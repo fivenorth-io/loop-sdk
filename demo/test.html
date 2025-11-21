@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Loop SDK Demo dApp</title>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script type="module">
+        import { h, render } from 'https://esm.sh/preact';
+        import { useState, useEffect } from 'https://esm.sh/preact/hooks';
+        import htm from 'https://esm.sh/htm';
+        //import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.1.1/dist';
+        import { loop } from './dist/index.js';
+
+        const html = htm.bind(h);
+
+        const getDamlCommandTemplate = (partyId = '') => ({
+            commands: [{
+                ExerciseCommand: {
+                    templateId: "#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferFactory",
+                    contractId: '009f00e5bf00640118d849080aaf22bc963a8458d322585cebf1119cb7bf37a955ca11122065b775fb8a4199904ed32fa9277fd9c0e82bb82319a7151249df124182072381',
+                    choice: 'TransferFactory_Transfer',
+                    choiceArgument: {
+                        expectedAdmin: "DSO::1220be58c29e65de40bf273be1dc2b266d43a9a002ea5b18955aeef7aac881bb471a",
+                        transfer: {
+                            sender: partyId,
+                            receiver: '510ae534b026134d27e23ee14ac83be3::1220e21e937baf58245ad64e5e4a903a6b6c46e86c6d12dc0d7408be746fb804b56d',
+                            amount: '1.5',
+                            instrumentId: {
+                                admin: 'DSO::1220be58c29e65de40bf273be1dc2b266d43a9a002ea5b18955aeef7aac881bb471a',
+                                id: 'Amulet',
+                            },
+                            requestedAt: new Date().toISOString(),
+                            executeBefore: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+                            lock: null,
+                            meta: { values: {} },
+                            inputHoldingCids: ['list-of-holing-amulet-cid'],
+                            meta: {
+                                values: {
+                                    "splice.lfdecentralizedtrust.org/reason": "demo transfer by LoopSDK"
+                                }
+                            },
+                        },
+                        extraArgs: {
+                            context: { 
+                                values: {
+                                    "get-these-from-factory": ""
+                                }
+                            },
+                            meta: {
+                                values: {}
+                            }
+                        },
+                    }
+                }
+            }],
+            packageIdSelectionPreference: [],
+            disclosedContracts: [],
+        });
+
+        function App() {
+            const [account, setAccount] = useState(null);
+            const [provider, setProvider] = useState(null);
+            const [holdings, setHoldings] = useState([]);
+            const [isLoading, setIsLoading] = useState(false);
+            const [templateId, setTemplateId] = useState('');
+            const [activeContract, setActiveContract] = useState([]);
+            const [isFindingContract, setIsFindingContract] = useState(false);
+            const [interfaceId, setInterfaceId] = useState('');
+            const [contractByInterface, setContractByInterface] = useState([]);
+            const [isFindingByInterface, setIsFindingByInterface] = useState(false);
+            const [damlCommand, setDamlCommand] = useState(JSON.stringify(getDamlCommandTemplate(), null, 2));
+            const [isSubmittingTx, setIsSubmittingTx] = useState(false);
+            const [txResult, setTxResult] = useState(null);
+            const [rawMessage, setRawMessage] = useState('Hello, Loop!');
+            const [signature, setSignature] = useState(null);
+            const [isSigning, setIsSigning] = useState(false);
+
+            useEffect(() => {
+                loop.init({
+                    appName: 'My Test DApp',
+                    network: 'local',
+                    onAccept: (prov) => {
+                        setProvider(prov);
+                        console.log('Provider:', prov);
+                        setAccount({ partyId: prov.party_id, publicKey: prov.public_key });
+                    },
+                    onReject: () => {
+                        alert('Connection Rejected!');
+                        setAccount(null);
+                        setProvider(null);
+                        setHoldings([]);
+                    },
+                });
+            }, []);
+
+            useEffect(() => {
+                if (account?.partyId) {
+                    setDamlCommand(JSON.stringify(getDamlCommandTemplate(account.partyId), null, 2));
+                }
+            }, [account]);
+
+
+            const handleConnect = () => {
+                loop.connect();
+            };
+            
+            const handleGetHolding = async () => {
+                if (!provider) return;
+                setIsLoading(true);
+                try {
+                    const fetchedHoldings = await provider.getHolding();
+                    console.log('Holdings:', fetchedHoldings);
+                    setHoldings(fetchedHoldings);
+                } catch (error) {
+                    console.error('Failed to get holdings:', error);
+                    alert('Failed to get holdings. See console.');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleFindContract = async () => {
+                if (!provider || !templateId) {
+                    alert('Please connect and enter a template ID.');
+                    return;
+                }
+                setIsFindingContract(true);
+                setActiveContract([]);
+                try {
+                    const contracts = await provider.getActiveContracts({ templateId });
+                    console.log('Found contracts:', contracts);
+                    if (contracts && contracts.length > 0) {
+                        setActiveContract(contracts);
+                    } else {
+                        alert('No active contract found with that template ID.');
+                    }
+                } catch (error) {
+                    console.error('Failed to find active contract:', error);
+                    alert('Failed to find active contract. See console.');
+                } finally {
+                    setIsFindingContract(false);
+                }
+            };
+
+            const handleFindContractByInterface = async () => {
+                if (!provider || !interfaceId) {
+                    alert('Please connect and enter an Interface ID.');
+                    return;
+                }
+                setIsFindingByInterface(true);
+                setContractByInterface([]);
+                try {
+                    console.log('Finding contract by interface:', interfaceId);
+                    const contracts = await provider.getActiveContracts({ interfaceId });
+                    console.log('Found contract by interface:', contracts);
+                    if (contracts && contracts.length > 0) {
+                        setContractByInterface(contracts);
+                    } else {
+                        alert('No active contract found with that interface ID.');
+                    }
+                } catch (error) {
+                    console.error('Failed to find active contract by interface:', error);
+                    alert('Failed to find active contract by interface. See console.');
+                } finally {
+                    setIsFindingByInterface(false);
+                }
+            };
+
+            const handleRunTransaction = async () => {
+                if (!provider) {
+                    alert('Please connect first.');
+                    return;
+                }
+                setIsSubmittingTx(true);
+                setTxResult(null);
+                try {
+                    const command = JSON.parse(damlCommand);
+                    const result = await provider.submitTransaction(command);
+                    setTxResult(result);
+                } catch (error) {
+                    console.error('Failed to submit transaction:', error);
+                    alert('Failed to submit transaction. See console.');
+                    setTxResult({ error: error.message });
+                } finally {
+                    setIsSubmittingTx(false);
+                }
+            };
+
+            const handleSignMessage = async () => {
+                if (!provider) {
+                    alert('Please connect first.');
+                    return;
+                }
+                setIsSigning(true);
+                setSignature(null);
+                try {
+                    const result = await provider.signMessage(rawMessage);
+                    setSignature(result);
+                } catch (error) {
+                    console.error('Failed to sign message:', error);
+                    alert('Failed to sign message. See console.');
+                    setSignature({ error: error.message });
+                } finally {
+                    setIsSigning(false);
+                }
+            };
+
+            return html`
+                <div>
+                    <h1>Loop SDK Preact Test</h1>
+                    ${account ? html`
+                        <div>
+                            <h2>Connected!</h2>
+                            <p>Party ID: ${account.partyId}</p>
+                            <p>Puplic Key: ${account.publicKey}</p>
+                            <button onClick=${handleGetHolding} disabled=${isLoading}>
+                                ${isLoading ? 'Loading...' : 'Get Holdings'}
+                            </button>
+
+                            ${holdings.length > 0 && !isLoading && html`
+                                <h3>Your Holdings:</h3>
+                                <ul>
+                                    ${holdings.map(h => html`
+                                        <li>
+                                            <strong>${h.symbol}</strong>: 
+                                            ${(parseFloat(h.total_unlocked_coin) + parseFloat(h.total_locked_coin)).toFixed(h.decimals)}
+                                            <br />
+                                            <small>Instrument ID: ${h.instrument_id.id}</small>
+                                        </li>
+                                    `)}
+                                </ul>
+                            `}
+                            <hr style="margin: 20px 0;" />
+
+                            <div>
+                                <h4>Find Active Contract By Template ID</h4>
+                                <p>Eg, <span>#splice-amulet:Splice.Amulet:Amulet</span></p>
+                                <input type="text" value=${templateId} onInput=${(e) => setTemplateId(e.target.value)} placeholder="Enter Template ID" style="margin-right: 10px;" />
+                                <button onClick=${handleFindContract} disabled=${isFindingContract}>
+                                    ${isFindingContract ? 'Finding...' : 'Find Active Contract'}
+                                </button>
+                            </div>
+
+                            ${activeContract.length > 0 && !isFindingContract && html`
+                                <div style="margin-top: 20px;">
+                                    <h5>Found Contract IDs:</h5>
+                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(activeContract.map(c => c?.contractEntry?.JsActiveContract?.createdEvent?.contractId).filter(Boolean), null, 2)}</pre>
+                                    <h5>Found Contract Details:</h5>
+                                    ${activeContract.map(contract => html`
+                                        <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(contract, null, 2)}</pre>
+                                    `)}
+                                </div>
+                            `}
+
+                            <hr style="margin: 20px 0;" />
+
+                            <div>
+                                <h4>Find Active Contract By Interface ID</h4>
+                                <p>Eg, <span>#splice-api-token-holding-v1:Splice.Api.Token.HoldingV1:Holding</span></p>
+                                <input type="text" value=${interfaceId} onInput=${(e) => setInterfaceId(e.target.value)} placeholder="Enter Interface ID" style="margin-right: 10px;" />
+                                <button onClick=${handleFindContractByInterface} disabled=${isFindingByInterface}>
+                                    ${isFindingByInterface ? 'Finding...' : 'Find by Interface'}
+                                </button>
+                            </div>
+
+                            ${contractByInterface.length > 0 && !isFindingByInterface && html`
+                                <div style="margin-top: 20px;">
+                                    <h5>Found Contract by Interface IDs:</h5>
+                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(contractByInterface.map(c => c?.contractEntry?.JsActiveContract?.createdEvent?.contractId).filter(Boolean), null, 2)}</pre>
+                                    <h5>Found Contract by Interface Details:</h5>
+                                    ${contractByInterface.map(contract => html`
+                                        <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(contract, null, 2)}</pre>
+                                    `)}
+                                </div>
+                            `}
+
+                            <hr style="margin: 20px 0;" />
+                            
+                            <div>
+                                <h3>Sign Raw Message</h3>
+                                <input 
+                                    type="text"
+                                    style="width: 100%; font-family: monospace; margin-bottom: 10px;"
+                                    value=${rawMessage}
+                                    onInput=${(e) => setRawMessage(e.target.value)}
+                                />
+                                <button onClick=${handleSignMessage} disabled=${isSigning}>
+                                    ${isSigning ? 'Signing...' : 'Sign'}
+                                </button>
+                            </div>
+
+                            ${signature && !isSigning && html`
+                                <div style="margin-top: 20px;">
+                                    <h5>Signature:</h5>
+                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(signature, null, 2)}</pre>
+                                </div>
+                            `}
+
+                            <hr style="margin: 20px 0;" />
+                            
+                            <div>
+                                <h3>Run DAML Transaction</h3>
+                                <p>Example below is a DAML command For Amulet Transfer on devnet. Make sure to incldue the Factory Disclosure:</p>
+                                <textarea 
+                                    style="width: 100%; height: 150px; font-family: monospace;"
+                                    value=${damlCommand}
+                                    onInput=${(e) => setDamlCommand(e.target.value)}
+                                ></textarea>
+                                <button onClick=${handleRunTransaction} disabled=${isSubmittingTx} style="margin-top: 10px;">
+                                    ${isSubmittingTx ? 'Submitting...' : 'Run'}
+                                </button>
+                            </div>
+
+                            ${txResult && !isSubmittingTx && html`
+                                <div style="margin-top: 20px;">
+                                    <h5>Transaction Result:</h5>
+                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(txResult, null, 2)}</pre>
+                                </div>
+                            `}
+
+                        </div>
+                    ` : html`
+                        <button onClick=${handleConnect}>Connect</button>
+                    `}
+                </div>
+            `;
+        }
+
+        render(html`<${App} />`, document.getElementById('app'));
+    </script>
+</body>
+</html>
