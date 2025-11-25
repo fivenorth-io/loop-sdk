@@ -11,17 +11,19 @@ export class Provider {
     public connection: Connection;
     public party_id: string;
     public public_key: string;
+    public email?: string;
     private auth_token: string;
     private requests: Map<string, any> = new Map();
     private requestTimeout: number = 30000; // 30 seconds
 
-    constructor({ connection, party_id, public_key, auth_token, requestTimeout }: { connection: Connection, party_id: string, public_key: string, auth_token: string, requestTimeout?: number }) {
+    constructor({ connection, party_id, public_key, auth_token, email, requestTimeout }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string, requestTimeout?: number }) {
         if (!connection) {
             throw new Error('Provider requires a connection object.');
         }
         this.connection = connection;
         this.party_id = party_id;
         this.public_key = public_key;
+        this.email = email;
         this.auth_token = auth_token;
         this.requestTimeout = requestTimeout || 30000; // 30 seconds
     }
