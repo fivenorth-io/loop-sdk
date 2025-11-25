@@ -39,14 +39,14 @@ class LoopSDK {
     const existingConnectionRaw = localStorage.getItem('loop_connect');
     if (existingConnectionRaw) {
       try {
-        const { ticketId, authToken, partyId, publicKey } = JSON.parse(existingConnectionRaw);
+        const { ticketId, authToken, partyId, publicKey, email } = JSON.parse(existingConnectionRaw);
 
         // Attempt to auto-login if we have a token
         if (authToken && partyId && publicKey) {
             try {
                 const verifiedAccount = await this.connection.verifySession(authToken);
                 if (verifiedAccount.party_id === partyId) {
-                    this.provider = new Provider({ connection: this.connection, party_id: partyId, auth_token: authToken, public_key: publicKey });
+                    this.provider = new Provider({ connection: this.connection, party_id: partyId, auth_token: authToken, public_key: publicKey, email });
                     this.onAccept?.(this.provider);
                     
                     // Re-establish websocket for this session
@@ -96,9 +96,9 @@ class LoopSDK {
   private handleWebSocketMessage(event: MessageEvent) {
     const message = JSON.parse(event.data);
     if (message.type === MessageType.HANDSHAKE_ACCEPT) {
-      const { authToken, partyId, publicKey } = message.payload || {};
+      const { authToken, partyId, publicKey, email } = message.payload || {};
       if (authToken && partyId && publicKey) {
-        this.provider = new Provider({ connection: this.connection!, party_id: partyId, auth_token: authToken, public_key: publicKey });
+        this.provider = new Provider({ connection: this.connection!, party_id: partyId, auth_token: authToken, public_key: publicKey, email });
 
         const connectionInfoRaw = localStorage.getItem('loop_connect');
         if (connectionInfoRaw) {
@@ -107,6 +107,7 @@ class LoopSDK {
             connectionInfo.authToken = authToken;
             connectionInfo.partyId = partyId;
             connectionInfo.publicKey = publicKey;
+            connectionInfo.email = email;
             localStorage.setItem('loop_connect', JSON.stringify(connectionInfo));
             this.onAccept?.(this.provider);
             this.hideQrCode();
