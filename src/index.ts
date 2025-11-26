@@ -9,6 +9,7 @@ class LoopSDK {
   private appName: string = 'Unknown';
   private connection: Connection | null = null;
   private provider: Provider | null = null;
+  private openMode: 'popup' | 'tab' = 'popup';
 
   private onAccept: ((provider: Provider) => void) | null = null;
   private onReject: (() => void) | null = null;
@@ -18,10 +19,11 @@ class LoopSDK {
   constructor() {
   }
 
-  init({ appName, network, walletUrl, apiUrl, onAccept, onReject }: { appName: string, network?: Network, walletUrl?: string, apiUrl?: string, onAccept?: (provider: Provider) => void, onReject?: () => void }) {
+  init({ appName, network, walletUrl, apiUrl, onAccept, onReject, openMode }: { appName: string, network?: Network, walletUrl?: string, apiUrl?: string, onAccept?: (provider: Provider) => void, onReject?: () => void, openMode?: 'popup' | 'tab' }) {
     this.appName = appName;
     this.onAccept = onAccept || null;
     this.onReject = onReject || null;
+    this.openMode = openMode ?? 'popup';
     
     this.connection = new Connection({ network, walletUrl, apiUrl });
   }
@@ -127,6 +129,42 @@ class LoopSDK {
     }
   }
 
+  private openWallet(url: string) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (this.openMode === 'popup') {
+      const width = 480;
+      const height = 720;
+
+      const left = (window.innerWidth - width) / 2 + window.screenX;
+      const top = (window.innerWidth - height) / 2 + window.screenX;
+
+      const features =
+        `width=${width},height=${height},` +
+        `left=${left},top=${top},` +
+        'menubar=no,toolbar=no,location=no,' +
+        'resizable=yes,scrollbars=yes,status=no';
+      
+      const popup = window.open(url, 'loop-wallet', features);
+
+      if (!popup) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      try { 
+        popup.focus();
+      } catch {
+        // focus errors
+      }
+
+      return;
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
   private showQrCode(url: string) {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return;
@@ -160,7 +198,11 @@ class LoopSDK {
       link.textContent = 'Or click here to connect';
       link.style.color = 'white';
       link.style.marginTop = '20px';
-      link.target = '_blank';
+      //link.target = '_blank';
+      link.onclick = (e) => {
+        e.preventDefault();
+        this.openWallet(url);
+      };
       overlay.appendChild(link);
       
       overlay.onclick = (e) => {
