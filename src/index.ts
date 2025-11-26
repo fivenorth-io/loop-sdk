@@ -10,6 +10,7 @@ class LoopSDK {
   private connection: Connection | null = null;
   private provider: Provider | null = null;
   private openMode: 'popup' | 'tab' = 'popup';
+  private popupWindow: Window | null = null; 
 
   private onAccept: ((provider: Provider) => void) | null = null;
   private onReject: (() => void) | null = null;
@@ -97,7 +98,9 @@ class LoopSDK {
 
   private handleWebSocketMessage(event: MessageEvent) {
     const message = JSON.parse(event.data);
+    console.log('[LoopSDK] WS message received:', message);
     if (message.type === MessageType.HANDSHAKE_ACCEPT) {
+      console.log('[LoopSDK] Entering HANDSHAKE_ACCEPT flow');
       const { authToken, partyId, publicKey, email } = message.payload || {};
       if (authToken && partyId && publicKey) {
         this.provider = new Provider({ connection: this.connection!, party_id: partyId, auth_token: authToken, public_key: publicKey, email });
@@ -114,16 +117,30 @@ class LoopSDK {
             this.onAccept?.(this.provider);
             this.hideQrCode();
             this.connection?.connectWebSocket(connectionInfo.ticketId, this.handleWebSocketMessage.bind(this));
+
+            console.log('[LoopSDK] HANDSHAKE_ACCEPT: closing popup (if exists)');
+            if (this.popupWindow && !this.popupWindow.closed) {
+              this.popupWindow.close();
+            }
+            this.popupWindow = null;
+
           } catch (error) {
             console.error('Failed to update local storage with auth token.', error);
           }
         }
       }
     } else if (message.type === MessageType.HANDSHAKE_REJECT) {
+      console.log('[LoopSDK] Entering HANDSHAKE_REJECT flow');
       localStorage.removeItem('loop_connect');
       this.connection?.ws?.close();
       this.onReject?.();
       this.hideQrCode();
+
+      console.log('[LoopSDK] HANDSHAKE_REJECT: closing popup (if exists)');
+      if (this.popupWindow && !this.popupWindow.closed) {
+              this.popupWindow.close();
+      }
+      this.popupWindow = null;
     } else if (this.provider) {
         this.provider.handleResponse(message);
     }
@@ -139,7 +156,7 @@ class LoopSDK {
       const height = 720;
 
       const left = (window.innerWidth - width) / 2 + window.screenX;
-      const top = (window.innerWidth - height) / 2 + window.screenX;
+      const top = (window.innerWidth - height) / 2 + window.screenY;
 
       const features =
         `width=${width},height=${height},` +
@@ -153,6 +170,8 @@ class LoopSDK {
         window.open(url, '_blank', 'noopener,noreferrer');
         return;
       }
+
+      this.popupWindow = popup;
 
       try { 
         popup.focus();
