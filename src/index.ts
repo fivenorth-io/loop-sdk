@@ -9,6 +9,8 @@ class LoopSDK {
   private appName: string = 'Unknown';
   private connection: Connection | null = null;
   private provider: Provider | null = null;
+  private openMode: 'popup' | 'tab' = 'popup';
+  private popupWindow: Window | null = null; 
 
   private onAccept: ((provider: Provider) => void) | null = null;
   private onReject: (() => void) | null = null;
@@ -18,10 +20,11 @@ class LoopSDK {
   constructor() {
   }
 
-  init({ appName, network, walletUrl, apiUrl, onAccept, onReject }: { appName: string, network?: Network, walletUrl?: string, apiUrl?: string, onAccept?: (provider: Provider) => void, onReject?: () => void }) {
+  init({ appName, network, walletUrl, apiUrl, onAccept, onReject, openMode }: { appName: string, network?: Network, walletUrl?: string, apiUrl?: string, onAccept?: (provider: Provider) => void, onReject?: () => void, openMode?: 'popup' | 'tab' }) {
     this.appName = appName;
     this.onAccept = onAccept || null;
     this.onReject = onReject || null;
+    this.openMode = openMode ?? 'popup';
     
     this.connection = new Connection({ network, walletUrl, apiUrl });
   }
@@ -102,7 +105,9 @@ class LoopSDK {
 
   private handleWebSocketMessage(event: MessageEvent) {
     const message = JSON.parse(event.data);
+    console.log('[LoopSDK] WS message received:', message);
     if (message.type === MessageType.HANDSHAKE_ACCEPT) {
+      console.log('[LoopSDK] Entering HANDSHAKE_ACCEPT flow');
       const { authToken, partyId, publicKey, email } = message.payload || {};
       if (authToken && partyId && publicKey) {
         this.provider = new Provider({ connection: this.connection!, party_id: partyId, auth_token: authToken, public_key: publicKey, email });
@@ -119,21 +124,73 @@ class LoopSDK {
             this.onAccept?.(this.provider);
             this.hideQrCode();
             this.connection?.connectWebSocket(connectionInfo.ticketId, this.handleWebSocketMessage.bind(this));
+
+            console.log('[LoopSDK] HANDSHAKE_ACCEPT: closing popup (if exists)');
+            if (this.popupWindow && !this.popupWindow.closed) {
+              this.popupWindow.close();
+            }
+            this.popupWindow = null;
+
           } catch (error) {
             console.error('Failed to update local storage with auth token.', error);
           }
         }
       }
     } else if (message.type === MessageType.HANDSHAKE_REJECT) {
+      console.log('[LoopSDK] Entering HANDSHAKE_REJECT flow');
       localStorage.removeItem('loop_connect');
       this.connection?.ws?.close();
       this.onReject?.();
       this.hideQrCode();
+
+      console.log('[LoopSDK] HANDSHAKE_REJECT: closing popup (if exists)');
+      if (this.popupWindow && !this.popupWindow.closed) {
+              this.popupWindow.close();
+      }
+      this.popupWindow = null;
     } else if (this.provider) {
         this.provider.handleResponse(message);
     }
   }
 
+  private openWallet(url: string) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (this.openMode === 'popup') {
+      const width = 480;
+      const height = 720;
+
+      const left = (window.innerWidth - width) / 2 + window.screenX;
+      const top = (window.innerWidth - height) / 2 + window.screenY;
+
+      const features =
+        `width=${width},height=${height},` +
+        `left=${left},top=${top},` +
+        'menubar=no,toolbar=no,location=no,' +
+        'resizable=yes,scrollbars=yes,status=no';
+      
+      const popup = window.open(url, 'loop-wallet', features);
+
+      if (!popup) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      this.popupWindow = popup;
+
+      try { 
+        popup.focus();
+      } catch {
+        // focus errors
+      }
+
+      return;
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
   private showQrCode(url: string) {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return;
@@ -167,7 +224,11 @@ class LoopSDK {
       link.textContent = 'Or click here to connect';
       link.style.color = 'white';
       link.style.marginTop = '20px';
-      link.target = '_blank';
+      //link.target = '_blank';
+      link.onclick = (e) => {
+        e.preventDefault();
+        this.openWallet(url);
+      };
       overlay.appendChild(link);
       
       overlay.onclick = (e) => {
