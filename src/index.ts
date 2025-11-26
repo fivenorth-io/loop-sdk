@@ -39,6 +39,7 @@ class LoopSDK {
     const existingConnectionRaw = localStorage.getItem('loop_connect');
     if (existingConnectionRaw) {
       try {
+        let canReuseTicket = true;
         const { ticketId, authToken, partyId, publicKey, email } = JSON.parse(existingConnectionRaw);
 
         // Attempt to auto-login if we have a token
@@ -54,14 +55,20 @@ class LoopSDK {
                         this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
                     }
                     return;
-                }
-            } catch (err) {
-                console.error('Auto-login failed, token is invalid. Starting new connection.', err);
-            }
+                  } else {
+                    console.warn('[LoopSDK] Sttored partyId does not march verified account. Clearing cached session.');
+                    canReuseTicket = false;
+                    localStorage.removeItem('loop_connect');
+                  }
+              } catch (err) {
+                  console.error('Auto-login failed, token is invalid. Starting new connection.', err);
+                  canReuseTicket = false;
+                  localStorage.removeItem('loop_connect');
+              }
         }
         
         // Reuse ticket if it exists but no token
-        if (ticketId) {
+        if (ticketId && canReuseTicket) {
           this.ticketId = ticketId;
           const connectUrl = `${this.connection.walletUrl}/.connect/?ticketId=${ticketId}`;
           this.showQrCode(connectUrl);
