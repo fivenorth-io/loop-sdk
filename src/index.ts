@@ -11,6 +11,7 @@ class LoopSDK {
   private provider: Provider | null = null;
   private openMode: 'popup' | 'tab' = 'popup';
   private popupWindow: Window | null = null; 
+  private redirectUrl?: string;
 
   private onAccept: ((provider: Provider) => void) | null = null;
   private onReject: (() => void) | null = null;
@@ -20,11 +21,12 @@ class LoopSDK {
   constructor() {
   }
 
-  init({ appName, network, walletUrl, apiUrl, onAccept, onReject, openMode }: { appName: string, network?: Network, walletUrl?: string, apiUrl?: string, onAccept?: (provider: Provider) => void, onReject?: () => void, openMode?: 'popup' | 'tab' }) {
+  init({ appName, network, walletUrl, apiUrl, redirectUrl, onAccept, onReject, openMode }: { appName: string, network?: Network, walletUrl?: string, apiUrl?: string, redirectUrl?: string, onAccept?: (provider: Provider) => void, onReject?: () => void, openMode?: 'popup' | 'tab' }) {
     this.appName = appName;
     this.onAccept = onAccept || null;
     this.onReject = onReject || null;
     this.openMode = openMode ?? 'popup';
+    this.redirectUrl = redirectUrl;
     
     this.connection = new Connection({ network, walletUrl, apiUrl });
   }
@@ -73,7 +75,12 @@ class LoopSDK {
         // Reuse ticket if it exists but no token
         if (ticketId && canReuseTicket) {
           this.ticketId = ticketId;
-          const connectUrl = `${this.connection.walletUrl}/.connect/?ticketId=${ticketId}`;
+          const url = new URL('/.connect/', this.connection.walletUrl);
+          url.searchParams.set('ticketId', ticketId);
+          if (this.redirectUrl) {
+            url.searchParams.set('redirectUrl', this.redirectUrl);
+          }
+          const connectUrl = url.toString();
           this.showQrCode(connectUrl);
           this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
           return;
@@ -93,7 +100,12 @@ class LoopSDK {
 
         localStorage.setItem('loop_connect', JSON.stringify({ sessionId, ticketId }));
         
-        const connectUrl = `${this.connection.walletUrl}/.connect/?ticketId=${ticketId}`;
+        const url = new URL('/.connect/', this.connection.walletUrl);
+        url.searchParams.set('ticketId', ticketId);
+        if (this.redirectUrl) {
+          url.searchParams.set('redirectUrl', this.redirectUrl);
+        }
+        const connectUrl = url.toString();
         this.showQrCode(connectUrl);
 
         this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
