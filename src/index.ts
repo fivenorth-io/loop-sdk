@@ -138,9 +138,9 @@ class LoopSDK {
             this.connection?.connectWebSocket(connectionInfo.ticketId, this.handleWebSocketMessage.bind(this));
 
             console.log('[LoopSDK] HANDSHAKE_ACCEPT: closing popup (if exists)');
-            if (this.popupWindow && !this.popupWindow.closed) {
-              this.popupWindow.close();
-            }
+            //if (this.popupWindow && !this.popupWindow.closed) {
+            //  this.popupWindow.close();
+            //}
             this.popupWindow = null;
 
           } catch (error) {
