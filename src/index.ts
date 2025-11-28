@@ -21,13 +21,39 @@ class LoopSDK {
   constructor() {
   }
 
-  init({ appName, network, walletUrl, apiUrl, redirectUrl, onAccept, onReject, openMode }: { appName: string, network?: Network, walletUrl?: string, apiUrl?: string, redirectUrl?: string, onAccept?: (provider: Provider) => void, onReject?: () => void, openMode?: 'popup' | 'tab' }) {
+  init({ 
+    appName, 
+    network, 
+    walletUrl, 
+    apiUrl, 
+    onAccept, 
+    onReject,
+    options,  
+  }: { 
+    appName: string, 
+    network?: Network, 
+    walletUrl?: string, 
+    apiUrl?: string, 
+    onAccept?: (provider: Provider) => void, 
+    onReject?: () => void, 
+    options?: {
+      openMode?: 'popup' | 'tab' 
+      redirectUrl?: string, 
+    };
+  }) {
     this.appName = appName;
     this.onAccept = onAccept || null;
     this.onReject = onReject || null;
-    this.openMode = openMode ?? 'popup';
-    this.redirectUrl = redirectUrl;
-    
+
+    const resolvedOptions = {
+      openMode: 'popup' as 'popup' | 'tab',
+      redirectUrl: undefined as string | undefined,
+      ...(options ?? {}),
+    };
+
+    this.openMode = resolvedOptions.openMode;
+    this.redirectUrl = resolvedOptions.redirectUrl;
+
     this.connection = new Connection({ network, walletUrl, apiUrl });
   }
 
