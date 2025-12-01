@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 (2025-12-01)
+
+### BREAKING CHANGES
+* **sdk:** `openMode` has been moved into the `options` object of `loop.init()`.
+  - Old:
+    ```ts
+    loop.init({ openMode: 'popup' });
+    ```
+  - New:
+    ```ts
+    loop.init({ options: { openMode: 'popup' } });
+    ```
+* **sdk:** `redirectUrl` is now also expected inside the `options` field.
+
+These changes require integrators to update how they call `loop.init()` to prevent breaking behavior.
+
 ## 0.3.0 (2025-11-26)
 
 Full Changelog: [v0.2.1...v0.3.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.2.1...v0.3.0)

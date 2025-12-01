@@ -82,10 +82,9 @@
                 loop.init({
                     appName: 'My Test DApp',
                     network: 'local',
-                    options:
-                    {
-                        openMode: null,
-                        redirectUrl: null,
+                    options: {
+                        openMode: 'popup', // 'popup' (default) or 'tab'
+                        redirectUrl: 'https://myapp.com/after-connect', // optional redirect after approval
                     },
                     onAccept: (prov) => {
                         setProvider(prov);
