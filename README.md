@@ -42,7 +42,10 @@ Before you can connect, you need to initialize the SDK. This is typically done o
 loop.init({
     appName: 'My Awesome dApp',
     network: 'local', // or 'devnet', 'mainnet'
-    openMode: 'popup', // 'popup' (default), 'tab'
+    options: {
+        openMode: 'popup', // 'popup' (default) or 'tab'
+        redirectUrl: 'https://myapp.com/after-connect', // optional redirect after approval
+    },
     onAccept: (provider) => {
         console.log('Connected!', provider);
         // You can now use the provider to interact with the wallet
@@ -56,7 +59,9 @@ loop.init({
 The `init` method takes a configuration object with the following properties:
 - `appName`: The name of your application, which will be displayed to the user in the Loop wallet.
 - `network`: The network to connect to. Can be `local`, `devnet`, or `mainnet`.
-- `openMode`: Controls how the Loop wallet opens during conenction, `'popup'` (default) or `'tab'`.
+- `options`: Optional object containing:
+  - `openMode`: Controls how Loop opens: `'popup'` (default) or `'tab'`.
+  - `redirectUrl`: Optional redirect URL the wallet will navigate back to after successful approval. If omitted, user stays on Loop dashboard.
 - `onAccept`: A callback function that is called when the user accepts the connection. It receives a `provider` object.
 - `onReject`: A callback function that is called when the user rejects the connection.
 
