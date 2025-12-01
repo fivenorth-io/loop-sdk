@@ -82,6 +82,11 @@
                 loop.init({
                     appName: 'My Test DApp',
                     network: 'local',
+                    options:
+                    {
+                        openMode: null,
+                        redirectUrl: null,
+                    },
                     onAccept: (prov) => {
                         setProvider(prov);
                         console.log('Provider:', prov);
