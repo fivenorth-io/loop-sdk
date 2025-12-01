@@ -4,6 +4,7 @@ export type Account = {
   party_id: string;
   auth_token: string;
   public_key: string;
+  email?: string;
 };
 
 export enum MessageType {
