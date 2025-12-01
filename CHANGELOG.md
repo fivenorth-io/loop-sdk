@@ -16,6 +16,9 @@
 
 These changes require integrators to update how they call `loop.init()` to prevent breaking behavior.
 
+### Features
+
+* **sdk:** expose `email` in `verifySession()` response by adding `email` to the `Account` return type and forwarding the backend value. 
 ## 0.3.0 (2025-11-26)
 
 Full Changelog: [v0.2.1...v0.3.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.2.1...v0.3.0)

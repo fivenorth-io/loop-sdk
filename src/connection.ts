@@ -115,6 +115,7 @@ export class Connection {
         }
 
         const data = await response.json();
+        const email = data?.email;
 
         if (!data?.party_id || !data?.public_key) {
             throw new Error('Invalid session verification response.');
@@ -124,6 +125,7 @@ export class Connection {
             party_id: data?.party_id,
             auth_token: authToken,
             public_key: data?.public_key,
+            email,
         };
         return account;
     }
