@@ -19,6 +19,8 @@ These changes require integrators to update how they call `loop.init()` to preve
 ### Features
 
 * **sdk:** expose `email` in `verifySession()` response by adding `email` to the `Account` return type and forwarding the backend value. 
+* **sdk:** add UUID polyfill fallback for environments where `crypto.randomUUID` is unavailable (older browsers or non-HTTPS contexts).
+
 ## 0.3.0 (2025-11-26)
 
 Full Changelog: [v0.2.1...v0.3.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.2.1...v0.3.0)

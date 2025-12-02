@@ -9,11 +9,12 @@ function generateUUID(): string {
     (c) => {
       const gCrypto = globalThis.crypto as Crypto | undefined;
 
-      if (!gCrypto?.getRandomValues) {
+      if (!gCrypto?.getRandomValues) { // fallback for if crypto is not available
         const n = Number(c);
         return ((n ^ (Math.random() * 16) >> (n / 4))).toString(16);
       }
 
+      // use crypto API
       const arr = gCrypto.getRandomValues(new Uint8Array(1));
       const byte = arr[0]!;
       const n = Number(c);
