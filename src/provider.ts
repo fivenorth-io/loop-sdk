@@ -3,6 +3,8 @@ import type { Holding, ActiveContract } from './types';
 import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
 
+// Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
+// In production (HTTPS), native randomUUID will be used
 function generateUUID(): string {
   return '10000000-1000-4000-8000-100000000000'.replace(
     /[018]/g,
