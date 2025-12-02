@@ -246,7 +246,7 @@ class LoopSDK {
       overlay.style.left = '0';
       overlay.style.width = '100%';
       overlay.style.height = '100%';
-      overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+      overlay.style.backgroundColor = 'rgba(0,0,0,0.9)';
       overlay.style.display = 'flex';
       overlay.style.justifyContent = 'center';
       overlay.style.alignItems = 'center';
