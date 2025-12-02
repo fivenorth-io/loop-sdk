@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
 
 permissions:
   id-token: write  # Required for OIDC
@@ -28,5 +30,11 @@ jobs:
 
       - name: Update npm
         run: npm install -g npm@latest
-      - name: Publish to npm with provenance
+
+      - name: Publish alpha package
+        if: github.ref == 'refs/heads/main'
+        run: npm publish premajor --preid alpha
+
+      - name: Publish to npm 
+        if: startsWith(github.ref, 'refs/tags/v')
         run: npm publish
