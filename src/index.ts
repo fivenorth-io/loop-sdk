@@ -241,6 +241,8 @@ class LoopSDK {
       }
       
       const overlay = document.createElement('div');
+      overlay.id = 'loop-sdk-connect-overlay';
+      overlay.className = 'loop-sdk-connect-overlay';
       overlay.style.position = 'fixed';
       overlay.style.top = '0';
       overlay.style.left = '0';
@@ -253,9 +255,15 @@ class LoopSDK {
       overlay.style.zIndex = '1000';
       overlay.style.flexDirection = 'column';
       
+      const content = document.createElement('div');
+      content.className = 'loop-sdk-connect-content';
+      content.style.display = 'flex';
+      content.style.flexDirection = 'column';
+      content.style.alignItems = 'center';
+
       const img = document.createElement('img');
       img.src = dataUrl;
-      overlay.appendChild(img);
+      content.appendChild(img);
 
       const link = document.createElement('a');
       link.href = url;
@@ -267,7 +275,8 @@ class LoopSDK {
         e.preventDefault();
         this.openWallet(url);
       };
-      overlay.appendChild(link);
+      content.appendChild(link);
+      overlay.appendChild(content);
       
       overlay.onclick = (e) => {
         if (e.target === overlay) {

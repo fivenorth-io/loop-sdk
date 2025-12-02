@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 (2025-12-02)
+
+Full Changelog: [v0.4.0...v0.4.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.4.0...v0.4.1)
+
+### Features
+
+* **sdk:** add `id`/`class` attributes to the overlay container and wrap QR/link in a content div for easier styling/hooks.
+
 ## 0.4.0 (2025-12-01)
 
 ### BREAKING CHANGES
