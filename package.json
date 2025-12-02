@@ -16,6 +16,7 @@
   "publishConfig": {
     "access": "public"
   },
+  "repository": "github:fivenorth-io/loop-sdk",
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist",
     "prepublishOnly": "bun run build",
