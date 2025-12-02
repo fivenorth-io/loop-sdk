@@ -3,8 +3,37 @@ import type { Holding, ActiveContract } from './types';
 import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
 
+// Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
+// In production (HTTPS), native randomUUID will be used
+function generateUUID(): string {
+  return '10000000-1000-4000-8000-100000000000'.replace(
+    /[018]/g,
+    (c) => {
+      const gCrypto = globalThis.crypto as Crypto | undefined;
+
+      if (!gCrypto?.getRandomValues) { // fallback for if crypto is not available
+        const n = Number(c);
+        return ((n ^ (Math.random() * 16) >> (n / 4))).toString(16);
+      }
+
+      // use crypto API
+      const arr = gCrypto.getRandomValues(new Uint8Array(1));
+      const byte = arr[0]!;
+      const n = Number(c);
+
+      return ((n ^ ((byte & 15) >> (n / 4)))).toString(16);
+    },
+  );
+}
+
 export function generateRequestId(): string {
-    return crypto.randomUUID();
+  const gCrypto = globalThis.crypto as Crypto | undefined;
+
+  if (gCrypto?.randomUUID) {
+    return gCrypto.randomUUID();
+  }
+
+  return generateUUID();
 }
 
 export class Provider {
