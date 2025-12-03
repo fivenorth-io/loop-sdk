@@ -106,7 +106,11 @@ export class Provider {
                     clearInterval(intervalId);
                     this.requests.delete(requestId);
                     if (response.type === MessageType.REJECT_REQUEST) {
-                        reject(new RejectRequestError());
+                        const payload = response.payload as any;
+                        const backendMessage =
+                            (payload && (payload.message || payload.error || payload.cause)) || undefined;
+
+                        reject(new Error(backendMessage || 'Transaction failed'));
                     } else {
                         resolve(response.payload);
                     }
