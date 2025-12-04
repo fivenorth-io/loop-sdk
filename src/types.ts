@@ -64,8 +64,15 @@ export type ConnectTransferResponse = {
 };
 
 export type TransferOptions = {
-  instrument_admin?: string;
-  instrument_id?: string;
   requestedAt?: string | Date;
   executeBefore?: string | Date;
 };
+
+export type InstrumentSpec = {
+  instrument_id: string;
+  instrument_admin?: string;
+};
+
+export interface Wallet {
+  transfer(recipient: string, amount: string | number, instrument?: InstrumentSpec, options?: TransferOptions): Promise<any>;
+}

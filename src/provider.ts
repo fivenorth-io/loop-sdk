@@ -1,5 +1,5 @@
 import type { Connection } from './connection';
-import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions } from './types';
+import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec } from './types';
 import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
 
@@ -90,6 +90,7 @@ export class Provider {
     async transfer(
       recipient: string,
       amount: string | number,
+      instrument?: InstrumentSpec,
       options?: TransferOptions,
     ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
@@ -111,12 +112,12 @@ export class Provider {
         const executeBeforeIso = resolveDate(options?.executeBefore, 24 * 60 * 60 * 1000);
 
         const transferRequest: TransferRequest = {
-            recipient,
-            amount: amountStr,
-            instrument_admin: options?.instrument_admin,
-            instrument_id: options?.instrument_id || 'Amulet',
-            requested_at: requestedAtIso,
-            execute_before: executeBeforeIso,
+          recipient,
+          amount: amountStr,
+          instrument_admin: instrument?.instrument_admin,
+          instrument_id: instrument?.instrument_id || 'Amulet',
+          requested_at: requestedAtIso,
+          execute_before: executeBeforeIso,
         };
 
         const preparedPayload: PreparedTransferPayload = await this.connection.prepareTransfer(this.auth_token, transferRequest);
