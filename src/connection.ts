@@ -115,6 +115,14 @@ export class Connection {
             payload.instrument_id = params.instrument_id;
         }
 
+        if (params.requested_at) {
+            payload.requested_at = params.requested_at;
+        }
+
+        if (params.execute_before) {
+            payload.execute_before = params.execute_before;
+        }
+
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/transfer`, {
             method: 'POST',
             headers: {

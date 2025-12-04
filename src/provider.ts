@@ -87,14 +87,36 @@ export class Provider {
         return this.sendRequest(MessageType.RUN_TRANSACTION, payload);
     }
 
-    async transfer(recipient: string, amount: string | number, instrument?: { instrument_admin?: string; instrument_id?: string }): Promise<any> {
+    async transfer(
+      recipient: string,
+      amount: string | number,
+      options?: { instrument_admin?: string; instrument_id?: string; requestedAt?: string | Date; executeBefore?: string | Date },
+    ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
+
+        const resolveDate = (value?: string | Date, fallbackMs?: number) => {
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          if (typeof value === 'string' && value.length > 0) {
+            return value;
+          }
+          if (fallbackMs) {
+            return new Date(Date.now() + fallbackMs).toISOString();
+          }
+          return new Date().toISOString();
+        };
+
+        const requestedAtIso = resolveDate(options?.requestedAt);
+        const executeBeforeIso = resolveDate(options?.executeBefore, 24 * 60 * 60 * 1000);
 
         const transferRequest: TransferRequest = {
             recipient,
             amount: amountStr,
-            instrument_admin: instrument?.instrument_admin,
-            instrument_id: instrument?.instrument_id || 'Amulet',
+            instrument_admin: options?.instrument_admin,
+            instrument_id: options?.instrument_id || 'Amulet',
+            requested_at: requestedAtIso,
+            execute_before: executeBeforeIso,
         };
 
         const preparedPayload: PreparedTransferPayload = await this.connection.prepareTransfer(this.auth_token, transferRequest);

@@ -46,6 +46,8 @@ export type TransferRequest = {
   amount: string;
   instrument_admin?: string;
   instrument_id?: string;
+  requested_at?: string;
+  execute_before?: string;
 };
 
 export type PreparedTransferPayload = {
