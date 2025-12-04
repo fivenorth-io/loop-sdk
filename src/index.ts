@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import type { Account, Network } from './types';
+import type { Account, Network, TransferOptions } from './types';
 import { MessageType } from './types';
 import { Connection } from './connection';
 import { Provider, generateRequestId } from './provider';
@@ -17,8 +17,14 @@ class LoopSDK {
   private onReject: (() => void) | null = null;
   private overlay: HTMLDivElement | null = null;
   private ticketId: string | null = null;
+  public wallet: {
+    transfer: (recipient: string, amount: string | number, options?: TransferOptions) => Promise<any>;
+  };
 
   constructor() {
+    this.wallet = {
+      transfer: this.walletTransfer.bind(this),
+    };
   }
 
   init({ 
@@ -294,6 +300,18 @@ class LoopSDK {
       this.overlay.parentElement.removeChild(this.overlay);
       this.overlay = null;
     }
+  }
+
+  private requireProvider(): Provider {
+    if (!this.provider) {
+      throw new Error('SDK not connected. Call connect() and wait for acceptance first.');
+    }
+    return this.provider;
+  }
+
+  private walletTransfer(recipient: string, amount: string | number, options?: TransferOptions): Promise<any> {
+    const provider = this.requireProvider();
+    return provider.transfer(recipient, amount, options);
   }
 }
 
