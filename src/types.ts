@@ -62,3 +62,10 @@ export type PreparedTransferPayload = {
 export type ConnectTransferResponse = {
   payload: PreparedTransferPayload;
 };
+
+export type TransferOptions = {
+  instrument_admin?: string;
+  instrument_id?: string;
+  requestedAt?: string | Date;
+  executeBefore?: string | Date;
+};
