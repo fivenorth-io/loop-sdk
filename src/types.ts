@@ -40,3 +40,23 @@ export type ActiveContract = {
   // Place other known properties here...
   [key: string]: any; // Allow other properties
 };
+
+export type TransferRequest = {
+  recipient: string;
+  amount: string;
+  instrument_admin?: string;
+  instrument_id?: string;
+};
+
+export type PreparedTransferPayload = {
+  actAs: string[];
+  readAs: string[];
+  synchronizerId: string;
+  commands: any[];
+  disclosedContracts: any[];
+  packageIdSelectionPreference: string[];
+};
+
+export type ConnectTransferResponse = {
+  payload: PreparedTransferPayload;
+};

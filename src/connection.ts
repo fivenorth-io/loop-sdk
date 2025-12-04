@@ -1,4 +1,4 @@
-import type { Network, Account, Holding } from './types';
+import type { Network, Account, Holding, TransferRequest, PreparedTransferPayload, ConnectTransferResponse } from './types';
 
 export class Connection {
     public walletUrl: string = 'https://cantonloop.com';
@@ -99,6 +99,37 @@ export class Connection {
         }
 
         return response.json();
+    }
+
+    async prepareTransfer(authToken: string, params: TransferRequest): Promise<PreparedTransferPayload> {
+        const payload: Record<string, any> = {
+            recipient: params.recipient,
+            amount: params.amount,
+        };
+
+        if (params.instrument_admin) {
+            payload.instrument_admin = params.instrument_admin;
+        }
+
+        if (params.instrument_id) {
+            payload.instrument_id = params.instrument_id;
+        }
+
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/transfer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to prepare transfer.');
+        }
+
+        const data: ConnectTransferResponse = await response.json();
+        return data.payload;
     }
 
     async verifySession(authToken: string): Promise<Account> {
