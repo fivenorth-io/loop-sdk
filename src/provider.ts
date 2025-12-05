@@ -1,7 +1,16 @@
 import type { Connection } from './connection';
-import type { Holding, ActiveContract } from './types';
+import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec } from './types';
 import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
+
+type TransactionPayload = {
+  commands: any[];
+  disclosedContracts: any[];
+  packageIdSelectionPreference?: string[];
+  actAs?: string[];
+  readAs?: string[];
+  synchronizerId?: string;
+};
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
 // In production (HTTPS), native randomUUID will be used
@@ -74,8 +83,55 @@ export class Provider {
     }
 
     // submit a transaction to be signed by the wallet to the websocket
-    async submitTransaction(payload: { commands: any[]; disclosedContracts: any[] }): Promise<any> {
+    async submitTransaction(payload: TransactionPayload): Promise<any> {
         return this.sendRequest(MessageType.RUN_TRANSACTION, payload);
+    }
+
+    async transfer(
+      recipient: string,
+      amount: string | number,
+      instrument?: InstrumentSpec,
+      options?: TransferOptions,
+    ): Promise<any> {
+        const amountStr = typeof amount === 'number' ? amount.toString() : amount;
+
+        const resolveDate = (value?: string | Date, fallbackMs?: number) => {
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          if (typeof value === 'string' && value.length > 0) {
+            return value;
+          }
+          if (fallbackMs) {
+            return new Date(Date.now() + fallbackMs).toISOString();
+          }
+          return new Date().toISOString();
+        };
+
+        const requestedAtIso = resolveDate(options?.requestedAt);
+        const executeBeforeIso = resolveDate(options?.executeBefore, 24 * 60 * 60 * 1000);
+
+        const transferRequest: TransferRequest = {
+          recipient,
+          amount: amountStr,
+          instrument: {
+            instrument_admin: instrument?.instrument_admin,
+            instrument_id: instrument?.instrument_id || 'Amulet',
+          },
+          requested_at: requestedAtIso,
+          execute_before: executeBeforeIso,
+        };
+
+        const preparedPayload: PreparedTransferPayload = await this.connection.prepareTransfer(this.auth_token, transferRequest);
+
+        return this.submitTransaction({
+            commands: preparedPayload.commands,
+            disclosedContracts: preparedPayload.disclosedContracts,
+            packageIdSelectionPreference: preparedPayload.packageIdSelectionPreference,
+            actAs: preparedPayload.actAs,
+            readAs: preparedPayload.readAs,
+            synchronizerId: preparedPayload.synchronizerId,
+        });
     }
 
     // submit a raw message to be signed by the wallet to the websocket

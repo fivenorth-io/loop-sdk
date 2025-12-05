@@ -151,6 +151,27 @@ try {
 }
 ```
 
+#### Transfer (built-in helper)
+
+```javascript
+await loop.wallet.transfer(
+  'receiver::fingerprint',
+  '5', // amount (string or number)
+  {
+    instrument_id: 'Amulet',                 // defaults to Amulet if omitted
+    instrument_admin: 'issuer::fingerprint', // optional; defaults to DSO/Amulet
+  },
+  {
+    requestedAt: new Date().toISOString(),   // optional; auto-filled if omitted
+    executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
+  },
+);
+```
+
+Notes:
+- You must have spendable holdings for the specified instrument (admin + id). If left blank, the SDK defaults to the native token.
+- The helper handles fetching holdings, building the transfer factory payload, and submitting via Wallet Connect.
+
 # API
 
 Coming soon

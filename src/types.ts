@@ -40,3 +40,40 @@ export type ActiveContract = {
   // Place other known properties here...
   [key: string]: any; // Allow other properties
 };
+
+export type Instrument = {
+  instrument_admin?: string;
+  instrument_id: string;
+};
+
+export type TransferRequest = {
+  recipient: string;
+  amount: string;
+  instrument?: Instrument;
+  requested_at?: string;
+  execute_before?: string;
+};
+
+export type PreparedTransferPayload = {
+  actAs: string[];
+  readAs: string[];
+  synchronizerId: string;
+  commands: any[];
+  disclosedContracts: any[];
+  packageIdSelectionPreference: string[];
+};
+
+export type ConnectTransferResponse = {
+  payload: PreparedTransferPayload;
+};
+
+export type TransferOptions = {
+  requestedAt?: string | Date;
+  executeBefore?: string | Date;
+};
+
+export type InstrumentSpec = Instrument;
+
+export interface Wallet {
+  transfer(recipient: string, amount: string | number, instrument?: InstrumentSpec, options?: TransferOptions): Promise<any>;
+}

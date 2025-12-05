@@ -1,8 +1,9 @@
 import QRCode from 'qrcode';
-import type { Account, Network } from './types';
+import type { Account, Network, TransferOptions, InstrumentSpec, Wallet } from './types';
 import { MessageType } from './types';
 import { Connection } from './connection';
 import { Provider, generateRequestId } from './provider';
+import { LoopWallet } from './wallet';
 
 class LoopSDK {
   private version: string = '0.0.1';
@@ -17,8 +18,10 @@ class LoopSDK {
   private onReject: (() => void) | null = null;
   private overlay: HTMLDivElement | null = null;
   private ticketId: string | null = null;
+  public wallet: Wallet;
 
   constructor() {
+    this.wallet = new LoopWallet(() => this.provider);
   }
 
   init({ 
@@ -294,6 +297,13 @@ class LoopSDK {
       this.overlay.parentElement.removeChild(this.overlay);
       this.overlay = null;
     }
+  }
+
+  private requireProvider(): Provider {
+    if (!this.provider) {
+      throw new Error('SDK not connected. Call connect() and wait for acceptance first.');
+    }
+    return this.provider;
   }
 }
 

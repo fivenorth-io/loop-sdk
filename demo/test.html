@@ -77,6 +77,12 @@
             const [rawMessage, setRawMessage] = useState('Hello, Loop!');
             const [signature, setSignature] = useState(null);
             const [isSigning, setIsSigning] = useState(false);
+            const [transferRecipient, setTransferRecipient] = useState('');
+            const [transferAmount, setTransferAmount] = useState('');
+            const [transferInstrumentAdmin, setTransferInstrumentAdmin] = useState('');
+            const [transferInstrumentId, setTransferInstrumentId] = useState('');
+            const [transferResult, setTransferResult] = useState(null);
+            const [isTransferring, setIsTransferring] = useState(false);
 
             useEffect(() => {
                 loop.init({
@@ -123,6 +129,41 @@
                     alert('Failed to get holdings. See console.');
                 } finally {
                     setIsLoading(false);
+                }
+            };
+
+            const handleWalletTransfer = async () => {
+                if (!loop || !loop.wallet) {
+                    alert('SDK not ready');
+                    return;
+                }
+                if (!transferRecipient || !transferAmount) {
+                    alert('Enter recipient and amount');
+                    return;
+                }
+                setIsTransferring(true);
+                setTransferResult(null);
+                try {
+                    const now = new Date();
+                    const executeBefore = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+                    const res = await loop.wallet.transfer(
+                      transferRecipient,
+                      transferAmount,
+                      {
+                        instrument_id: transferInstrumentId || 'Amulet',
+                        instrument_admin: transferInstrumentAdmin || undefined,
+                      },
+                      {
+                        requestedAt: now.toISOString(),
+                        executeBefore: executeBefore.toISOString(),
+                      },
+                    );
+                    setTransferResult(res);
+                } catch (error) {
+                    console.error('Transfer failed', error);
+                    setTransferResult({ error: error?.message || 'Transfer failed' });
+                } finally {
+                    setIsTransferring(false);
                 }
             };
 
@@ -303,6 +344,49 @@
                                 </div>
                             `}
 
+                            <hr style="margin: 20px 0;" />
+
+                            <div>
+                                <h3>Transfer Helper</h3>
+                                <p>Instrument admin/id are optional; leave blank to default to Amulet/DSO.</p>
+                                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                                    <input
+                                        type="text"
+                                        placeholder="Recipient party"
+                                        value=${transferRecipient}
+                                        onInput=${(e) => setTransferRecipient(e.target.value)}
+                                        style="flex: 1; min-width: 220px;"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Amount"
+                                        value=${transferAmount}
+                                        onInput=${(e) => setTransferAmount(e.target.value)}
+                                        style="width: 160px;"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Instrument admin (optional)"
+                                        value=${transferInstrumentAdmin}
+                                        onInput=${(e) => setTransferInstrumentAdmin(e.target.value)}
+                                        style="flex: 1; min-width: 260px;"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Instrument id (optional)"
+                                        value=${transferInstrumentId}
+                                        onInput=${(e) => setTransferInstrumentId(e.target.value)}
+                                        style="width: 180px;"
+                                    />
+                                </div>
+                                <button onClick=${handleWalletTransfer} disabled=${isTransferring} style="margin-top: 8px;">
+                                    ${isTransferring ? 'Sending...' : 'Send'}
+                                </button>
+                                ${transferResult && html`
+                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(transferResult, null, 2)}</pre>
+                                `}
+                            </div>
+                            
                             <hr style="margin: 20px 0;" />
                             
                             <div>
