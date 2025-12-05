@@ -114,8 +114,10 @@ export class Provider {
         const transferRequest: TransferRequest = {
           recipient,
           amount: amountStr,
-          instrument_admin: instrument?.instrument_admin,
-          instrument_id: instrument?.instrument_id || 'Amulet',
+          instrument: {
+            instrument_admin: instrument?.instrument_admin,
+            instrument_id: instrument?.instrument_id || 'Amulet',
+          },
           requested_at: requestedAtIso,
           execute_before: executeBeforeIso,
         };

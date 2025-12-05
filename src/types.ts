@@ -41,11 +41,15 @@ export type ActiveContract = {
   [key: string]: any; // Allow other properties
 };
 
+export type Instrument = {
+  instrument_admin?: string;
+  instrument_id: string;
+};
+
 export type TransferRequest = {
   recipient: string;
   amount: string;
-  instrument_admin?: string;
-  instrument_id?: string;
+  instrument?: Instrument;
   requested_at?: string;
   execute_before?: string;
 };
@@ -68,10 +72,7 @@ export type TransferOptions = {
   executeBefore?: string | Date;
 };
 
-export type InstrumentSpec = {
-  instrument_id: string;
-  instrument_admin?: string;
-};
+export type InstrumentSpec = Instrument;
 
 export interface Wallet {
   transfer(recipient: string, amount: string | number, instrument?: InstrumentSpec, options?: TransferOptions): Promise<any>;

@@ -107,12 +107,13 @@ export class Connection {
             amount: params.amount,
         };
 
-        if (params.instrument_admin) {
-            payload.instrument_admin = params.instrument_admin;
-        }
-
-        if (params.instrument_id) {
-            payload.instrument_id = params.instrument_id;
+        if (params.instrument) {
+            if (params.instrument.instrument_admin) {
+                payload.instrument_admin = params.instrument.instrument_admin;
+            }
+            if (params.instrument.instrument_id) {
+                payload.instrument_id = params.instrument.instrument_id;
+            }
         }
 
         if (params.requested_at) {
