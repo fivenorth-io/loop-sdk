@@ -90,6 +90,8 @@ const holdings = await provider.getHolding();
 console.log(holdings);
 ```
 
+Each holding includes its `instrument_id` (with `admin` and `id` fields), which you can use when building transfers for CC, CIP-56 tokens, LOOP, or any custom instrument.
+
 #### Get Active Contracts
 
 You can query for active contracts by `templateId` or `interfaceId`.
@@ -158,11 +160,12 @@ await loop.wallet.transfer(
   'receiver::fingerprint',
   '5', // amount (string or number)
   {
-    instrument_id: 'Amulet',                 // defaults to Amulet if omitted
-    instrument_admin: 'issuer::fingerprint', // optional; defaults to DSO/Amulet
+    // Optional overrides. Defaults to Amulet/DSO if omitted.
+    instrument_admin: 'issuer::fingerprint', // optional
+    instrument_id: 'Amulet',                 // optional
   },
   {
-    requestedAt: new Date().toISOString(),   // optional; auto-filled if omitted
+    requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
   },
 );
@@ -171,6 +174,13 @@ await loop.wallet.transfer(
 Notes:
 - You must have spendable holdings for the specified instrument (admin + id). If left blank, the SDK defaults to the native token.
 - The helper handles fetching holdings, building the transfer factory payload, and submitting via Wallet Connect.
+
+Common instrument overrides (pass into the `instrument` argument above):
+
+- Canton Coin (CC): `{ instrument_admin: 'cc-issuer::fingerprint', instrument_id: 'CC' }`
+- CIP-56: `{ instrument_admin: 'cip56-issuer::fingerprint', instrument_id: 'CIP-56' }`
+
+Swap in the admin/id for the specific instrument you hold in the Loop wallet.
 
 # API
 
