@@ -215,11 +215,7 @@ export class Connection {
         this.attachWebSocket(ticketId, onMessage);
     }
 
-    async reconnectWebSocket(): Promise<void> {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            return;
-        }
-
+    private createReconnectionPromise(): Promise<void> {
         if (!this.ticketId || !this.onMessageHandler) {
             throw new Error('Cannot reconnect without a known ticket.');
         }
@@ -256,5 +252,13 @@ export class Connection {
         });
 
         return this.reconnectionPromise;
+    }
+
+    async reconnectWebSocket(): Promise<void> {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            return;
+        }
+
+        return this.createReconnectionPromise();
     }
 }
