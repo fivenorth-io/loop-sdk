@@ -54,6 +54,7 @@ export class Provider {
     public email?: string;
     private auth_token: string;
     private requests: Map<string, any> = new Map();
+    private requestTimeout: number = DEFAULT_REQUEST_TIMEOUT_MS;
 
     constructor({ connection, party_id, public_key, auth_token, email }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string }) {
         if (!connection) {
@@ -140,43 +141,65 @@ export class Provider {
         return this.sendRequest(MessageType.SIGN_RAW_MESSAGE, message);
     }
 
+    private async ensureConnected(): Promise<void> {
+        if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
+            return;
+        }
+
+        if (typeof this.connection.reconnectWebSocket === 'function') {
+            await this.connection.reconnectWebSocket();
+            if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
+                return;
+            }
+        }
+
+        throw new Error('Not connected.');
+    }
+
     private sendRequest(messageType: MessageType, params: any = {}, options?: { requestTimeout?: number }): Promise<any> {
         return new Promise((resolve, reject) => {
-            if (!this.connection.ws || this.connection.ws.readyState !== WebSocket.OPEN) {
-                return reject(new Error("Not connected."));
-            }
+            const ensure = async () => {
+                try {
+                    await this.ensureConnected();
+                } catch (error) {
+                    reject(error);
+                    return;
+                }
 
-            const requestId = generateRequestId();
-            const requestTimeout = options?.requestTimeout ?? DEFAULT_REQUEST_TIMEOUT_MS;
+                const requestId = generateRequestId();
 
-            this.connection.ws.send(JSON.stringify({
-                request_id: requestId,
-                type: messageType,
-                payload: params,
-            }));
+                this.connection.ws!.send(JSON.stringify({
+                    request_id: requestId,
+                    type: messageType,
+                    payload: params,
+                }));
 
-            const intervalTime = 300; // 300ms
-            let elapsedTime = 0;
+                const intervalTime = 300; // 300ms
+                let elapsedTime = 0;
+                const timeoutMs = options?.requestTimeout ?? this.requestTimeout;
 
-            const intervalId = setInterval(() => {
-                const response = this.requests.get(requestId);
-                if (response) {
-                    clearInterval(intervalId);
-                    this.requests.delete(requestId);
-                    if (response.type === MessageType.REJECT_REQUEST) {
-                        reject(new RejectRequestError());
-                    } else {
-                        resolve(response.payload);
-                    }
-                } else {
-                    elapsedTime += intervalTime;
-                    if (elapsedTime >= requestTimeout) {
+                const intervalId = setInterval(() => {
+                    const response = this.requests.get(requestId);
+                    if (response) {
                         clearInterval(intervalId);
                         this.requests.delete(requestId);
-                        reject(new RequestTimeoutError(requestTimeout));
+                        if (response.type === MessageType.REJECT_REQUEST) {
+                            reject(new RejectRequestError());
+                        } else {
+                            resolve(response.payload);
+                        }
+                    } else {
+                        elapsedTime += intervalTime;
+                        if (elapsedTime >= timeoutMs) {
+                            clearInterval(intervalId);
+                            this.requests.delete(requestId);
+                            reject(new RequestTimeoutError(timeoutMs));
+                        }
                     }
-                }
-            }, intervalTime);
+                }, intervalTime);
+            };
+
+            void ensure();
         });
     }
 }
