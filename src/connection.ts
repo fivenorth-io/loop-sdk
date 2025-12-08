@@ -7,7 +7,8 @@ export class Connection {
     private network: Network = 'main';
     private ticketId: string | null = null;
     private onMessageHandler: ((event: MessageEvent) => void) | null = null;
-    private reconnectionPromise: Promise<void> | null = null;
+    private reconnectionPromise: Promise<void> = Promise.resolve();
+    private reconnecting: boolean = false;
 
     constructor({ network, walletUrl, apiUrl }: { network?: Network, walletUrl?: string, apiUrl?: string }) {
         this.network = network || 'main';
@@ -220,10 +221,11 @@ export class Connection {
             throw new Error('Cannot reconnect without a known ticket.');
         }
 
-        if (this.reconnectionPromise) {
+        if (this.reconnecting) {
             return this.reconnectionPromise;
         }
 
+        this.reconnecting = true;
         this.reconnectionPromise = new Promise((resolve, reject) => {
             let opened = false;
             this.attachWebSocket(
@@ -231,21 +233,21 @@ export class Connection {
                 this.onMessageHandler!,
                 () => {
                     opened = true;
-                    this.reconnectionPromise = null;
+                    this.reconnecting = false;
                     resolve();
                 },
                 (event) => {
                     if (opened) {
                         return;
                     }
-                    this.reconnectionPromise = null;
+                    this.reconnecting = false;
                     reject(new Error('Failed to reconnect to ticket server.'));
                 },
                 () => {
                     if (opened) {
                         return;
                     }
-                    this.reconnectionPromise = null;
+                    this.reconnecting = false;
                     reject(new Error('Failed to reconnect to ticket server.'));
                 },
             );
