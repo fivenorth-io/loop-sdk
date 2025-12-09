@@ -1,5 +1,15 @@
 # Changelog
 
+# Changelog
+
+## 0.6.1 (2025-12-04)
+
+Full Changelog: [v0.6.0...v0.6.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.0...v0.6.1)
+
+### Improvements
+
+* **sdk:** increase wallet request/transaction timeout to 5 minutes.
+
 ## 0.6.0 (2025-12-03)
 
 Full Changelog: [v0.5.0...v0.6.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.5.0...v0.6.0)
