@@ -9,6 +9,7 @@ Full Changelog: [v0.6.0...v0.6.1](https://github.com/fivenorth-io/loop-sdk/compa
 ### Improvements
 
 * **sdk:** increase wallet request/transaction timeout to 5 minutes.
+* **sdk:** display instrument admin info when fetching holdings.
 * **docs:** moved Loop SDK docs under the `loop-sdk` package directory (previously under `docs/`).
 
 ## 0.6.0 (2025-12-03)
