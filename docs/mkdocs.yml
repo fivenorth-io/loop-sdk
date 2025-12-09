@@ -1,0 +1,7 @@
+site_name: Loop SDK
+docs_dir: .
+nav:
+  - Overview: overview.md
+  - Usage guide: usage.md
+  - API reference: api-reference.md
+  - Release: release.md
