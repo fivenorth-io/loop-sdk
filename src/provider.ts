@@ -52,7 +52,7 @@ export class Provider {
     public email?: string;
     private auth_token: string;
     private requests: Map<string, any> = new Map();
-    private requestTimeout: number = 30000; // 30 seconds
+    private requestTimeout: number = 300000; // 5 minutes
 
     constructor({ connection, party_id, public_key, auth_token, email, requestTimeout }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string, requestTimeout?: number }) {
         if (!connection) {
@@ -63,7 +63,7 @@ export class Provider {
         this.public_key = public_key;
         this.email = email;
         this.auth_token = auth_token;
-        this.requestTimeout = requestTimeout || 30000; // 30 seconds
+        this.requestTimeout = requestTimeout || 300000; // 5 minutes
     }
 
     // handle all responses from the websocket except for handshake_accept, handshake_reject
