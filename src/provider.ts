@@ -3,6 +3,8 @@ import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload,
 import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
 
+export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
+
 type TransactionPayload = {
   commands: any[];
   disclosedContracts: any[];
@@ -52,9 +54,8 @@ export class Provider {
     public email?: string;
     private auth_token: string;
     private requests: Map<string, any> = new Map();
-    private requestTimeout: number = 300000; // 5 minutes
 
-    constructor({ connection, party_id, public_key, auth_token, email, requestTimeout }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string, requestTimeout?: number }) {
+    constructor({ connection, party_id, public_key, auth_token, email }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string }) {
         if (!connection) {
             throw new Error('Provider requires a connection object.');
         }
@@ -63,7 +64,6 @@ export class Provider {
         this.public_key = public_key;
         this.email = email;
         this.auth_token = auth_token;
-        this.requestTimeout = requestTimeout || 300000; // 5 minutes
     }
 
     // handle all responses from the websocket except for handshake_accept, handshake_reject
@@ -83,8 +83,8 @@ export class Provider {
     }
 
     // submit a transaction to be signed by the wallet to the websocket
-    async submitTransaction(payload: TransactionPayload): Promise<any> {
-        return this.sendRequest(MessageType.RUN_TRANSACTION, payload);
+    async submitTransaction(payload: TransactionPayload, options?: { requestTimeout?: number }): Promise<any> {
+        return this.sendRequest(MessageType.RUN_TRANSACTION, payload, options);
     }
 
     async transfer(
@@ -94,6 +94,7 @@ export class Provider {
       options?: TransferOptions,
     ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
+        const { requestedAt, executeBefore, requestTimeout } = options || {};
 
         const resolveDate = (value?: string | Date, fallbackMs?: number) => {
           if (value instanceof Date) {
@@ -108,8 +109,8 @@ export class Provider {
           return new Date().toISOString();
         };
 
-        const requestedAtIso = resolveDate(options?.requestedAt);
-        const executeBeforeIso = resolveDate(options?.executeBefore, 24 * 60 * 60 * 1000);
+        const requestedAtIso = resolveDate(requestedAt);
+        const executeBeforeIso = resolveDate(executeBefore, 24 * 60 * 60 * 1000);
 
         const transferRequest: TransferRequest = {
           recipient,
@@ -131,7 +132,7 @@ export class Provider {
             actAs: preparedPayload.actAs,
             readAs: preparedPayload.readAs,
             synchronizerId: preparedPayload.synchronizerId,
-        });
+        }, { requestTimeout });
     }
 
     // submit a raw message to be signed by the wallet to the websocket
@@ -139,13 +140,14 @@ export class Provider {
         return this.sendRequest(MessageType.SIGN_RAW_MESSAGE, message);
     }
 
-    private sendRequest(messageType: MessageType, params: any = {}): Promise<any> {
+    private sendRequest(messageType: MessageType, params: any = {}, options?: { requestTimeout?: number }): Promise<any> {
         return new Promise((resolve, reject) => {
             if (!this.connection.ws || this.connection.ws.readyState !== WebSocket.OPEN) {
                 return reject(new Error("Not connected."));
             }
 
             const requestId = generateRequestId();
+            const requestTimeout = options?.requestTimeout ?? DEFAULT_REQUEST_TIMEOUT_MS;
 
             this.connection.ws.send(JSON.stringify({
                 request_id: requestId,
@@ -168,10 +170,10 @@ export class Provider {
                     }
                 } else {
                     elapsedTime += intervalTime;
-                    if (elapsedTime >= this.requestTimeout) {
+                    if (elapsedTime >= requestTimeout) {
                         clearInterval(intervalId);
                         this.requests.delete(requestId);
-                        reject(new RequestTimeoutError(this.requestTimeout));
+                        reject(new RequestTimeoutError(requestTimeout));
                     }
                 }
             }, intervalTime);
