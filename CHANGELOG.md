@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.2 (2025-12-08)
+
+Full Changelog: [v0.6.1...v0.6.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.1...v0.6.2)
+
+### Improvements
+
+* **sdk:** version bump release; package metadata updated to 0.6.2.
+
 ## 0.6.1 (2025-12-04)
 
 Full Changelog: [v0.6.0...v0.6.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.0...v0.6.1)

@@ -7,6 +7,9 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.6.2
+- Version bump release; package metadata updated to 0.6.2.
+
 ## v0.6.1
 - Increased wallet request/transaction timeout to 5 minutes.
 - Display instrument admin info when fetching holdings.
