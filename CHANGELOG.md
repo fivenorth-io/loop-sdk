@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.4 (2025-12-10)
+
+Full Changelog: [v0.6.3...v0.6.4](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.3...v0.6.4)
+
+### Improvements
+
+* **sdk:** allow per-transfer request timeout via `TransferOptions.requestTimeout`; export `DEFAULT_REQUEST_TIMEOUT_MS` and demo UI input.
+
+## 0.6.3 (2025-12-09)
+
+Full Changelog: [v0.6.2...v0.6.3](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.2...v0.6.3)
+
+### Documentation
+
+* **docs:** add embedded CodePen demo to the Loop SDK demo section for interactive examples.
+
 ## 0.6.2 (2025-12-08)
 
 Full Changelog: [v0.6.1...v0.6.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.1...v0.6.2)
