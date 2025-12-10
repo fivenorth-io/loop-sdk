@@ -169,8 +169,11 @@ await loop.wallet.transfer(
     // Optional overrides. Defaults to Amulet/DSO if omitted.
     instrument_admin: 'issuer::fingerprint', // optional
     instrument_id: 'LOOP',                   // optional
+  },
+  {
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
+    requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes
   },
 );
 ```
@@ -178,6 +181,7 @@ await loop.wallet.transfer(
 Notes:
 - You must have spendable holdings for the specified instrument (admin + id). If left blank, the SDK defaults to the native token.
 - The helper handles: fetching holdings, building the transfer factory payload, and submitting via Wallet Connect.
+- Requests time out after 5 minutes by default; override with `requestTimeout` in milliseconds.
 
 ---
 

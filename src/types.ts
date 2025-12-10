@@ -70,6 +70,7 @@ export type ConnectTransferResponse = {
 export type TransferOptions = {
   requestedAt?: string | Date;
   executeBefore?: string | Date;
+  requestTimeout?: number;
 };
 
 export type InstrumentSpec = Instrument;

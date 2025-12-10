@@ -6,6 +6,11 @@
 - **Full Changelog:** [`CHANGELOG`](https://www.github.com/fivenorth-io/loop-sdk/blob/main/CHANGELOG.md)
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
+## v0.6.4
+- Added per-transfer `requestTimeout` option (defaults to 5 minutes), exported `DEFAULT_REQUEST_TIMEOUT_MS`, and updated demo UI to accept a timeout value.
+
+## v0.6.3
+- Added embedded CodePen demo to the docs under the Demo section for interactive examples.
 
 ## v0.6.3
 - Added embedded CodePen demo to the docs under the Demo section for interactive examples.
