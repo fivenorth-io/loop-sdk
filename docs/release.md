@@ -7,6 +7,9 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.6.3
+- Added embedded CodePen demo to the docs under the Demo section for interactive examples.
+
 ## v0.6.2
 - Version bump release; package metadata updated to 0.6.2.
 
