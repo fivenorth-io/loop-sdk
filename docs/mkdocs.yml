@@ -3,5 +3,6 @@ docs_dir: .
 nav:
   - Overview: overview.md
   - Usage guide: usage.md
+  - Demo: demo.md
   - API reference: api-reference.md
   - Release: release.md
