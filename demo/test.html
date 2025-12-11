@@ -99,7 +99,7 @@
                         setAccount({ partyId: prov.party_id, publicKey: prov.public_key });
                     },
                     onReject: () => {
-                        alert('Connection Rejected!');
+                        console.log('Connection Rejected');
                         setAccount(null);
                         setProvider(null);
                         setHoldings([]);

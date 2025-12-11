@@ -167,9 +167,6 @@ class LoopSDK {
             this.connection?.connectWebSocket(connectionInfo.ticketId, this.handleWebSocketMessage.bind(this));
 
             console.log('[LoopSDK] HANDSHAKE_ACCEPT: closing popup (if exists)');
-            //if (this.popupWindow && !this.popupWindow.closed) {
-            //  this.popupWindow.close();
-            //}
             this.popupWindow = null;
 
           } catch (error) {
@@ -185,9 +182,6 @@ class LoopSDK {
       this.hideQrCode();
 
       console.log('[LoopSDK] HANDSHAKE_REJECT: closing popup (if exists)');
-      if (this.popupWindow && !this.popupWindow.closed) {
-              this.popupWindow.close();
-      }
       this.popupWindow = null;
     } else if (this.provider) {
         this.provider.handleResponse(message);
