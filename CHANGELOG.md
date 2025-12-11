@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.5 (2025-12-10)
+
+Full Changelog: [v0.6.4...v0.6.5](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.4...v0.6.5)
+
+### Improvements
+
+* **sdk:** adjust `HANDSHAKE_REJECT` behavior so popup closing is fully controlled by the Wallet Connect UI.
+
 ## 0.6.4 (2025-12-10)
 
 Full Changelog: [v0.6.3...v0.6.4](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.3...v0.6.4)
