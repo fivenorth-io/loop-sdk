@@ -1,5 +1,5 @@
 import type { Connection } from './connection';
-import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec } from './types';
+import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec, WithdrawUsdcRequest, PreparedWithdrawPayload, WithdrawOptions } from './types';
 import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
 
@@ -133,6 +133,30 @@ export class Provider {
             readAs: preparedPayload.readAs,
             synchronizerId: preparedPayload.synchronizerId,
         }, { requestTimeout });
+    }
+
+    async withdrawUSDC(
+      recipient: string,
+      amount: string | number,
+      options?: WithdrawOptions,
+    ): Promise<any> {
+        const amountStr = typeof amount === 'number' ? amount.toString() : amount;
+        const withdrawRequest: WithdrawUsdcRequest = {
+            recipient,
+            amount: amountStr,
+            reference: options?.reference,
+        };
+
+        const preparedPayload: PreparedWithdrawPayload = await this.connection.prepareUsdcWithdraw(this.auth_token, withdrawRequest);
+
+        return this.submitTransaction({
+            commands: preparedPayload.commands,
+            disclosedContracts: preparedPayload.disclosedContracts,
+            packageIdSelectionPreference: preparedPayload.packageIdSelectionPreference,
+            actAs: preparedPayload.actAs,
+            readAs: preparedPayload.readAs,
+            synchronizerId: preparedPayload.synchronizerId,
+        }, { requestTimeout: options?.requestTimeout });
     }
 
     // submit a raw message to be signed by the wallet to the websocket
