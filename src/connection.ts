@@ -7,8 +7,7 @@ export class Connection {
     private network: Network = 'main';
     private ticketId: string | null = null;
     private onMessageHandler: ((event: MessageEvent) => void) | null = null;
-    private reconnectionPromise: Promise<void> = Promise.resolve();
-    private reconnecting: boolean = false;
+    private reconnectPromise: Promise<void> | null = null;
 
     constructor({ network, walletUrl, apiUrl }: { network?: Network, walletUrl?: string, apiUrl?: string }) {
         this.network = network || 'main';
@@ -216,44 +215,44 @@ export class Connection {
         this.attachWebSocket(ticketId, onMessage);
     }
 
-    private createReconnectionPromise(): Promise<void> {
+    private reconnect(): Promise<void> {
         if (!this.ticketId || !this.onMessageHandler) {
-            throw new Error('Cannot reconnect without a known ticket.');
+            return Promise.reject(new Error('Cannot reconnect without a known ticket.'));
         }
 
-        if (this.reconnecting) {
-            return this.reconnectionPromise;
+        // Guard: if a reconnect is already in progress, share it.
+        if (this.reconnectPromise) {
+            return this.reconnectPromise;
         }
 
-        this.reconnecting = true;
-        this.reconnectionPromise = new Promise((resolve, reject) => {
+        this.reconnectPromise = new Promise<void>((resolve, reject) => {
             let opened = false;
             this.attachWebSocket(
                 this.ticketId!,
                 this.onMessageHandler!,
                 () => {
                     opened = true;
-                    this.reconnecting = false;
                     resolve();
                 },
-                (event) => {
+                () => {
                     if (opened) {
                         return;
                     }
-                    this.reconnecting = false;
                     reject(new Error('Failed to reconnect to ticket server.'));
                 },
                 () => {
                     if (opened) {
                         return;
                     }
-                    this.reconnecting = false;
                     reject(new Error('Failed to reconnect to ticket server.'));
                 },
             );
+        }).finally(() => {
+            // clear the cached promise once done
+            this.reconnectPromise = null;
         });
 
-        return this.reconnectionPromise;
+        return this.reconnectPromise;
     }
 
     async reconnectWebSocket(): Promise<void> {
@@ -261,6 +260,6 @@ export class Connection {
             return;
         }
 
-        return this.createReconnectionPromise();
+        return this.reconnect();
     }
 }
