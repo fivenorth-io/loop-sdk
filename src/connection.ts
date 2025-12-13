@@ -5,6 +5,9 @@ export class Connection {
     public apiUrl: string = 'https://cantonloop.com';
     public ws: WebSocket | null = null;
     private network: Network = 'main';
+    private ticketId: string | null = null;
+    private onMessageHandler: ((event: MessageEvent) => void) | null = null;
+    private reconnectPromise: Promise<void> | null = null;
 
     constructor({ network, walletUrl, apiUrl }: { network?: Network, walletUrl?: string, apiUrl?: string }) {
         this.network = network || 'main';
@@ -174,17 +177,89 @@ export class Connection {
         return `${this.network === 'local' ? 'ws' : 'wss'}://${this.apiUrl.replace('https://', '').replace('http://', '')}/api/v1/.connect/pair/ws/${ticketId}`;
     }
 
-    connectWebSocket(ticketId: string, onMessage: (event: MessageEvent) => void) {
+    private attachWebSocket(
+        ticketId: string,
+        onMessage: (event: MessageEvent) => void,
+        onOpen?: () => void,
+        onError?: (event: Event) => void,
+        onClose?: (event: CloseEvent) => void,
+    ) {
         const wsUrl = this.websocketUrl(ticketId);
-        this.ws = new WebSocket(wsUrl);
-        this.ws.onmessage = onMessage;
-        
-        this.ws.onopen = () => {
-          console.log('Connected to ticket server.');
+        const ws = new WebSocket(wsUrl);
+
+        ws.onmessage = onMessage;
+        ws.onopen = () => {
+            console.log('Connected to ticket server.');
+            onOpen?.();
         };
-    
-        this.ws.onclose = () => {
-          console.log('Disconnected from ticket server.');
+        ws.onclose = (event: CloseEvent) => {
+            if (this.ws === ws) {
+                this.ws = null;
+            }
+            console.log('Disconnected from ticket server.');
+            onClose?.(event);
         };
+        ws.onerror = (event) => {
+            if (this.ws === ws) {
+                this.ws = null;
+            }
+            onError?.(event);
+        };
+
+        this.ws = ws;
+    }
+
+    connectWebSocket(ticketId: string, onMessage: (event: MessageEvent) => void) {
+        this.ticketId = ticketId;
+        this.onMessageHandler = onMessage;
+        this.attachWebSocket(ticketId, onMessage);
+    }
+
+    private reconnect(): Promise<void> {
+        if (!this.ticketId || !this.onMessageHandler) {
+            return Promise.reject(new Error('Cannot reconnect without a known ticket.'));
+        }
+
+        // Guard: if a reconnect is already in progress, share it.
+        if (this.reconnectPromise) {
+            return this.reconnectPromise;
+        }
+
+        this.reconnectPromise = new Promise<void>((resolve, reject) => {
+            let opened = false;
+            this.attachWebSocket(
+                this.ticketId!,
+                this.onMessageHandler!,
+                () => {
+                    opened = true;
+                    resolve();
+                },
+                () => {
+                    if (opened) {
+                        return;
+                    }
+                    reject(new Error('Failed to reconnect to ticket server.'));
+                },
+                () => {
+                    if (opened) {
+                        return;
+                    }
+                    reject(new Error('Failed to reconnect to ticket server.'));
+                },
+            );
+        }).finally(() => {
+            // clear the cached promise once done
+            this.reconnectPromise = null;
+        });
+
+        return this.reconnectPromise;
+    }
+
+    async reconnectWebSocket(): Promise<void> {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            return;
+        }
+
+        return this.reconnect();
     }
 }
