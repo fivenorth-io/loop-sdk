@@ -19,7 +19,27 @@ export class UsdcBridge implements UsdcBridgeExtension {
 
   withdraw(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any> {
     const provider = this.requireProvider();
-    return provider.withdrawUSDC(recipient, amount, options);
+    const amountStr = typeof amount === 'number' ? amount.toString() : amount;
+
+    const withdrawRequest: WithdrawUsdcRequest = {
+      recipient,
+      amount: amountStr,
+      reference: options?.reference,
+    };
+
+    return prepareUsdcWithdraw(provider.connection, provider.getAuthToken(), withdrawRequest).then((preparedPayload: PreparedWithdrawPayload) =>
+      provider.submitTransaction(
+        {
+          commands: preparedPayload.commands,
+          disclosedContracts: preparedPayload.disclosedContracts,
+          packageIdSelectionPreference: preparedPayload.packageIdSelectionPreference,
+          actAs: preparedPayload.actAs,
+          readAs: preparedPayload.readAs,
+          synchronizerId: preparedPayload.synchronizerId,
+        },
+        { requestTimeout: options?.requestTimeout },
+      )
+    );
   }
 }
 

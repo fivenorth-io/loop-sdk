@@ -28,6 +28,6 @@ export class LoopWallet implements Wallet {
 
   withdrawUSDC(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any> {
     const provider = this.requireProvider();
-    return provider.withdrawUSDC(recipient, amount, options);
+    return this.extension.usdcBridge.withdraw(recipient, amount, options);
   }
 }

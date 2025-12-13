@@ -1,8 +1,7 @@
 import type { Connection } from './connection';
-import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec, WithdrawUsdcRequest, PreparedWithdrawPayload, WithdrawOptions } from './types';
+import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec } from './types';
 import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
-import { prepareUsdcWithdraw } from './extensions/usdc';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
 
@@ -64,7 +63,7 @@ export class Provider {
         this.party_id = party_id;
         this.public_key = public_key;
         this.email = email;
-        this.auth_token = auth_token;
+        this.auth_token = auth_token; 
     }
 
     // handle all responses from the websocket except for handshake_accept, handshake_reject
@@ -134,30 +133,6 @@ export class Provider {
             readAs: preparedPayload.readAs,
             synchronizerId: preparedPayload.synchronizerId,
         }, { requestTimeout });
-    }
-
-    async withdrawUSDC(
-      recipient: string,
-      amount: string | number,
-      options?: WithdrawOptions,
-    ): Promise<any> {
-        const amountStr = typeof amount === 'number' ? amount.toString() : amount;
-        const withdrawRequest: WithdrawUsdcRequest = {
-            recipient,
-            amount: amountStr,
-            reference: options?.reference,
-        };
-
-        const preparedPayload: PreparedWithdrawPayload = await prepareUsdcWithdraw(this.connection, this.auth_token, withdrawRequest);
-
-        return this.submitTransaction({
-            commands: preparedPayload.commands,
-            disclosedContracts: preparedPayload.disclosedContracts,
-            packageIdSelectionPreference: preparedPayload.packageIdSelectionPreference,
-            actAs: preparedPayload.actAs,
-            readAs: preparedPayload.readAs,
-            synchronizerId: preparedPayload.synchronizerId,
-        }, { requestTimeout: options?.requestTimeout });
     }
 
     // submit a raw message to be signed by the wallet to the websocket
