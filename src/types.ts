@@ -1,3 +1,5 @@
+import type { UsdcBridgeExtension } from './extensions/usdc/types';
+
 export type Network = 'devnet' | 'testnet' | 'mainnet' | 'local' | 'dev' | 'test' | 'main';
 
 export type Account = {
@@ -74,27 +76,6 @@ export type TransferOptions = {
 };
 
 export type InstrumentSpec = Instrument;
-
-export type WithdrawUsdcRequest = {
-  recipient: string;
-  amount: string;
-  reference?: string;
-};
-
-export type PreparedWithdrawPayload = PreparedTransferPayload;
-
-export type ConnectWithdrawResponse = {
-  payload: PreparedWithdrawPayload;
-};
-
-export type WithdrawOptions = {
-  reference?: string;
-  requestTimeout?: number;
-};
-
-export interface UsdcBridgeExtension {
-  withdrawalUSDCxToEthereum(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any>;
-}
 
 export interface Wallet {
   transfer(recipient: string, amount: string | number, instrument?: InstrumentSpec, options?: TransferOptions): Promise<any>;

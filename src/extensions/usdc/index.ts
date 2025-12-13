@@ -1,4 +1,4 @@
-import type { WithdrawOptions, UsdcBridgeExtension, WithdrawUsdcRequest, PreparedWithdrawPayload, ConnectWithdrawResponse } from '../../types';
+import type { WithdrawOptions, UsdcBridgeExtension, WithdrawUsdcRequest, PreparedWithdrawPayload, ConnectWithdrawResponse } from './types';
 import type { Provider } from '../../provider';
 import type { Connection } from '../../connection';
 

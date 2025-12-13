@@ -1,4 +1,5 @@
 import type { InstrumentSpec, TransferOptions, Wallet } from './types';
+import type { WithdrawOptions } from './extensions/usdc/types';
 import type { Provider } from './provider';
 import { UsdcBridge } from './extensions/usdc';
 
