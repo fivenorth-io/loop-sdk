@@ -1,3 +1,5 @@
+import type { UsdcBridgeExtension } from './extensions/usdc/types';
+
 export type Network = 'devnet' | 'testnet' | 'mainnet' | 'local' | 'dev' | 'test' | 'main';
 
 export type Account = {
@@ -77,4 +79,7 @@ export type InstrumentSpec = Instrument;
 
 export interface Wallet {
   transfer(recipient: string, amount: string | number, instrument?: InstrumentSpec, options?: TransferOptions): Promise<any>;
+  extension: {
+    usdcBridge: UsdcBridgeExtension;
+  };
 }

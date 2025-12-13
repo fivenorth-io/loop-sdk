@@ -184,6 +184,23 @@ Common instrument overrides (pass into the `instrument` argument above):
 
 Swap in the admin/id for the specific instrument you hold in the Loop wallet.
 
+#### USDC withdraw helper
+
+```javascript
+await loop.wallet.extension.usdcBridge.withdrawalUSDCxToEthereum(
+  '0xYourEthAddress',
+  '10.5', // amount in USDCx
+  {
+    reference: 'optional memo',
+    requestTimeout: 5 * 60 * 1000, // optional override (ms)
+  },
+);
+```
+
+Notes:
+- Uses the connect-based withdraw endpoint to prepare the transaction and sends it over Wallet Connect.
+- The helper auto-reconnects the websocket if it was closed before sending the request.
+
 # API
 
 Coming soon

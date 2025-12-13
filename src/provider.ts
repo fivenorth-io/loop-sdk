@@ -63,7 +63,11 @@ export class Provider {
         this.party_id = party_id;
         this.public_key = public_key;
         this.email = email;
-        this.auth_token = auth_token;
+        this.auth_token = auth_token; 
+    }
+
+    public getAuthToken(): string {
+        return this.auth_token;
     }
 
     // handle all responses from the websocket except for handshake_accept, handshake_reject

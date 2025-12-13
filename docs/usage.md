@@ -185,6 +185,25 @@ Notes:
 
 ---
 
+### USDC withdraw helper
+
+```javascript
+await loop.wallet.extension.usdcBridge.withdrawalUSDCxToEthereum(
+  '0xYourEthAddress',
+  '10.5',
+  {
+    reference: 'optional memo',
+    requestTimeout: 5 * 60 * 1000,
+  },
+);
+```
+
+Notes:
+- Uses the connect-based withdraw endpoint to prepare the transaction and sends it over Wallet Connect.
+- The helper auto-reconnects the websocket if it was closed before sending the request.
+
+---
+
 ## How the Loop Connect Flow Works
 
 This section explains the code path from your dApp to the Loop wallet and back.

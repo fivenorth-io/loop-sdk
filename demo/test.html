@@ -84,6 +84,12 @@
             const [transferRequestTimeout, setTransferRequestTimeout] = useState('');
             const [transferResult, setTransferResult] = useState(null);
             const [isTransferring, setIsTransferring] = useState(false);
+            const [withdrawRecipient, setWithdrawRecipient] = useState('');
+            const [withdrawAmount, setWithdrawAmount] = useState('');
+            const [withdrawReference, setWithdrawReference] = useState('');
+            const [withdrawRequestTimeout, setWithdrawRequestTimeout] = useState('');
+            const [withdrawResult, setWithdrawResult] = useState(null);
+            const [isWithdrawing, setIsWithdrawing] = useState(false);
 
             useEffect(() => {
                 loop.init({
@@ -241,6 +247,41 @@
                 }
             };
 
+            const handleWithdrawUsdc = async () => {
+                if (!loop || !loop.wallet) {
+                    alert('SDK not ready');
+                    return;
+                }
+                if (!withdrawRecipient || !withdrawAmount) {
+                    alert('Enter recipient and amount');
+                    return;
+                }
+                const requestTimeoutMs = withdrawRequestTimeout ? Number(withdrawRequestTimeout) : undefined;
+                if (requestTimeoutMs !== undefined && Number.isNaN(requestTimeoutMs)) {
+                    alert('Request timeout must be a number (milliseconds).');
+                    return;
+                }
+
+                setIsWithdrawing(true);
+                setWithdrawResult(null);
+                try {
+                    const res = await loop.wallet.extension.usdcBridge.withdrawalUSDCxToEthereum(
+                        withdrawRecipient,
+                        withdrawAmount,
+                        {
+                            reference: withdrawReference || undefined,
+                            requestTimeout: requestTimeoutMs,
+                        },
+                    );
+                    setWithdrawResult(res);
+                } catch (error) {
+                    console.error('Withdrawal failed', error);
+                    setWithdrawResult({ error: error?.message || 'Withdrawal failed' });
+                } finally {
+                    setIsWithdrawing(false);
+                }
+            };
+
             const handleSignMessage = async () => {
                 if (!provider) {
                     alert('Please connect first.');
@@ -331,8 +372,6 @@
                                 </div>
                             `}
 
-                            <hr style="margin: 20px 0;" />
-                            
                             <div>
                                 <h3>Sign Raw Message</h3>
                                 <input 
@@ -400,6 +439,49 @@
                                 </button>
                                 ${transferResult && html`
                                     <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(transferResult, null, 2)}</pre>
+                                `}
+                            </div>
+
+                            <hr style="margin: 20px 0;" />
+                            
+                            <div>
+                                <h3>USDC Withdraw Helper</h3>
+                                <p>Reference and timeout are optional; enter recipient (ETH address) and amount.</p>
+                                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                                    <input
+                                        type="text"
+                                        placeholder="Recipient (0x...)"
+                                        value=${withdrawRecipient}
+                                        onInput=${(e) => setWithdrawRecipient(e.target.value)}
+                                        style="flex: 1; min-width: 240px;"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Amount"
+                                        value=${withdrawAmount}
+                                        onInput=${(e) => setWithdrawAmount(e.target.value)}
+                                        style="width: 160px;"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Reference (optional)"
+                                        value=${withdrawReference}
+                                        onInput=${(e) => setWithdrawReference(e.target.value)}
+                                        style="flex: 1; min-width: 220px;"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Timeout ms (optional)"
+                                        value=${withdrawRequestTimeout}
+                                        onInput=${(e) => setWithdrawRequestTimeout(e.target.value)}
+                                        style="width: 200px;"
+                                    />
+                                </div>
+                                <button onClick=${handleWithdrawUsdc} disabled=${isWithdrawing} style="margin-top: 8px;">
+                                    ${isWithdrawing ? 'Submitting...' : 'Withdraw USDC'}
+                                </button>
+                                ${withdrawResult && html`
+                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px; margin-top: 10px;">${JSON.stringify(withdrawResult, null, 2)}</pre>
                                 `}
                             </div>
                             

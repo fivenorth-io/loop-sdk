@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 (2025-12-11)
+
+Full Changelog: [v0.6.5...v0.7.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.5...v0.7.0)
+
+### Improvements
+
+* **sdk:** automatically reconnect the websocket before sending requests if it timed out.
+
+### Features
+
+* **usdc:** add `wallet.extension.usdcBridge.withdrawalUSDCxToEthereum` helper and move USDC types/logic under the extension namespace; demo updated to use the new helper.
+
 ## 0.6.5 (2025-12-10)
 
 Full Changelog: [v0.6.4...v0.6.5](https://github.com/fivenorth-io/loop-sdk/compare/v0.6.4...v0.6.5)
