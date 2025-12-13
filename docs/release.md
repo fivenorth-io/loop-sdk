@@ -6,14 +6,15 @@
 - **Full Changelog:** [`CHANGELOG`](https://www.github.com/fivenorth-io/loop-sdk/blob/main/CHANGELOG.md)
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
+## v0.7.0
+- Auto-reconnect websocket before sending requests to reduce `Not connected` errors after idle timeouts.
+- Add USDC withdraw helper: `wallet.extension.usdcBridge.withdrawalUSDCxToEthereum` (with `withdraw` alias), move USDC types/logic under the extension, and update the demo helper UI.
+
 ## v0.6.5
 - Adjust `HANDSHAKE_REJECT` behavior so popup closing is fully controlled by the Wallet Connect UI.
 
 ## v0.6.4
 - Added per-transfer `requestTimeout` option (defaults to 5 minutes), exported `DEFAULT_REQUEST_TIMEOUT_MS`, and updated demo UI to accept a timeout value.
-
-## v0.6.3
-- Added embedded CodePen demo to the docs under the Demo section for interactive examples.
 
 ## v0.6.3
 - Added embedded CodePen demo to the docs under the Demo section for interactive examples.

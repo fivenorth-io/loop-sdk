@@ -303,3 +303,4 @@ class LoopSDK {
 
 export const loop = new LoopSDK();
 export * from './types';
+export * from './extensions/usdc/types';
