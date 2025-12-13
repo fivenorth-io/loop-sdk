@@ -17,7 +17,7 @@ export class UsdcBridge implements UsdcBridgeExtension {
     return provider;
   }
 
-  withdraw(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any> {
+  withdrawalUSDCxToEthereum(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any> {
     const provider = this.requireProvider();
     const amountStr = typeof amount === 'number' ? amount.toString() : amount;
 

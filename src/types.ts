@@ -93,12 +93,11 @@ export type WithdrawOptions = {
 };
 
 export interface UsdcBridgeExtension {
-  withdraw(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any>;
+  withdrawalUSDCxToEthereum(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any>;
 }
 
 export interface Wallet {
   transfer(recipient: string, amount: string | number, instrument?: InstrumentSpec, options?: TransferOptions): Promise<any>;
-  withdrawUSDC(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any>;
   extension: {
     usdcBridge: UsdcBridgeExtension;
   };

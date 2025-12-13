@@ -1,4 +1,4 @@
-import type { InstrumentSpec, TransferOptions, Wallet, WithdrawOptions } from './types';
+import type { InstrumentSpec, TransferOptions, Wallet } from './types';
 import type { Provider } from './provider';
 import { UsdcBridge } from './extensions/usdc';
 
@@ -24,10 +24,5 @@ export class LoopWallet implements Wallet {
   transfer(recipient: string, amount: string | number, instrument?: InstrumentSpec, options?: TransferOptions): Promise<any> {
     const provider = this.requireProvider();
     return provider.transfer(recipient, amount, instrument, options);
-  }
-
-  withdrawUSDC(recipient: string, amount: string | number, options?: WithdrawOptions): Promise<any> {
-    const provider = this.requireProvider();
-    return this.extension.usdcBridge.withdraw(recipient, amount, options);
   }
 }

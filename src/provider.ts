@@ -66,6 +66,10 @@ export class Provider {
         this.auth_token = auth_token; 
     }
 
+    public getAuthToken(): string {
+        return this.auth_token;
+    }
+
     // handle all responses from the websocket except for handshake_accept, handshake_reject
     public handleResponse(message: any) {
         console.log('Received response:', message);

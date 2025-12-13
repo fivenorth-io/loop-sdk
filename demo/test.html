@@ -265,7 +265,7 @@
                 setIsWithdrawing(true);
                 setWithdrawResult(null);
                 try {
-                    const res = await loop.wallet.withdrawUSDC(
+                    const res = await loop.wallet.extension.usdcBridge.withdrawalUSDCxToEthereum(
                         withdrawRecipient,
                         withdrawAmount,
                         {
