@@ -1,11 +1,16 @@
 import type { InstrumentSpec, TransferOptions, Wallet, WithdrawOptions } from './types';
 import type { Provider } from './provider';
+import { UsdcBridge } from './extensions/usdc';
 
 export class LoopWallet implements Wallet {
   private getProvider: () => Provider | null;
+  public extension: Wallet['extension'];
 
   constructor(getProvider: () => Provider | null) {
     this.getProvider = getProvider;
+    this.extension = {
+      usdcBridge: new UsdcBridge(this.getProvider),
+    };
   }
 
   private requireProvider(): Provider {
