@@ -1,4 +1,4 @@
-import type { Network, Account, Holding, TransferRequest, PreparedTransferPayload, ConnectTransferResponse, WithdrawUsdcRequest, PreparedWithdrawPayload, ConnectWithdrawResponse } from './types';
+import type { Network, Account, Holding, TransferRequest, PreparedTransferPayload, ConnectTransferResponse } from './types';
 
 export class Connection {
     public walletUrl: string = 'https://cantonloop.com';
@@ -138,33 +138,6 @@ export class Connection {
         }
 
         const data: ConnectTransferResponse = await response.json();
-        return data.payload;
-    }
-
-    async prepareUsdcWithdraw(authToken: string, params: WithdrawUsdcRequest): Promise<PreparedWithdrawPayload> {
-        const payload: Record<string, any> = {
-            recipient: params.recipient,
-            amount: params.amount,
-        };
-
-        if (params.reference) {
-            payload.reference = params.reference;
-        }
-
-        const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/usdc/withdraw`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to prepare USDC withdrawal.');
-        }
-
-        const data: ConnectWithdrawResponse = await response.json();
         return data.payload;
     }
 

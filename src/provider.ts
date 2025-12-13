@@ -2,6 +2,7 @@ import type { Connection } from './connection';
 import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec, WithdrawUsdcRequest, PreparedWithdrawPayload, WithdrawOptions } from './types';
 import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
+import { prepareUsdcWithdraw } from './extensions/usdc';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
 
@@ -147,7 +148,7 @@ export class Provider {
             reference: options?.reference,
         };
 
-        const preparedPayload: PreparedWithdrawPayload = await this.connection.prepareUsdcWithdraw(this.auth_token, withdrawRequest);
+        const preparedPayload: PreparedWithdrawPayload = await prepareUsdcWithdraw(this.connection, this.auth_token, withdrawRequest);
 
         return this.submitTransaction({
             commands: preparedPayload.commands,
