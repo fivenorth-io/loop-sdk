@@ -73,6 +73,7 @@ export type TransferOptions = {
   requestedAt?: string | Date;
   executeBefore?: string | Date;
   requestTimeout?: number;
+  message?: string; // custom message to include in the request ticket
 };
 
 export type InstrumentSpec = Instrument;
