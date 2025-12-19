@@ -55,8 +55,10 @@ export class Provider {
     private auth_token: string;
     private requests: Map<string, any> = new Map();
     private requestTimeout: number = DEFAULT_REQUEST_TIMEOUT_MS;
+    private openRequestUi?: () => Window | null;
+    private closeRequestUi?: () => void;
 
-    constructor({ connection, party_id, public_key, auth_token, email }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string }) {
+    constructor({ connection, party_id, public_key, auth_token, email, openRequestUi, closeRequestUi }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string, openRequestUi?: () => Window | null, closeRequestUi?: () => void }) {
         if (!connection) {
             throw new Error('Provider requires a connection object.');
         }
@@ -65,6 +67,8 @@ export class Provider {
         this.public_key = public_key;
         this.email = email;
         this.auth_token = auth_token; 
+        this.openRequestUi = openRequestUi;
+        this.closeRequestUi = closeRequestUi;
     }
 
     public getAuthToken(): string {
@@ -169,10 +173,16 @@ export class Provider {
       options?: { requestTimeout?: number; message?: string }
     ): Promise<any> {
         return new Promise((resolve, reject) => {
+            const requestId = generateRequestId();
+            const maybePopup = this.openRequestUi?.();
+
             const ensure = async () => {
                 try {
                     await this.ensureConnected();
                 } catch (error) {
+                    if (maybePopup) {
+                        this.closeRequestUi?.();
+                    }
                     reject(error);
                     return;
                 }
@@ -207,6 +217,9 @@ export class Provider {
                     if (response) {
                         clearInterval(intervalId);
                         this.requests.delete(requestId);
+                        if (maybePopup) {
+                            this.closeRequestUi?.();
+                        }
                         if (response.type === MessageType.REJECT_REQUEST) {
                             reject(new RejectRequestError());
                         } else {
@@ -217,6 +230,9 @@ export class Provider {
                         if (elapsedTime >= timeoutMs) {
                             clearInterval(intervalId);
                             this.requests.delete(requestId);
+                            if (maybePopup) {
+                                this.closeRequestUi?.();
+                            }
                             reject(new RequestTimeoutError(timeoutMs));
                         }
                     }

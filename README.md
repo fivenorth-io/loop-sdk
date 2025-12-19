@@ -44,6 +44,7 @@ loop.init({
     network: 'local', // or 'devnet', 'mainnet'
     options: {
         openMode: 'popup', // 'popup' (default) or 'tab'
+        requestOpenMode: 'popup', // 'popup' (default) or 'tab'
         redirectUrl: 'https://myapp.com/after-connect', // optional redirect after approval
     },
     onAccept: (provider) => {
@@ -61,6 +62,7 @@ The `init` method takes a configuration object with the following properties:
 - `network`: The network to connect to. Can be `local`, `devnet`, or `mainnet`.
 - `options`: Optional object containing:
   - `openMode`: Controls how Loop opens: `'popup'` (default) or `'tab'`.
+  - `requestOpenMode`: Controls how signing/transaction requests open the wallet UI after you're connected: `'popup'` (default) or `'tab'`.
   - `redirectUrl`: Optional redirect URL the wallet will navigate back to after successful approval. If omitted, user stays on Loop dashboard.
 - `onAccept`: A callback function that is called when the user accepts the connection. It receives a `provider` object.
 - `onReject`: A callback function that is called when the user rejects the connection.
@@ -74,6 +76,7 @@ loop.connect();
 ```
 
 This will open a modal with a QR code for the user to scan with their Loop wallet.
+If you set `requestOpenMode` to `'popup'` (or `'tab'`), each signing/transaction request will also open the wallet dashboard and auto-close the popup once the wallet responds.
 
 ### 3. Using the Provider
 

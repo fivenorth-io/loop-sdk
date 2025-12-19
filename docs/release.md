@@ -8,7 +8,7 @@
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 ## v0.7.1
 - Custom wallet prompt message: pass `message` to transactions to show dApp-provided text in the wallet UI.
-- Demo updated with optional “Custom message” inputs on transfer and USDC withdraw helpers.
+- Add optional `requestOpenMode` (defaults to `'popup'`) to auto-open wallet dashboard (popup/tab) for signing/transaction requests and auto-close the popup when the wallet responds.
 
 ## v0.7.0
 - Auto-reconnect websocket before sending requests to reduce `Not connected` errors after idle timeouts.

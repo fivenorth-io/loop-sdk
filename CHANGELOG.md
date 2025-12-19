@@ -1,13 +1,13 @@
 # Changelog
 
-## 0.7.1 (2025-12-12)
+## 0.7.1 (2025-12-19)
 
 Full Changelog: [v0.7.0...v0.7.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.0...v0.7.1)
 
 ### Features
 
 * **sdk:** allow passing a custom ticket message when submitting transactions so the wallet prompt can display dApp-provided context.
-* **demo:** add optional “Custom message” inputs to transfer and USDC withdraw helpers.
+* **sdk:** add optional `requestOpenMode` (default `'popup'`) to auto-open the wallet dashboard (popup/tab) for signing/transaction requests and auto-close the popup when the wallet responds.
 
 ## 0.7.0 (2025-12-11)
 

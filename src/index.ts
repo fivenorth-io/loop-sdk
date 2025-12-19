@@ -11,6 +11,7 @@ class LoopSDK {
   private connection: Connection | null = null;
   private provider: Provider | null = null;
   private openMode: 'popup' | 'tab' = 'popup';
+  private requestOpenMode: 'popup' | 'tab' = 'popup';
   private popupWindow: Window | null = null; 
   private redirectUrl?: string;
 
@@ -41,6 +42,7 @@ class LoopSDK {
     onReject?: () => void, 
     options?: {
       openMode?: 'popup' | 'tab' 
+      requestOpenMode?: 'popup' | 'tab',
       redirectUrl?: string, 
     };
   }) {
@@ -50,11 +52,13 @@ class LoopSDK {
 
     const resolvedOptions = {
       openMode: 'popup' as 'popup' | 'tab',
+      requestOpenMode: 'popup' as 'popup' | 'tab',
       redirectUrl: undefined as string | undefined,
       ...(options ?? {}),
     };
 
     this.openMode = resolvedOptions.openMode;
+    this.requestOpenMode = resolvedOptions.requestOpenMode;
     this.redirectUrl = resolvedOptions.redirectUrl;
 
     this.connection = new Connection({ network, walletUrl, apiUrl });
@@ -81,7 +85,16 @@ class LoopSDK {
             try {
                 const verifiedAccount = await this.connection.verifySession(authToken);
                 if (verifiedAccount.party_id === partyId) {
-                    this.provider = new Provider({ connection: this.connection, party_id: partyId, auth_token: authToken, public_key: publicKey, email });
+                    this.provider = new Provider({ 
+                      connection: this.connection, 
+                      party_id: partyId, 
+                      auth_token: authToken, 
+                      public_key: publicKey, 
+                      email,
+                      openRequestUi: this.openRequestUi.bind(this),
+                      closeRequestUi: this.closePopupIfExists.bind(this),
+                    });
+                    this.ticketId = ticketId || null;
                     this.onAccept?.(this.provider);
                     
                     // Re-establish websocket for this session
@@ -129,12 +142,7 @@ class LoopSDK {
 
         localStorage.setItem('loop_connect', JSON.stringify({ sessionId, ticketId }));
         
-        const url = new URL('/.connect/', this.connection.walletUrl);
-        url.searchParams.set('ticketId', ticketId);
-        if (this.redirectUrl) {
-          url.searchParams.set('redirectUrl', this.redirectUrl);
-        }
-        const connectUrl = url.toString();
+        const connectUrl = this.buildConnectUrl(ticketId);
         this.showQrCode(connectUrl);
 
         this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
@@ -151,12 +159,21 @@ class LoopSDK {
       console.log('[LoopSDK] Entering HANDSHAKE_ACCEPT flow');
       const { authToken, partyId, publicKey, email } = message.payload || {};
       if (authToken && partyId && publicKey) {
-        this.provider = new Provider({ connection: this.connection!, party_id: partyId, auth_token: authToken, public_key: publicKey, email });
+            this.provider = new Provider({ 
+              connection: this.connection!, 
+              party_id: partyId, 
+              auth_token: authToken, 
+              public_key: publicKey, 
+              email,
+              openRequestUi: this.openRequestUi.bind(this),
+              closeRequestUi: this.closePopupIfExists.bind(this),
+            });
 
         const connectionInfoRaw = localStorage.getItem('loop_connect');
         if (connectionInfoRaw) {
           try {
             const connectionInfo = JSON.parse(connectionInfoRaw);
+            this.ticketId = connectionInfo.ticketId || this.ticketId;
             connectionInfo.authToken = authToken;
             connectionInfo.partyId = partyId;
             connectionInfo.publicKey = publicKey;
@@ -188,12 +205,60 @@ class LoopSDK {
     }
   }
 
-  private openWallet(url: string) {
+  private buildConnectUrl(ticketId: string) {
+    const url = new URL('/.connect/', this.connection!.walletUrl);
+    url.searchParams.set('ticketId', ticketId);
+    if (this.redirectUrl) {
+      url.searchParams.set('redirectUrl', this.redirectUrl);
+    }
+    return url.toString();
+  }
+
+  private buildDashboardUrl() {
+    if (!this.connection) {
+      throw new Error('Connection not initialized');
+    }
+    return this.connection.walletUrl;
+  }
+
+  private openRequestUi(): Window | null {
     if (typeof window === 'undefined') {
-      return;
+      return null;
+    }
+    if (!this.ticketId) {
+      console.warn('[LoopSDK] Cannot open wallet UI for request: no active ticket.');
+      return null;
     }
 
-    if (this.openMode === 'popup') {
+    const dashboardUrl = this.buildDashboardUrl();
+    const targetMode = this.requestOpenMode === 'tab' ? 'tab' : 'popup';
+    const opened = this.openWallet(dashboardUrl, targetMode);
+    if (opened) {
+      this.popupWindow = opened;
+      return opened;
+    }
+    return null;
+  }
+
+  private closePopupIfExists() {
+    if (this.popupWindow && !this.popupWindow.closed) {
+      try {
+        this.popupWindow.close();
+      } catch {
+        // ignore close errors
+      }
+    }
+    this.popupWindow = null;
+  }
+
+  private openWallet(url: string, mode?: 'popup' | 'tab'): Window | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const targetMode = mode || this.openMode;
+
+    if (targetMode === 'popup') {
       const width = 480;
       const height = 720;
 
@@ -209,8 +274,7 @@ class LoopSDK {
       const popup = window.open(url, 'loop-wallet', features);
 
       if (!popup) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-        return;
+        return window.open(url, '_blank', 'noopener,noreferrer');
       }
 
       this.popupWindow = popup;
@@ -221,10 +285,10 @@ class LoopSDK {
         // focus errors
       }
 
-      return;
+      return popup;
     }
 
-    window.open(url, '_blank', 'noopener,noreferrer');
+    return window.open(url, '_blank', 'noopener,noreferrer');
   }
   private showQrCode(url: string) {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
