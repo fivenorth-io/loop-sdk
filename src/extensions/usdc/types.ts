@@ -20,6 +20,7 @@ export type ConnectWithdrawResponse = {
 export type WithdrawOptions = {
   reference?: string;
   requestTimeout?: number;
+  message?: string; // custom message to include in the request ticket
 };
 
 export interface UsdcBridgeExtension {

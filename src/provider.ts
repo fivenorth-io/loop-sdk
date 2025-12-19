@@ -88,7 +88,10 @@ export class Provider {
     }
 
     // submit a transaction to be signed by the wallet to the websocket
-    async submitTransaction(payload: TransactionPayload, options?: { requestTimeout?: number }): Promise<any> {
+    async submitTransaction(
+      payload: TransactionPayload, 
+      options?: { requestTimeout?: number; message?: string }
+    ): Promise<any> {
         return this.sendRequest(MessageType.RUN_TRANSACTION, payload, options);
     }
 
@@ -100,7 +103,7 @@ export class Provider {
     ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
         const { requestedAt, executeBefore, requestTimeout } = options || {};
-
+        const message = options?.message;
         const resolveDate = (value?: string | Date, fallbackMs?: number) => {
           if (value instanceof Date) {
             return value.toISOString();
@@ -137,7 +140,7 @@ export class Provider {
             actAs: preparedPayload.actAs,
             readAs: preparedPayload.readAs,
             synchronizerId: preparedPayload.synchronizerId,
-        }, { requestTimeout });
+        }, { requestTimeout, message });
     }
 
     // submit a raw message to be signed by the wallet to the websocket
@@ -160,7 +163,11 @@ export class Provider {
         throw new Error('Not connected.');
     }
 
-    private sendRequest(messageType: MessageType, params: any = {}, options?: { requestTimeout?: number }): Promise<any> {
+    private sendRequest(
+      messageType: MessageType, 
+      params: any = {}, 
+      options?: { requestTimeout?: number; message?: string }
+    ): Promise<any> {
         return new Promise((resolve, reject) => {
             const ensure = async () => {
                 try {
@@ -172,11 +179,24 @@ export class Provider {
 
                 const requestId = generateRequestId();
 
-                this.connection.ws!.send(JSON.stringify({
+                const requestBody: any = {
                     request_id: requestId,
                     type: messageType,
                     payload: params,
-                }));
+                };
+
+                if (options?.message) {
+                    requestBody.ticket = { message: options.message };
+
+                    if (typeof params === 'object' && params !== null && !Array.isArray(params)) {
+                        requestBody.payload = {
+                            ...params,
+                            ticket: { message: options.message },
+                        };
+                    }
+                }
+
+                this.connection.ws!.send(JSON.stringify(requestBody));
 
                 const intervalTime = 300; // 300ms
                 let elapsedTime = 0;

@@ -6,6 +6,10 @@
 - **Full Changelog:** [`CHANGELOG`](https://www.github.com/fivenorth-io/loop-sdk/blob/main/CHANGELOG.md)
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
+## v0.7.1
+- Custom wallet prompt message: pass `message` to transactions to show dApp-provided text in the wallet UI.
+- Demo updated with optional “Custom message” inputs on transfer and USDC withdraw helpers.
+
 ## v0.7.0
 - Auto-reconnect websocket before sending requests to reduce `Not connected` errors after idle timeouts.
 - Add USDC withdraw helper: `wallet.extension.usdcBridge.withdrawalUSDCxToEthereum` (with `withdraw` alias), move USDC types/logic under the extension, and update the demo helper UI.

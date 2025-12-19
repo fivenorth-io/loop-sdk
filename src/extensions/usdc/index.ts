@@ -37,7 +37,7 @@ export class UsdcBridge implements UsdcBridgeExtension {
           readAs: preparedPayload.readAs,
           synchronizerId: preparedPayload.synchronizerId,
         },
-        { requestTimeout: options?.requestTimeout },
+        { requestTimeout: options?.requestTimeout, message: options?.message },
       )
     );
   }

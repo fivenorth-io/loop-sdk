@@ -90,6 +90,7 @@
             const [withdrawRequestTimeout, setWithdrawRequestTimeout] = useState('');
             const [withdrawResult, setWithdrawResult] = useState(null);
             const [isWithdrawing, setIsWithdrawing] = useState(false);
+            const [customTxMessage, setCustomTxMessage] = useState('');
 
             useEffect(() => {
                 loop.init({
@@ -153,6 +154,7 @@
                     alert('Request timeout must be a number (milliseconds).');
                     return;
                 }
+                const message = customTxMessage.trim();
                 setIsTransferring(true);
                 setTransferResult(null);
                 try {
@@ -169,6 +171,7 @@
                         requestedAt: now.toISOString(),
                         executeBefore: executeBefore.toISOString(),
                         requestTimeout: requestTimeoutMs,
+                        message: message || undefined,
                       },
                     );
                     setTransferResult(res);
@@ -236,7 +239,8 @@
                 setTxResult(null);
                 try {
                     const command = JSON.parse(damlCommand);
-                    const result = await provider.submitTransaction(command);
+                    const message = customTxMessage?.trim();
+                    const result = await provider.submitTransaction(command, { message: message || undefined });
                     setTxResult(result);
                 } catch (error) {
                     console.error('Failed to submit transaction:', error);
@@ -261,6 +265,7 @@
                     alert('Request timeout must be a number (milliseconds).');
                     return;
                 }
+                const message = customTxMessage.trim();
 
                 setIsWithdrawing(true);
                 setWithdrawResult(null);
@@ -271,6 +276,7 @@
                         {
                             reference: withdrawReference || undefined,
                             requestTimeout: requestTimeoutMs,
+                            message: message || undefined,
                         },
                     );
                     setWithdrawResult(res);
@@ -328,6 +334,21 @@
                                     `)}
                                 </ul>
                             `}
+                            <hr style="margin: 20px 0;" />
+
+                            <div>
+                                <h3>Custom Signing Message (optional)</h3>
+                                <p>This message will be shown to the user in the wallet signing modal.</p>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. My Test DApp is requesting permission to submit a transaction"
+                                    value=${customTxMessage}
+                                    onInput=${(e) => setCustomTxMessage(e.target.value)}
+                                    style="width: 100%; margin-bottom: 8px;"
+                                />
+                                <button onClick=${() => setCustomTxMessage('')}>Clear</button>
+                            </div>
+
                             <hr style="margin: 20px 0;" />
 
                             <div>
