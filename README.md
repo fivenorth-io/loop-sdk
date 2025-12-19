@@ -132,7 +132,10 @@ const damlCommand = {
 };
 
 try {
-    const result = await provider.submitTransaction(damlCommand);
+    const result = await provider.submitTransaction(damlCommand, {
+        // Optional: show a custom message in the wallet prompt
+        message: 'Transfer 10 CC to RetailStore',
+    });
     console.log('Transaction successful:', result);
 } catch (error) {
     console.error('Transaction failed:', error);
@@ -165,6 +168,8 @@ await loop.wallet.transfer(
     instrument_id: 'Amulet',                 // optional
   },
   {
+    // Optional: show a custom message in the wallet prompt
+    message: 'Send 5 CC to Alice',
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
     requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes
@@ -192,6 +197,7 @@ await loop.wallet.extension.usdcBridge.withdrawalUSDCxToEthereum(
   '10.5', // amount in USDCx
   {
     reference: 'optional memo',
+    message: 'Withdraw 10.5 USDCx to 0xabc', // optional custom prompt text
     requestTimeout: 5 * 60 * 1000, // optional override (ms)
   },
 );
