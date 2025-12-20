@@ -22,7 +22,7 @@ loop.init({
     apiUrl?: string,
     options?: {
         openMode?: 'popup' | 'tab';
-        requestOpenMode?: 'popup' | 'tab'; // default: 'popup'
+        requestSigningMode?: 'popup' | 'tab'; // default: 'popup'
         redirectUrl?: string;
     },
     onAccept: (provider: Provider) => void,
@@ -34,7 +34,7 @@ loop.init({
 - `onAccept(provider)` is called when user approves via wallet.
 - `onReject()` is called when user rejects.
 - `openMode` and `redirectUrl` configure connection UI behavior.
-- `requestOpenMode` controls whether signing/transaction requests open the wallet dashboard automatically after you are connected (`'popup'` default or `'tab'`).
+- `requestSigningMode` controls whether signing/transaction requests open the wallet dashboard automatically after you are connected (`'popup'` default or `'tab'`).
 
 ---
 

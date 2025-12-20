@@ -11,7 +11,7 @@ class LoopSDK {
   private connection: Connection | null = null;
   private provider: Provider | null = null;
   private openMode: 'popup' | 'tab' = 'popup';
-  private requestOpenMode: 'popup' | 'tab' = 'popup';
+  private requestSigningMode: 'popup' | 'tab' = 'popup';
   private popupWindow: Window | null = null; 
   private redirectUrl?: string;
 
@@ -42,7 +42,7 @@ class LoopSDK {
     onReject?: () => void, 
     options?: {
       openMode?: 'popup' | 'tab' 
-      requestOpenMode?: 'popup' | 'tab',
+      requestSigningMode?: 'popup' | 'tab',
       redirectUrl?: string, 
     };
   }) {
@@ -52,13 +52,13 @@ class LoopSDK {
 
     const resolvedOptions = {
       openMode: 'popup' as 'popup' | 'tab',
-      requestOpenMode: 'popup' as 'popup' | 'tab',
+      requestSigningMode: 'popup' as 'popup' | 'tab',
       redirectUrl: undefined as string | undefined,
       ...(options ?? {}),
     };
 
     this.openMode = resolvedOptions.openMode;
-    this.requestOpenMode = resolvedOptions.requestOpenMode;
+    this.requestSigningMode = resolvedOptions.requestSigningMode;
     this.redirectUrl = resolvedOptions.redirectUrl;
 
     this.connection = new Connection({ network, walletUrl, apiUrl });
@@ -205,7 +205,7 @@ class LoopSDK {
     }
   }
 
-  private buildConnectUrl(ticketId: string) {
+  private buildConnectUrl(ticketId: string): string {
     const url = new URL('/.connect/', this.connection!.walletUrl);
     url.searchParams.set('ticketId', ticketId);
     if (this.redirectUrl) {
@@ -231,7 +231,7 @@ class LoopSDK {
     }
 
     const dashboardUrl = this.buildDashboardUrl();
-    const targetMode = this.requestOpenMode === 'tab' ? 'tab' : 'popup';
+    const targetMode = this.requestSigningMode === 'tab' ? 'tab' : 'popup';
     const opened = this.openWallet(dashboardUrl, targetMode);
     if (opened) {
       this.popupWindow = opened;

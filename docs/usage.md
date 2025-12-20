@@ -32,7 +32,7 @@ loop.init({
     network: 'local', // or 'devnet', 'mainnet'
     options: {
         openMode: 'popup', // or 'tab'
-        requestOpenMode: 'popup', // 'popup' (default) | 'tab'
+        requestSigningMode: 'popup', // 'popup' (default) | 'tab'
         redirectUrl: 'https://mydapp.com/after-connect', // optional
     },
     onAccept: (provider) => {
@@ -58,7 +58,7 @@ loop.init({
 | Field | Description |
 |-------|-------------|
 | `openMode` | `'popup'` (default) or `'tab'` |
-| `requestOpenMode` | Controls how signing/transaction requests open the wallet UI: `'popup'` (default) or `'tab'` |
+| `requestSigningMode` | Controls how signing/transaction requests open the wallet UI: `'popup'` (default) or `'tab'` |
 | `redirectUrl` | Optional URL your user will return to after connecting |
 
 ---
@@ -75,7 +75,7 @@ loop.connect();
 
 This opens a QR modal for the user to scan with their Loop wallet.
 
-If you set `requestOpenMode` to `'popup'` (or `'tab'`), the SDK will also open the wallet dashboard for signing/transaction requests and auto-close the popup when the wallet responds.
+If you set `requestSigningMode` to `'popup'` (or `'tab'`), the SDK will also open the wallet dashboard for signing/transaction requests and auto-close the popup when the wallet responds.
 
 ---
 
