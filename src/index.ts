@@ -91,9 +91,8 @@ class LoopSDK {
                       auth_token: authToken, 
                       public_key: publicKey, 
                       email,
-                      openRequestUi: this.openRequestUi.bind(this),
-                      closeRequestUi: this.closePopupIfExists.bind(this),
                     });
+                    this.attachRequestUi(this.provider);
                     this.ticketId = ticketId || null;
                     this.onAccept?.(this.provider);
                     
@@ -165,9 +164,8 @@ class LoopSDK {
               auth_token: authToken, 
               public_key: publicKey, 
               email,
-              openRequestUi: this.openRequestUi.bind(this),
-              closeRequestUi: this.closePopupIfExists.bind(this),
             });
+            this.attachRequestUi(this.provider);
 
         const connectionInfoRaw = localStorage.getItem('loop_connect');
         if (connectionInfoRaw) {
@@ -362,6 +360,26 @@ class LoopSDK {
       throw new Error('SDK not connected. Call connect() and wait for acceptance first.');
     }
     return this.provider;
+  }
+
+  private attachRequestUi(provider: Provider) {
+    const methods: Array<keyof Provider> = ['submitTransaction', 'transfer', 'signMessage'];
+
+    for (const methodName of methods) {
+      const original = (provider as any)[methodName];
+      if (typeof original !== 'function') continue;
+
+      (provider as any)[methodName] = async (...args: any[]) => {
+        const win = this.openRequestUi();
+        try {
+          return await original.apply(provider, args);
+        } finally {
+          if (win) {
+            this.closePopupIfExists();
+          }
+        }
+      };
+    }
   }
 }
 
