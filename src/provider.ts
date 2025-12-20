@@ -187,8 +187,6 @@ export class Provider {
                     return;
                 }
 
-                const requestId = generateRequestId();
-
                 const requestBody: any = {
                     request_id: requestId,
                     type: messageType,
