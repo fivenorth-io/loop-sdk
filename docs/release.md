@@ -9,6 +9,7 @@ The release notes below highlight only the major updates. Refer to the links abo
 ## v0.7.1
 - Custom wallet prompt message: pass `message` to transactions to show dApp-provided text in the wallet UI.
 - Add optional `requestSigningMode` (defaults to `'popup'`) to auto-open wallet dashboard (popup/tab) for signing/transaction requests and auto-close the popup when the wallet responds.
+- Add internal request lifecycle hooks on `Provider` to allow the SDK core to react to signing and transaction requests.
 
 ## v0.7.0
 - Auto-reconnect websocket before sending requests to reduce `Not connected` errors after idle timeouts.

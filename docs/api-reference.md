@@ -79,11 +79,16 @@ When the user approves, the SDK returns a Provider instance.
 | `party_id` | `string` | The user's Canton party ID |
 | `public_key` | `string` | Public key of the wallet |
 | `email` | `string` | User email |
-| `auth_token` | `string` | Token for authenticated backend calls |
 
 ---
 
 ### Methods
+
+#### `provider.getAuthToken(): string`
+
+Returns the auth token used for authenticated backend calls.
+
+---
 
 #### `provider.getHolding(): Promise<Holding[]>`
 
@@ -110,9 +115,52 @@ Submits a DAML ExcerciseCommand or multi-command transaction.
 
 ---
 
+#### `provider.transfer(recipient, amount, instrument?, options?): Promise<any>`
+
+Prepares and submits a token transfer transaction to be signed by the wallet.
+
+```ts
+await provider.transfer(
+  recipient: string,
+  amount: string | number,
+  instrument?: {
+    instrument_admin?: string;
+    instrument_id?: string; // default: 'Amulet'
+  },
+  options?: {
+    requestedAt?: string | Date;
+    executeBefore?: string | Date;
+    requestTimeout?: number;
+    message?: string;
+  }
+);
+```
+
+---
+
 #### `provider.signMessage(message: string): Promise<any>`
 
 Requests the wallet to sign an arbitrary message.
+
+---
+
+## Request lifecycle hooks
+
+Internal request lifecycle hooks allow the SDK core to react to signing and transaction requests. These hooks are internal and not exposed to dApps.
+
+### `ProviderHooks`
+
+```ts
+type ProviderHooks = {
+  onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown;
+  onRequestFinish?: (args: {
+    status: 'success' | 'rejected' | 'timeout' | 'error';
+    messageType: MessageType;
+    requestLabel?: string;
+    requestContext?: unknown;
+  }) => void;
+};
+```
 
 ---
 
