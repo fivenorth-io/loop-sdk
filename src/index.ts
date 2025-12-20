@@ -3,6 +3,7 @@ import type { Account, Network, TransferOptions, InstrumentSpec, Wallet } from '
 import { MessageType } from './types';
 import { Connection } from './connection';
 import { Provider, generateRequestId } from './provider';
+import type { ProviderHooks } from './provider';
 import { LoopWallet } from './wallet';
 
 class LoopSDK {
@@ -91,8 +92,8 @@ class LoopSDK {
                       auth_token: authToken, 
                       public_key: publicKey, 
                       email,
+                      hooks: this.createProviderHooks(),
                     });
-                    this.attachRequestUi(this.provider);
                     this.ticketId = ticketId || null;
                     this.onAccept?.(this.provider);
                     
@@ -164,8 +165,8 @@ class LoopSDK {
               auth_token: authToken, 
               public_key: publicKey, 
               email,
+              hooks: this.createProviderHooks(),
             });
-            this.attachRequestUi(this.provider);
 
         const connectionInfoRaw = localStorage.getItem('loop_connect');
         if (connectionInfoRaw) {
@@ -362,24 +363,21 @@ class LoopSDK {
     return this.provider;
   }
 
-  private attachRequestUi(provider: Provider) {
-    const methods: Array<keyof Provider> = ['submitTransaction', 'transfer', 'signMessage'];
-
-    for (const methodName of methods) {
-      const original = (provider as any)[methodName];
-      if (typeof original !== 'function') continue;
-
-      (provider as any)[methodName] = async (...args: any[]) => {
-        const win = this.openRequestUi();
-        try {
-          return await original.apply(provider, args);
-        } finally {
-          if (win) {
+  private createProviderHooks(): ProviderHooks {
+    return {
+      onRequestStart: () => {
+        return this.openRequestUi();
+      },
+      onRequestFinish: ({ requestContext }) => {
+        const win = requestContext as Window | null | undefined;
+        if (win) {
+          // Delay closing to allow wallet UI to visibly transition / finalize
+          setTimeout(() => {
             this.closePopupIfExists();
-          }
+          }, 800);
         }
-      };
-    }
+      },
+    };
   }
 }
 

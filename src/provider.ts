@@ -4,6 +4,17 @@ import { MessageType } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
+export type RequestFinishStatus = 'success' | 'rejected' | 'timeout' | 'error';
+export type RequestFinishArgs = {
+  status: RequestFinishStatus;
+  messageType: MessageType;
+  requestLabel?: string;
+  requestContext?: unknown;
+};
+export type ProviderHooks = {
+  onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown;
+  onRequestFinish?: (args: RequestFinishArgs) => void;
+};
 
 type TransactionPayload = {
   commands: any[];
@@ -55,8 +66,9 @@ export class Provider {
     private auth_token: string;
     private requests: Map<string, any> = new Map();
     private requestTimeout: number = DEFAULT_REQUEST_TIMEOUT_MS;
+    private hooks?: ProviderHooks;
 
-    constructor({ connection, party_id, public_key, auth_token, email }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string }) {
+    constructor({ connection, party_id, public_key, auth_token, email, hooks }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string, hooks?: ProviderHooks }) {
         if (!connection) {
             throw new Error('Provider requires a connection object.');
         }
@@ -65,6 +77,7 @@ export class Provider {
         this.public_key = public_key;
         this.email = email;
         this.auth_token = auth_token; 
+        this.hooks = hooks;
     }
 
     public getAuthToken(): string {
@@ -90,7 +103,7 @@ export class Provider {
     // submit a transaction to be signed by the wallet to the websocket
     async submitTransaction(
       payload: TransactionPayload, 
-      options?: { requestTimeout?: number; message?: string }
+      options?: { requestTimeout?: number; message?: string; requestLabel?: string }
     ): Promise<any> {
         return this.sendRequest(MessageType.RUN_TRANSACTION, payload, options);
     }
@@ -166,15 +179,22 @@ export class Provider {
     private sendRequest(
       messageType: MessageType, 
       params: any = {}, 
-      options?: { requestTimeout?: number; message?: string }
+      options?: { requestTimeout?: number; message?: string; requestLabel?: string }
     ): Promise<any> {
         return new Promise((resolve, reject) => {
             const requestId = generateRequestId();
+            const requestContext = this.hooks?.onRequestStart?.(messageType, options?.requestLabel);
 
             const ensure = async () => {
                 try {
                     await this.ensureConnected();
                 } catch (error) {
+                    this.hooks?.onRequestFinish?.({
+                        status: 'error',
+                        messageType,
+                        requestLabel: options?.requestLabel,
+                        requestContext,
+                    });
                     reject(error);
                     return;
                 }
@@ -208,8 +228,20 @@ export class Provider {
                         clearInterval(intervalId);
                         this.requests.delete(requestId);
                         if (response.type === MessageType.REJECT_REQUEST) {
+                            this.hooks?.onRequestFinish?.({
+                                status: 'rejected',
+                                messageType,
+                                requestLabel: options?.requestLabel,
+                                requestContext,
+                            });
                             reject(new RejectRequestError());
                         } else {
+                            this.hooks?.onRequestFinish?.({
+                                status: 'success',
+                                messageType,
+                                requestLabel: options?.requestLabel,
+                                requestContext,
+                            });
                             resolve(response.payload);
                         }
                     } else {
@@ -217,6 +249,12 @@ export class Provider {
                         if (elapsedTime >= timeoutMs) {
                             clearInterval(intervalId);
                             this.requests.delete(requestId);
+                            this.hooks?.onRequestFinish?.({
+                                status: 'timeout',
+                                messageType,
+                                requestLabel: options?.requestLabel,
+                                requestContext,
+                            });
                             reject(new RequestTimeoutError(timeoutMs));
                         }
                     }
