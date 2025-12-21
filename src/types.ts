@@ -2,11 +2,16 @@ import type { UsdcBridgeExtension } from './extensions/usdc/types';
 
 export type Network = 'devnet' | 'testnet' | 'mainnet' | 'local' | 'dev' | 'test' | 'main';
 
+export type UsdcBridgeAccessType = 'not_requested' | 'pending' | 'granted';
 export type Account = {
   party_id: string;
   auth_token: string;
   public_key: string;
   email?: string;
+
+  has_preapproval?: boolean;
+  has_merge_delegation?: boolean;
+  usdc_bridge_access?: UsdcBridgeAccessType;
 };
 
 export enum MessageType {

@@ -6,6 +6,11 @@
 - **Full Changelog:** [`CHANGELOG`](https://www.github.com/fivenorth-io/loop-sdk/blob/main/CHANGELOG.md)
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
+
+## v0.7.1
+- Expose `has_preapproval` and `has_merge_delegation` to account object for dapp to check and ensure an account is setup to avoid UTXO size growing up.
+- Add a new method `getAccount` on provider to allow dapp to refresh these status.
+
 ## v0.7.1
 - Custom wallet prompt message: pass `message` to transactions to show dApp-provided text in the wallet UI.
 - Add optional `requestSigningMode` (defaults to `'popup'`) to auto-open wallet dashboard (popup/tab) for signing/transaction requests and auto-close the popup when the wallet responds.

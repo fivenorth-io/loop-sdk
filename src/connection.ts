@@ -169,6 +169,9 @@ export class Connection {
             auth_token: authToken,
             public_key: data?.public_key,
             email,
+            has_preapproval: data?.has_preapproval,
+            has_merge_delegation: data?.has_merge_delegation,
+            usdc_bridge_access: data?.usdc_bridge_access,
         };
         return account;
     }
