@@ -1,6 +1,6 @@
 import type { Connection } from './connection';
 import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec } from './types';
-import { MessageType } from './types';
+import { MessageType, type Account } from './types';
 import { RejectRequestError, RequestTimeoutError } from './errors';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
@@ -92,11 +92,17 @@ export class Provider {
         }
     }
 
-    async getHolding(): Promise<Holding[]> {
+    getHolding(): Promise<Holding[]> {
         return this.connection.getHolding(this.auth_token);
     }
 
-    async getActiveContracts(params?: { templateId?: string; interfaceId?: string }): Promise<ActiveContract[]> {
+    // get the current account connected to the provider
+    // This is useful for dApps to know if the user has pre approval or merge delegation permissions to ensure UTXO consolidation is in place
+    getAccount(): Promise<Account> {
+        return this.connection.verifySession(this.auth_token);
+    }
+
+    getActiveContracts(params?: { templateId?: string; interfaceId?: string }): Promise<ActiveContract[]> {
         return this.connection.getActiveContracts(this.auth_token, params);
     }
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.2 (2025-12-21)
+Full Changelog: [v0.7.1...v0.7.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.0...v0.7.1)
+
+### Features
+
+* **sdk:** add a new `getAccount` method on provider to retreive preapproval, utxo merge delegation, and usdc bridge access to dapp
+* **demo:** add a button to retrieive these account info data
+
 ## 0.7.1 (2025-12-19)
 
 Full Changelog: [v0.7.0...v0.7.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.0...v0.7.1)

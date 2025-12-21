@@ -91,6 +91,17 @@ The provider object includes:
 
 ---
 
+### Get Account
+
+Retrieve extra information about the account connected to the provider
+
+```javascript
+const account = await provider.getAccount();
+console.log(account);
+```
+
+---
+
 ### Get Holdings
 
 ```javascript

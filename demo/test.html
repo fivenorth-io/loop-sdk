@@ -91,6 +91,7 @@
             const [withdrawResult, setWithdrawResult] = useState(null);
             const [isWithdrawing, setIsWithdrawing] = useState(false);
             const [customTxMessage, setCustomTxMessage] = useState('');
+            const [accountInfo, setAccountInfo] = useState(null);
 
             useEffect(() => {
                 loop.init({
@@ -136,6 +137,24 @@
                 } catch (error) {
                     console.error('Failed to get holdings:', error);
                     alert('Failed to get holdings. See console.');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleGetAccount = async () => {
+                if (!provider) {
+                    alert('Not connected');
+                    return;
+                }
+                setIsLoading(true);
+                setAccountInfo(null);
+                try {
+                    const acc = await provider.getAccount();
+                    setAccountInfo(acc);
+                } catch (error) {
+                    console.error('Failed to get account:', error);
+                    alert('Failed to get account. See console.');
                 } finally {
                     setIsLoading(false);
                 }
@@ -316,6 +335,22 @@
                             <h2>Connected!</h2>
                             <p>Party ID: ${account.partyId}</p>
                             <p>Puplic Key: ${account.publicKey}</p>
+
+                            <button onClick=${handleGetAccount} disabled=${isLoading}>
+                                ${isLoading ? 'Loading...' : 'Get Account Info'}
+                            </button>
+
+                            ${accountInfo && !isLoading && html`
+                                <div style="margin-top: 10px; padding: 10px; background: #f4f4f4; border-radius: 5px;">
+                                    <h4>Account Info:</h4>
+                                    <p>Email: ${accountInfo.email}</p>
+                                    <p>Pre-approval: ${accountInfo.has_preapproval ? 'enabled' : 'not enabled'}</p>
+                                    <p>UTXO merge delegation: ${accountInfo.has_merge_delegation ? 'enabled' : 'not enabled'}</p>
+                                    <p>USDC Bridge Access: ${accountInfo.usdc_bridge_access}</p>
+                                </div>
+                            `}
+
+                            <hr style="margin: 20px 0;" />
                             <button onClick=${handleGetHolding} disabled=${isLoading}>
                                 ${isLoading ? 'Loading...' : 'Get Holdings'}
                             </button>
