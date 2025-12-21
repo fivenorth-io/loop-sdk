@@ -90,6 +90,12 @@ Returns the auth token used for authenticated backend calls.
 
 ---
 
+#### `provider.getAccount(): Promise<Account[]>`
+
+Fetches the extra account info of current account. This is userful to access information about a user such as pre approval, merge contract, bridge access
+
+---
+
 #### `provider.getHolding(): Promise<Holding[]>`
 
 Fetches the user's token holdings.
