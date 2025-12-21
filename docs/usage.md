@@ -96,7 +96,7 @@ The provider object includes:
 Retrieve extra information about the account connected to the provider
 
 ```javascript
-const account = await provider.getAccount);
+const account = await provider.getAccount();
 console.log(account);
 ```
 
