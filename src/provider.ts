@@ -12,8 +12,9 @@ export type RequestFinishArgs = {
   requestContext?: unknown;
 };
 export type ProviderHooks = {
-  onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown;
+  onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown | Promise<unknown>;
   onRequestFinish?: (args: RequestFinishArgs) => void;
+  onUnauth?: (info: { code?: string; message?: any; requestId?: string; messageType?: MessageType }) => void;
 };
 
 type TransactionPayload = {
@@ -24,6 +25,23 @@ type TransactionPayload = {
   readAs?: string[];
   synchronizerId?: string;
 };
+
+const UNAUTH_CODES = new Set(['UNAUTHENTICATED', 'UNAUTHORIZED', 'SESSION_EXPIRED', 'LOGGED_OUT']);
+
+function extractUnauthCode(message: any): string | undefined {
+    const code = 
+        (message?.error && (message.error.code || message.error.type)) ||
+        (message?.payload?.error && (message.payload.error.code || message.payload.error.type)) ||
+        message?.code;
+
+  return typeof code === 'string' ? code : undefined;
+}
+
+function isUnauthMessage(message: any): boolean {
+    const code = extractUnauthCode(message);
+    return !!code && UNAUTH_CODES.has(code);
+}
+
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
 // In production (HTTPS), native randomUUID will be used
@@ -85,12 +103,18 @@ export class Provider {
     }
 
     // handle all responses from the websocket except for handshake_accept, handshake_reject
-    public handleResponse(message: any) {
+        public handleResponse(message: any) {
         console.log('Received response:', message);
+
+        if (isUnauthMessage(message)) {
+            const code = extractUnauthCode(message);
+            this.hooks?.onUnauth?.({ code, message, requestId: message?.request_id, messageType: message?.type });
+        }
+
         if (message.request_id) {
             this.requests.set(message.request_id, message);
         }
-    }
+        }
 
     getHolding(): Promise<Holding[]> {
         return this.connection.getHolding(this.auth_token);
@@ -189,11 +213,13 @@ export class Provider {
     ): Promise<any> {
         return new Promise((resolve, reject) => {
             const requestId = generateRequestId();
-            const requestContext = this.hooks?.onRequestStart?.(messageType, options?.requestLabel);
+            let requestContext: unknown;
 
             const ensure = async () => {
                 try {
                     await this.ensureConnected();
+
+                    requestContext = await this.hooks?.onRequestStart?.(messageType, options?.requestLabel);
                 } catch (error) {
                     this.hooks?.onRequestFinish?.({
                         status: 'error',
@@ -233,6 +259,18 @@ export class Provider {
                     if (response) {
                         clearInterval(intervalId);
                         this.requests.delete(requestId);
+                        if (isUnauthMessage(response)) {
+                            const code = extractUnauthCode(response);
+                            this.hooks?.onRequestFinish?.({
+                                status: 'error',
+                                messageType,
+                                requestLabel: options?.requestLabel,
+                                requestContext,
+                            });
+                            this.hooks?.onUnauth?.({ code, message: response, requestId, messageType });
+                            reject(new Error(code || 'UNAUTHENTICATED'));
+                            return;
+                        }
                         if (response.type === MessageType.REJECT_REQUEST) {
                             this.hooks?.onRequestFinish?.({
                                 status: 'rejected',
