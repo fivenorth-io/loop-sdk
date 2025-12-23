@@ -91,7 +91,7 @@ class LoopSDK {
         const { ticket_id: ticketId } = await this.connection.getTicket(this.appName, sessionId, this.version);
         this.ticketId = ticketId;
 
-        localStorage.setItem('loop_connect', JSON.stringify({ sessionId, ticketId, connected: false }));
+        localStorage.setItem('loop_connect', JSON.stringify({ sessionId, ticketId }));
         
         const connectUrl = this.buildConnectUrl(ticketId);
         this.showQrCode(connectUrl);
@@ -157,7 +157,6 @@ class LoopSDK {
             connectionInfo.partyId = partyId;
             connectionInfo.publicKey = publicKey;
             connectionInfo.email = email;
-            connectionInfo.connected = true;
             localStorage.setItem('loop_connect', JSON.stringify(connectionInfo));
             this.onAccept?.(this.provider);
             this.hideQrCode();
@@ -346,7 +345,7 @@ class LoopSDK {
       if (raw) {
         try {
           const parsed = JSON.parse(raw);
-          hadConnected = !!parsed?.connected;
+          hadConnected = !!(parsed?.authToken || this.provider);
         } catch {
           // ignore parse errors
         }
@@ -426,8 +425,8 @@ class LoopSDK {
       return false;
     }
 
-    const { ticketId, authToken, partyId, publicKey, email, connected } = cached;
-    if (!(authToken && partyId && publicKey && connected)) {
+    const { ticketId, authToken, partyId, publicKey, email } = cached;
+    if (!(authToken && partyId && publicKey)) {
       return false;
     }
 
