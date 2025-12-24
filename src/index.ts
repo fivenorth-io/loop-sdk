@@ -8,6 +8,10 @@ import { LoopWallet } from './wallet';
 import { extractErrorCode, isUnauthCode, UnauthorizedError } from './errors';
 
 class LoopSDK {
+  private connectState: { status: 'init' | 'connecting' | 'connected'; promise: Promise<void> | null } = {
+    status: 'init',
+    promise: null,
+  };
   private version: string = '0.0.1';
   private appName: string = 'Unknown';
   private connection: Connection | null = null;
@@ -21,7 +25,6 @@ class LoopSDK {
   private onReject: (() => void) | null = null;
   private overlay: HTMLDivElement | null = null;
   private ticketId: string | null = null;
-  private connectInFlight: Promise<void> | null = null;
   public wallet: Wallet;
 
   constructor() {
@@ -76,12 +79,12 @@ class LoopSDK {
       throw new Error('SDK not initialized. Call init() first.');
     }
 
-    if (this.provider) {
+    if (this.connectState.status === 'connected' || this.provider) {
       return;
     }
 
-    if (this.connectInFlight) {
-      await this.connectInFlight;
+    if (this.connectState.status === 'connecting') {
+      await this.connectState.promise;
       return;
     }
 
@@ -99,7 +102,8 @@ class LoopSDK {
     const sessionId = generateRequestId();
 
     // prevent double-connect
-    this.connectInFlight = (async () => {
+    this.connectState.status = 'connecting';
+    const connectPromise = (async () => {
       const connection = this.connection;
       if (!connection) {
         throw new Error('Connection not initialized');
@@ -116,12 +120,14 @@ class LoopSDK {
         connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
       } catch (error) {
         console.error(error);
+        this.connectState.status = 'init';
       } finally {
-        this.connectInFlight = null;
+        this.connectState.promise = null;
       }
     })();
+    this.connectState.promise = connectPromise;
 
-    await this.connectInFlight;
+    await connectPromise;
   }
 
   // autoconnects if valid session exists
@@ -173,6 +179,7 @@ class LoopSDK {
             connectionInfo.publicKey = publicKey;
             connectionInfo.email = email;
             localStorage.setItem('loop_connect', JSON.stringify(connectionInfo));
+            this.connectState.status = 'connected';
             this.onAccept?.(this.provider);
             this.hideQrCode();
             this.connection?.connectWebSocket(connectionInfo.ticketId, this.handleWebSocketMessage.bind(this));
@@ -191,6 +198,7 @@ class LoopSDK {
       this.connection?.ws?.close();
       this.onReject?.();
       this.hideQrCode();
+      this.connectState.status = 'init';
 
       console.log('[LoopSDK] HANDSHAKE_REJECT: closing popup (if exists)');
       this.popupWindow = null;
@@ -361,6 +369,7 @@ class LoopSDK {
 
     this.ticketId = null;
     this.provider = null;
+    this.connectState.status = 'init';
     this.connection?.ws?.close();
     this.hideQrCode();
   }
@@ -439,6 +448,7 @@ class LoopSDK {
         hooks: this.createProviderHooks(),
       });
       this.ticketId = ticketId;
+      this.connectState.status = 'connected';
       this.onAccept?.(this.provider);
       if (ticketId) {
         this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
@@ -472,6 +482,7 @@ class LoopSDK {
     const connectUrl = this.buildConnectUrl(cached.ticketId);
     this.showQrCode(connectUrl);
     this.connection.connectWebSocket(cached.ticketId, this.handleWebSocketMessage.bind(this));
+    this.connectState.status = 'connecting';
     return true;
   }
 }
