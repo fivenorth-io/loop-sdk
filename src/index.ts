@@ -5,6 +5,7 @@ import { Connection } from './connection';
 import { Provider, generateRequestId } from './provider';
 import type { ProviderHooks } from './provider';
 import { LoopWallet } from './wallet';
+import { extractErrorCode, isUnauthCode, UnauthorizedError } from './errors';
 
 class LoopSDK {
   private version: string = '0.0.1';
@@ -20,6 +21,7 @@ class LoopSDK {
   private onReject: (() => void) | null = null;
   private overlay: HTMLDivElement | null = null;
   private ticketId: string | null = null;
+  private connectInFlight: Promise<void> | null = null;
   public wallet: Wallet;
 
   constructor() {
@@ -74,6 +76,15 @@ class LoopSDK {
       throw new Error('SDK not initialized. Call init() first.');
     }
 
+    if (this.provider) {
+      return;
+    }
+
+    if (this.connectInFlight) {
+      await this.connectInFlight;
+      return;
+    }
+
     // try to restore valid sessioin
     if (await this.tryRestoreValidSession()) {
       return;
@@ -87,8 +98,14 @@ class LoopSDK {
     // create new ticket
     const sessionId = generateRequestId();
 
-    try {
-        const { ticket_id: ticketId } = await this.connection.getTicket(this.appName, sessionId, this.version);
+    // prevent double-connect
+    this.connectInFlight = (async () => {
+      const connection = this.connection;
+      if (!connection) {
+        throw new Error('Connection not initialized');
+      }
+      try {
+        const { ticket_id: ticketId } = await connection.getTicket(this.appName, sessionId, this.version);
         this.ticketId = ticketId;
 
         localStorage.setItem('loop_connect', JSON.stringify({ sessionId, ticketId }));
@@ -96,11 +113,15 @@ class LoopSDK {
         const connectUrl = this.buildConnectUrl(ticketId);
         this.showQrCode(connectUrl);
 
-        this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
-    } catch (error) {
+        connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
+      } catch (error) {
         console.error(error);
-        return;
-    }
+      } finally {
+        this.connectInFlight = null;
+      }
+    })();
+
+    await this.connectInFlight;
   }
 
   // autoconnects if valid session exists
@@ -120,16 +141,10 @@ class LoopSDK {
   private handleWebSocketMessage(event: MessageEvent) {
     const message = JSON.parse(event.data);
 
-    const unauthCodes = new Set(['UNAUTHENTICATED', 'UNAUTHORIZED', 'SESSION_EXPIRED', 'LOGGED_OUT']);
-    const errCode =
-      (message?.error && (message.error.code || message.error.type)) ||
-      (message?.payload?.error && (message.payload.error.code || message.payload.error.type)) ||
-      message?.code ||
-      message?.type;
+    const errCode = extractErrorCode(message);
 
-
-    if (typeof errCode === 'string' && unauthCodes.has(errCode)) {
-      console.warn('[LoopSDK] Detected logout/session invalidation:', errCode, { message });
+    if (isUnauthCode(errCode)) {
+      console.warn('[LoopSDK] Detected session invalidation:', errCode, { message });
       this.logout();
       return;
     }
@@ -337,20 +352,10 @@ class LoopSDK {
   }
 
   logout() {
-    // only if there's a previous established connection
-    let hadConnected = false;
+    const cached = this.getCachedConnection();
+    const hadConnected = Boolean(this.provider || cached?.authToken);
 
     if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('loop_connect');
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          hadConnected = !!(parsed?.authToken || this.provider);
-        } catch {
-          // ignore parse errors
-        }
-      }
-
       localStorage.removeItem('loop_connect');
     }
 
@@ -367,30 +372,9 @@ class LoopSDK {
     return this.provider;
   }
 
-  private async ensureSessionValidOrLogout(): Promise<void> {
-    if (!this.connection || !this.provider) return;
-
-    // verify the stored auth token
-    const authToken = (this.provider as any)?.auth_token as string | undefined;
-    if (!authToken) return;
-
-    try {
-      await this.connection.verifySession(authToken);
-    } catch (err) {
-      this.logout();
-      throw err;
-    }
-  }
-
   private createProviderHooks(): ProviderHooks {
     return {
-      onRequestStart: async () => {
-        await this.ensureSessionValidOrLogout();
-        return this.openRequestUi();
-      },
-      onUnauth: ({ code, message }) => {
-        this.logout();
-      },
+      onRequestStart: () => this.openRequestUi(),
       onRequestFinish: ({ requestContext }) => {
         const win = requestContext as Window | null | undefined;
         if (win) {
@@ -404,7 +388,13 @@ class LoopSDK {
   }
 
   private getCachedConnection(): any | null {
-    const existingConnectionRaw = typeof window !== 'undefined' ? localStorage.getItem('loop_connect') : null;
+    let existingConnectionRaw: string | null = null;
+    try {
+      existingConnectionRaw = localStorage.getItem('loop_connect');
+    } catch (error) {
+      console.warn('[LoopSDK] localStorage is not available; skipping cached session.', error);
+      return null;
+    }
     if (!existingConnectionRaw) {
       return null;
     }
@@ -412,14 +402,16 @@ class LoopSDK {
       return JSON.parse(existingConnectionRaw);
     } catch (error) {
       console.error('Failed to parse existing connection info, creating a new one.', error);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('loop_connect');
-      }
+      localStorage.removeItem('loop_connect');
       return null;
     }
   }
 
   private async tryRestoreValidSession(): Promise<boolean> {
+    if (!this.connection) {
+      return false;
+    }
+
     const cached = this.getCachedConnection();
     if (!cached) {
       return false;
@@ -431,7 +423,7 @@ class LoopSDK {
     }
 
     try {
-      const verifiedAccount = await this.connection!.verifySession(authToken);
+      const verifiedAccount = await this.connection.verifySession(authToken);
       if (verifiedAccount.party_id !== partyId) {
         console.warn('[LoopSDK] Stored partyId does not match verified account. Clearing cached session.');
         this.logout();
@@ -446,29 +438,40 @@ class LoopSDK {
         email,
         hooks: this.createProviderHooks(),
       });
-      this.ticketId = ticketId || null;
+      this.ticketId = ticketId;
       this.onAccept?.(this.provider);
       if (ticketId) {
-        this.connection!.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
+        this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
       }
       return true;
     } catch (err) {
-      console.error('[LoopSDK] Auto-login failed, session is invalid.', err);
-      this.logout();
+      const isUnauthorized = err instanceof UnauthorizedError;
+      if (isUnauthorized) {
+        console.error('[LoopSDK] Auto-login failed, session is invalid.', err);
+        this.logout();
+        return false;
+      }
+      console.warn('[LoopSDK] Auto-login failed due to transient error; keeping cached session.', err);
       return false;
     }
   }
 
   private async tryResumePendingTicket(): Promise<boolean> {
+    // user initiates connect() with cached ticket but no verified session
     const cached = this.getCachedConnection();
     if (!cached || !cached.ticketId) {
+      return false;
+    }
+
+    if (!this.connection) {
+      console.warn('[LoopSDK] Connection not initialized; cannot resume pending ticket.');
       return false;
     }
 
     this.ticketId = cached.ticketId;
     const connectUrl = this.buildConnectUrl(cached.ticketId);
     this.showQrCode(connectUrl);
-    this.connection!.connectWebSocket(cached.ticketId, this.handleWebSocketMessage.bind(this));
+    this.connection.connectWebSocket(cached.ticketId, this.handleWebSocketMessage.bind(this));
     return true;
   }
 }

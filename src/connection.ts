@@ -1,4 +1,5 @@
 import type { Network, Account, Holding, TransferRequest, PreparedTransferPayload, ConnectTransferResponse } from './types';
+import { UnauthorizedError } from './errors';
 
 export class Connection {
     public walletUrl: string = 'https://cantonloop.com';
@@ -7,6 +8,7 @@ export class Connection {
     private network: Network = 'main';
     private ticketId: string | null = null;
     private onMessageHandler: ((event: MessageEvent) => void) | null = null;
+    private connectPromise: Promise<void> | null = null;
     private reconnectPromise: Promise<void> | null = null;
 
     constructor({ network, walletUrl, apiUrl }: { network?: Network, walletUrl?: string, apiUrl?: string }) {
@@ -154,7 +156,10 @@ export class Connection {
         });
 
         if (!response.ok) {
-            throw new Error('Session verification failed.');
+            if (response.status === 401 || response.status === 403) {
+                throw new UnauthorizedError();
+            }
+            throw new Error(`Session verification failed with status ${response.status}.`);
         }
 
         const data = await response.json();
@@ -213,9 +218,50 @@ export class Connection {
     }
 
     connectWebSocket(ticketId: string, onMessage: (event: MessageEvent) => void) {
-        this.ticketId = ticketId;
+        const sameTicket = this.ticketId === ticketId;
         this.onMessageHandler = onMessage;
-        this.attachWebSocket(ticketId, onMessage);
+
+        if (
+            this.ws &&
+            (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) &&
+            sameTicket
+        ) {
+            this.ws.onmessage = onMessage;
+            return;
+        }
+
+        // prevent opening multiple sockets for same ticket
+        if (this.connectPromise && sameTicket) {
+            return;
+        }
+
+        this.ticketId = ticketId;
+
+        // close any existing socket before attaching a new one
+        if (this.ws) {
+            try {
+                this.ws.close();
+            } catch {
+                // ignore close errors
+            }
+            this.ws = null;
+        }
+
+        const connectPromise = new Promise<void>((resolve) => {
+            this.attachWebSocket(
+                ticketId,
+                onMessage,
+                () => resolve(),
+                () => resolve(),
+                () => resolve(),
+            );
+        });
+        this.connectPromise = connectPromise;
+        connectPromise.finally(() => {
+            if (this.connectPromise === connectPromise) {
+                this.connectPromise = null;
+            }
+        });
     }
 
     private reconnect(): Promise<void> {
