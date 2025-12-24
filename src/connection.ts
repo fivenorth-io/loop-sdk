@@ -8,7 +8,7 @@ export class Connection {
     private network: Network = 'main';
     private ticketId: string | null = null;
     private onMessageHandler: ((event: MessageEvent) => void) | null = null;
-    private connectPromise: Promise<void> | null = null;
+    private connecting: boolean = false;
     private reconnectPromise: Promise<void> | null = null;
 
     constructor({ network, walletUrl, apiUrl }: { network?: Network, walletUrl?: string, apiUrl?: string }) {
@@ -231,7 +231,7 @@ export class Connection {
         }
 
         // prevent opening multiple sockets for same ticket
-        if (this.connectPromise && sameTicket) {
+        if (this.connecting && sameTicket) {
             return;
         }
 
@@ -247,21 +247,11 @@ export class Connection {
             this.ws = null;
         }
 
-        const connectPromise = new Promise<void>((resolve) => {
-            this.attachWebSocket(
-                ticketId,
-                onMessage,
-                () => resolve(),
-                () => resolve(),
-                () => resolve(),
-            );
-        });
-        this.connectPromise = connectPromise;
-        connectPromise.finally(() => {
-            if (this.connectPromise === connectPromise) {
-                this.connectPromise = null;
-            }
-        });
+        this.connecting = true;
+        const clearConnecting = () => {
+            this.connecting = false;
+        };
+        this.attachWebSocket(ticketId, onMessage, clearConnecting, clearConnecting, clearConnecting);
     }
 
     private reconnect(): Promise<void> {
