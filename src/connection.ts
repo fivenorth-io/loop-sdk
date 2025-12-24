@@ -218,32 +218,24 @@ export class Connection {
     }
 
     connectWebSocket(ticketId: string, onMessage: (event: MessageEvent) => void) {
-        const sameTicket = this.ticketId === ticketId;
+        this.ticketId = ticketId;
         this.onMessageHandler = onMessage;
 
         if (
             this.ws &&
             (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) &&
-            sameTicket
+            this.ticketId === ticketId
         ) {
             this.ws.onmessage = onMessage;
             return;
         }
 
         // prevent opening multiple sockets for same ticket
-        if (this.connecting && sameTicket) {
+        if (this.connecting) {
             return;
         }
 
-        this.ticketId = ticketId;
-
-        // close any existing socket before attaching a new one
         if (this.ws) {
-            try {
-                this.ws.close();
-            } catch {
-                // ignore close errors
-            }
             this.ws = null;
         }
 
