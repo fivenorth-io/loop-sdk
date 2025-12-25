@@ -204,6 +204,7 @@ class LoopSDK {
         hooks: this.createProviderHooks(),
       });
       this.onAccept?.(this.provider);
+      this.connection.connectWebSocket(this.connectionInfo!.ticketId!, this.handleWebSocketMessage.bind(this));
       return Promise.resolve();
     }
   }
