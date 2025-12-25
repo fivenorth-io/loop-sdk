@@ -133,6 +133,10 @@ class LoopSDK {
       redirectUrl?: string, 
     };
   }) {
+    if (typeof window === 'undefined' || typeof document === 'undefined' || typeof localStorage === 'undefined') {
+      throw new Error('LoopSDK can only be initialized in a browser environment with localStorage support.');
+    }
+
     this.appName = appName;
     this.onAccept = onAccept || null;
     this.onReject = onReject || null;
@@ -157,7 +161,6 @@ class LoopSDK {
     if (!connectionInfo) { return; }
 
     this.connectionInfo = connectionInfo;
-    console.log('Connection info:', connectionInfo.toJson());
     if (!this.connectionInfo.authorized()) { return; }
 
     try {
@@ -169,9 +172,6 @@ class LoopSDK {
         connectionInfo.clear();
         return;
       }
-
-
-      console.log('Connection info:', connectionInfo.toJson());
 
       this.connectionInfo = connectionInfo;
     } catch (error) {
@@ -185,10 +185,6 @@ class LoopSDK {
 
   // auto connect attempt to establish a connection without user interaction if detected a valid session aleady exists
   async autoConnect(): Promise<void> {
-    if (typeof window === 'undefined') {
-      console.warn('LoopSDK.connect() can only be called in a browser environment.');
-      return;
-    }
     if (!this.connection) {
       throw new Error('SDK not initialized. Call init() first.');
     }
@@ -213,10 +209,6 @@ class LoopSDK {
   }
 
   async connect() {
-    if (typeof window === 'undefined') {
-      console.warn('LoopSDK.connect() can only be called in a browser environment.');
-      return;
-    }
     if (!this.connection) {
       throw new Error('SDK not initialized. Call init() first.');
     }
@@ -390,10 +382,6 @@ class LoopSDK {
     return window.open(url, '_blank', 'noopener,noreferrer');
   }
   private showQrCode(url: string) {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-      return;
-    }
-
     QRCode.toDataURL(url, (err, dataUrl) => {
       if (err) {
         console.error('Failed to generate QR code', err);
@@ -457,14 +445,8 @@ class LoopSDK {
   }
 
   logout() {
-    const cached = this.getCachedConnection();
-    const hadConnected = Boolean(this.provider || cached?.authToken);
+    this.connectionInfo?.clear();
 
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('loop_connect');
-    }
-
-    this.ticketId = null;
     this.provider = null;
     this.connectState.status = 'init';
     this.connection?.ws?.close();
@@ -491,26 +473,6 @@ class LoopSDK {
         }
       },
     };
-  }
-
-  private async tryResumePendingTicket(): Promise<boolean> {
-    // user initiates connect() with cached ticket but no verified session
-    const cached = this.getCachedConnection();
-    if (!cached || !cached.ticketId) {
-      return false;
-    }
-
-    if (!this.connection) {
-      console.warn('[LoopSDK] Connection not initialized; cannot resume pending ticket.');
-      return false;
-    }
-
-    this.ticketId = cached.ticketId;
-    const connectUrl = this.buildConnectUrl(cached.ticketId);
-    this.showQrCode(connectUrl);
-    this.connection.connectWebSocket(cached.ticketId, this.handleWebSocketMessage.bind(this));
-    this.connectState.status = 'connecting';
-    return true;
   }
 }
 
