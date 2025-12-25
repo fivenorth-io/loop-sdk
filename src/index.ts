@@ -284,10 +284,10 @@ class LoopSDK {
       }
     } else if (message.type === MessageType.HANDSHAKE_REJECT) {
       console.log('[LoopSDK] Entering HANDSHAKE_REJECT flow');
-      localStorage.removeItem('loop_connect');
       this.connection?.ws?.close();
       this.onReject?.();
       this.hideQrCode();
+      this.connectionInfo?.clear()
       this.connectState.status = 'init';
 
       console.log('[LoopSDK] HANDSHAKE_REJECT: closing popup (if exists)');
