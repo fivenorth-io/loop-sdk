@@ -1,6 +1,7 @@
 import type { Network, Account, Holding, TransferRequest, PreparedTransferPayload, ConnectTransferResponse } from './types';
 import { UnauthorizedError } from './errors';
 
+
 export class Connection {
     public walletUrl: string = 'https://cantonloop.com';
     public apiUrl: string = 'https://cantonloop.com';

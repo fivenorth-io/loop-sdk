@@ -7,6 +7,87 @@ import type { ProviderHooks } from './provider';
 import { LoopWallet } from './wallet';
 import { extractErrorCode, isUnauthCode, UnauthorizedError } from './errors';
 
+const STORAGE_KEY_LOOP_CONNECT = 'loop_connect';
+
+class ConnectionInfo  {
+  public sessionId: string;
+  public ticketId?: string;
+  public authToken?: string;
+  public partyId?: string;
+  public publicKey?: string;
+  public email?: string;
+
+  constructor({ sessionId, ticketId, authToken, partyId, publicKey, email }: {  sessionId: string, ticketId?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string }) {
+    this.sessionId = sessionId;
+    this.ticketId = ticketId;
+    this.authToken = authToken;
+    this.partyId = partyId;
+    this.publicKey = publicKey;
+    this.email = email;
+  }
+
+  setTicketId(ticketId: string): void {
+    this.ticketId = ticketId;
+    this.save()
+  }
+
+  save(): void {
+    localStorage.setItem('loop_connect', this.toJson());
+  }
+
+  public toJson(): string {
+    return JSON.stringify({
+      sessionId: this.sessionId,
+      ticketId: this.ticketId,
+      authToken: this.authToken,
+      partyId: this.partyId,
+      publicKey: this.publicKey,
+      email: this.email,
+    });
+  }
+
+  validate(): boolean {
+    return this.ticketId !== undefined && this.sessionId !== undefined;
+  }
+
+  authorized(): boolean {
+    return this.ticketId !== undefined && this.sessionId !== undefined && this.authToken !== undefined && this.partyId !== undefined && this.publicKey !== undefined;
+  }
+
+  clear(): void {
+    localStorage.removeItem(STORAGE_KEY_LOOP_CONNECT);
+
+    this.sessionId = generateRequestId();
+
+    this.ticketId = undefined;
+    this.authToken = undefined;
+    this.partyId = undefined;
+    this.publicKey = undefined;
+    this.email = undefined;
+  }
+
+  static fromStorage(): ConnectionInfo {
+    const existingConnectionRaw = localStorage.getItem(STORAGE_KEY_LOOP_CONNECT);
+
+    if (!existingConnectionRaw) {
+      return new ConnectionInfo({ sessionId: generateRequestId() });
+    }
+
+    let connectionInfo: ConnectionInfo | null = null;
+
+    try {
+      connectionInfo = new ConnectionInfo(JSON.parse(existingConnectionRaw));
+    } catch (error) {
+      console.error('Failed to parse existing connection info, local storage is corrupted.', error);
+      localStorage.removeItem(STORAGE_KEY_LOOP_CONNECT);
+
+      connectionInfo = new ConnectionInfo({ sessionId: generateRequestId() });
+    }
+
+    return connectionInfo;
+  }
+}
+
 class LoopSDK {
   private connectState: { status: 'init' | 'connecting' | 'connected'; promise: Promise<void> | null } = {
     status: 'init',
@@ -15,6 +96,7 @@ class LoopSDK {
   private version: string = '0.0.1';
   private appName: string = 'Unknown';
   private connection: Connection | null = null;
+  private connectionInfo: ConnectionInfo | null = null;
   private provider: Provider | null = null;
   private openMode: 'popup' | 'tab' = 'popup';
   private requestSigningMode: 'popup' | 'tab' = 'popup';
@@ -24,7 +106,6 @@ class LoopSDK {
   private onAccept: ((provider: Provider) => void) | null = null;
   private onReject: (() => void) | null = null;
   private overlay: HTMLDivElement | null = null;
-  private ticketId: string | null = null;
   public wallet: Wallet;
 
   constructor() {
@@ -70,6 +151,67 @@ class LoopSDK {
     this.connection = new Connection({ network, walletUrl, apiUrl });
   }
 
+  private async loadConnectionInfo(): Promise<void> {
+    const connectionInfo = ConnectionInfo.fromStorage();
+
+    if (!connectionInfo) { return; }
+
+    this.connectionInfo = connectionInfo;
+    console.log('Connection info:', connectionInfo.toJson());
+    if (!this.connectionInfo.authorized()) { return; }
+
+    try {
+      // when authorized, authToken is always defined
+      const verifiedAccount = await this.connection?.verifySession(connectionInfo.authToken!);
+      if (!verifiedAccount || verifiedAccount?.party_id !== connectionInfo.partyId) {
+        console.warn('[LoopSDK] Stored partyId does not match verified account. Clearing cached session.');
+        // this.logout();
+        connectionInfo.clear();
+        return;
+      }
+
+
+      console.log('Connection info:', connectionInfo.toJson());
+
+      this.connectionInfo = connectionInfo;
+    } catch (error) {
+      console.error('Failed to verify session.', error);
+      // Depend on this kind of error we will clear out session or not, for now let just clear out
+      // this.logout();
+      // TODO: only clear on 401 or 403
+      connectionInfo.clear();
+    }
+  }
+
+  // auto connect attempt to establish a connection without user interaction if detected a valid session aleady exists
+  async autoConnect(): Promise<void> {
+    if (typeof window === 'undefined') {
+      console.warn('LoopSDK.connect() can only be called in a browser environment.');
+      return;
+    }
+    if (!this.connection) {
+      throw new Error('SDK not initialized. Call init() first.');
+    }
+
+    await this.loadConnectionInfo();
+    if (!this.connectionInfo) {
+      throw new Error('No valid session found. Call init() first.');
+    }
+
+    if (this.connectionInfo.authorized()) {
+      this.provider = new Provider({ 
+        connection: this.connection, 
+        party_id: this.connectionInfo!.partyId!, 
+        auth_token: this.connectionInfo!.authToken!, 
+        public_key: this.connectionInfo!.publicKey!, 
+        email: this.connectionInfo!.email!,
+        hooks: this.createProviderHooks(),
+      });
+      this.onAccept?.(this.provider);
+      return Promise.resolve();
+    }
+  }
+
   async connect() {
     if (typeof window === 'undefined') {
       console.warn('LoopSDK.connect() can only be called in a browser environment.');
@@ -79,69 +221,27 @@ class LoopSDK {
       throw new Error('SDK not initialized. Call init() first.');
     }
 
-    if (this.connectState.status === 'connected' || this.provider) {
+    await this.autoConnect();
+
+    if (this.connectionInfo && this.connectionInfo.authorized()) {
+      // if successfully connected from autoConnect, return early nothing we need to do
+      // if the auto connect attempt failed, we will proceed to the connect flow with qr code
       return;
     }
 
-    if (this.connectState.status === 'connecting') {
-      await this.connectState.promise;
-      return;
-    }
+    try {
+        const { ticket_id: ticketId } = await this.connection.getTicket(this.appName, this.connectionInfo!.sessionId, this.version);
 
-    // try to restore valid sessioin
-    if (await this.tryRestoreValidSession()) {
-      return;
-    }
-
-    // cached ticket, but no valid session
-    if (await this.tryResumePendingTicket()) {
-      return;
-    }
-
-    // create new ticket
-    const sessionId = generateRequestId();
-
-    // prevent double-connect
-    this.connectState.status = 'connecting';
-    const connectPromise = (async () => {
-      const connection = this.connection;
-      if (!connection) {
-        throw new Error('Connection not initialized');
-      }
-      try {
-        const { ticket_id: ticketId } = await connection.getTicket(this.appName, sessionId, this.version);
-        this.ticketId = ticketId;
-
-        localStorage.setItem('loop_connect', JSON.stringify({ sessionId, ticketId }));
+        this.connectionInfo!.setTicketId(ticketId);
         
         const connectUrl = this.buildConnectUrl(ticketId);
         this.showQrCode(connectUrl);
 
-        connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
-      } catch (error) {
+        this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
+    } catch (error) {
         console.error(error);
-        this.connectState.status = 'init';
-      } finally {
-        this.connectState.promise = null;
-      }
-    })();
-    this.connectState.promise = connectPromise;
-
-    await connectPromise;
-  }
-
-  // autoconnects if valid session exists
-  async autoConnect(): Promise<Provider | null> {
-    if (typeof window === 'undefined') {
-      console.warn('LoopSDK.autoConnect() can only be called in a browser environment.');
-      return null;
+        return;
     }
-    if (!this.connection) {
-      throw new Error('SDK not initialized. Call init() first.');
-    }
-
-    const restored = await this.tryRestoreValidSession();
-    return restored ? this.provider : null;
   }
 
   private handleWebSocketMessage(event: MessageEvent) {
@@ -160,36 +260,33 @@ class LoopSDK {
       console.log('[LoopSDK] Entering HANDSHAKE_ACCEPT flow');
       const { authToken, partyId, publicKey, email } = message.payload || {};
       if (authToken && partyId && publicKey) {
-            this.provider = new Provider({ 
-              connection: this.connection!, 
-              party_id: partyId, 
-              auth_token: authToken, 
-              public_key: publicKey, 
-              email,
-              hooks: this.createProviderHooks(),
-            });
+        this.provider = new Provider({ 
+          connection: this.connection!, 
+          party_id: partyId, 
+          auth_token: authToken, 
+          public_key: publicKey, 
+          email,
+          hooks: this.createProviderHooks(),
+        });
 
-        const connectionInfoRaw = localStorage.getItem('loop_connect');
-        if (connectionInfoRaw) {
-          try {
-            const connectionInfo = JSON.parse(connectionInfoRaw);
-            this.ticketId = connectionInfo.ticketId || this.ticketId;
-            connectionInfo.authToken = authToken;
-            connectionInfo.partyId = partyId;
-            connectionInfo.publicKey = publicKey;
-            connectionInfo.email = email;
-            localStorage.setItem('loop_connect', JSON.stringify(connectionInfo));
-            this.connectState.status = 'connected';
-            this.onAccept?.(this.provider);
-            this.hideQrCode();
-            this.connection?.connectWebSocket(connectionInfo.ticketId, this.handleWebSocketMessage.bind(this));
+        try {
+          // By the time this code hit, connectionInfo is already set
+          this.connectionInfo!.authToken = authToken;
+          this.connectionInfo!.partyId = partyId;
+          this.connectionInfo!.publicKey = publicKey;
+          this.connectionInfo!.email = email;
+          this.connectionInfo!.save();
 
-            console.log('[LoopSDK] HANDSHAKE_ACCEPT: closing popup (if exists)');
-            this.popupWindow = null;
+          this.connectState.status = 'connected';
+          this.hideQrCode();
+          this.onAccept?.(this.provider);
+          this.connection?.connectWebSocket(this.connectionInfo!.ticketId!, this.handleWebSocketMessage.bind(this));
 
-          } catch (error) {
-            console.error('Failed to update local storage with auth token.', error);
-          }
+          console.log('[LoopSDK] HANDSHAKE_ACCEPT: closing popup (if exists)');
+          this.popupWindow = null;
+
+        } catch (error) {
+          console.error('Failed to update local storage with auth token.', error);
         }
       }
     } else if (message.type === MessageType.HANDSHAKE_REJECT) {
@@ -227,7 +324,7 @@ class LoopSDK {
     if (typeof window === 'undefined') {
       return null;
     }
-    if (!this.ticketId) {
+    if (!this.connectionInfo?.ticketId) {
       console.warn('[LoopSDK] Cannot open wallet UI for request: no active ticket.');
       return null;
     }
@@ -394,76 +491,6 @@ class LoopSDK {
         }
       },
     };
-  }
-
-  private getCachedConnection(): any | null {
-    let existingConnectionRaw: string | null = null;
-    try {
-      existingConnectionRaw = localStorage.getItem('loop_connect');
-    } catch (error) {
-      console.warn('[LoopSDK] localStorage is not available; skipping cached session.', error);
-      return null;
-    }
-    if (!existingConnectionRaw) {
-      return null;
-    }
-    try {
-      return JSON.parse(existingConnectionRaw);
-    } catch (error) {
-      console.error('Failed to parse existing connection info, creating a new one.', error);
-      localStorage.removeItem('loop_connect');
-      return null;
-    }
-  }
-
-  private async tryRestoreValidSession(): Promise<boolean> {
-    if (!this.connection) {
-      return false;
-    }
-
-    const cached = this.getCachedConnection();
-    if (!cached) {
-      return false;
-    }
-
-    const { ticketId, authToken, partyId, publicKey, email } = cached;
-    if (!(authToken && partyId && publicKey)) {
-      return false;
-    }
-
-    try {
-      const verifiedAccount = await this.connection.verifySession(authToken);
-      if (verifiedAccount.party_id !== partyId) {
-        console.warn('[LoopSDK] Stored partyId does not match verified account. Clearing cached session.');
-        this.logout();
-        return false;
-      }
-
-      this.provider = new Provider({ 
-        connection: this.connection!, 
-        party_id: partyId, 
-        auth_token: authToken, 
-        public_key: publicKey, 
-        email,
-        hooks: this.createProviderHooks(),
-      });
-      this.ticketId = ticketId;
-      this.connectState.status = 'connected';
-      this.onAccept?.(this.provider);
-      if (ticketId) {
-        this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
-      }
-      return true;
-    } catch (err) {
-      const isUnauthorized = err instanceof UnauthorizedError;
-      if (isUnauthorized) {
-        console.error('[LoopSDK] Auto-login failed, session is invalid.', err);
-        this.logout();
-        return false;
-      }
-      console.warn('[LoopSDK] Auto-login failed due to transient error; keeping cached session.', err);
-      return false;
-    }
   }
 
   private async tryResumePendingTicket(): Promise<boolean> {
