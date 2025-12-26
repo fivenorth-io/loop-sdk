@@ -1,7 +1,16 @@
 # Changelog
 
+## 0.7.3 (2025-12-24)
+Full Changelog: [v0.7.2...v0.7.3](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.2...v0.7.3)
+
+### Features
+
+* **sdk:** add `autoconnect` and `logout` method on `loop` object to auto login on page load and support log out properly
+* **demo:** add auto login and a log out button
+
+
 ## 0.7.2 (2025-12-21)
-Full Changelog: [v0.7.1...v0.7.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.0...v0.7.1)
+Full Changelog: [v0.7.1...v0.7.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.1...v0.7.2)
 
 ### Features
 

@@ -51,7 +51,13 @@ This will:
 
 ---
 
-### `loop.disconnect()`
+### `loop.autoconnect()`
+
+Automatically connect to the wallet and sign user in if an previous sessionis still valid. This flow will happen sitenly and won't show the QR code if user has not login yet. Therefore, this is ideal to run on pageload without disruping the dapp UI/UX.
+
+---
+
+### `loop.logout()`
 
 Clears cached session (localStorage) and resets internal state.
 
