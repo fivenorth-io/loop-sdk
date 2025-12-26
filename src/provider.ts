@@ -1,7 +1,7 @@
 import type { Connection } from './connection';
 import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec } from './types';
 import { MessageType, type Account } from './types';
-import { RejectRequestError, RequestTimeoutError } from './errors';
+import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
 export type RequestFinishStatus = 'success' | 'rejected' | 'timeout' | 'error';
@@ -10,9 +10,10 @@ export type RequestFinishArgs = {
   messageType: MessageType;
   requestLabel?: string;
   requestContext?: unknown;
+  errorCode?: string;
 };
 export type ProviderHooks = {
-  onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown;
+  onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown | Promise<unknown>;
   onRequestFinish?: (args: RequestFinishArgs) => void;
 };
 
@@ -87,6 +88,8 @@ export class Provider {
     // handle all responses from the websocket except for handshake_accept, handshake_reject
     public handleResponse(message: any) {
         console.log('Received response:', message);
+
+
         if (message.request_id) {
             this.requests.set(message.request_id, message);
         }
@@ -169,14 +172,12 @@ export class Provider {
 
     private async ensureConnected(): Promise<void> {
         if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
-            return;
+            return Promise.resolve();
         }
 
-        if (typeof this.connection.reconnectWebSocket === 'function') {
-            await this.connection.reconnectWebSocket();
-            if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
-                return;
-            }
+        await this.connection.reconnect();
+        if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
+            return;
         }
 
         throw new Error('Not connected.');
@@ -189,12 +190,15 @@ export class Provider {
     ): Promise<any> {
         return new Promise((resolve, reject) => {
             const requestId = generateRequestId();
-            const requestContext = this.hooks?.onRequestStart?.(messageType, options?.requestLabel);
+            let requestContext: unknown;
 
             const ensure = async () => {
                 try {
                     await this.ensureConnected();
+
+                    requestContext = await this.hooks?.onRequestStart?.(messageType, options?.requestLabel);
                 } catch (error) {
+                    console.error('[LoopSDK] error when checking connection status', error);
                     this.hooks?.onRequestFinish?.({
                         status: 'error',
                         messageType,
@@ -222,7 +226,13 @@ export class Provider {
                     }
                 }
 
-                this.connection.ws!.send(JSON.stringify(requestBody));
+                try {
+                  this.connection.ws!.send(JSON.stringify(requestBody));
+                } catch (error) {
+                  console.error('[LoopSDK] error when sending request', error);
+                  reject(error);
+                  return;
+                }
 
                 const intervalTime = 300; // 300ms
                 let elapsedTime = 0;
@@ -233,6 +243,18 @@ export class Provider {
                     if (response) {
                         clearInterval(intervalId);
                         this.requests.delete(requestId);
+                        const code = extractErrorCode(response);
+                        if (isUnauthCode(code)) {
+                            this.hooks?.onRequestFinish?.({
+                                status: 'error',
+                                messageType,
+                                requestLabel: options?.requestLabel,
+                                requestContext,
+                                errorCode: code,
+                            });
+                            reject(new UnauthorizedError(code));
+                            return;
+                        }
                         if (response.type === MessageType.REJECT_REQUEST) {
                             this.hooks?.onRequestFinish?.({
                                 status: 'rejected',

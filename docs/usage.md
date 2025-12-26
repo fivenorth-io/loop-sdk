@@ -77,6 +77,17 @@ This opens a QR modal for the user to scan with their Loop wallet.
 
 If you set `requestSigningMode` to `'popup'` (or `'tab'`), the SDK will also open the wallet dashboard for signing/transaction requests and auto-close the popup when the wallet responds.
 
+Usually you will want to run this when user initiate some action and they had not login to wallet yet. To automatically connect on pageload, follow the next section.
+
+### Auto reconnect on page reload
+
+A common pattern is if user already connect, approved the connection, and have a valid session, then they close the browser or the tab, later on when user resume to the app, we want to automatically connect them on page load. If user has not connect wallet, or has not approved the connection previously, we do not want to show them the QR code onboarding screen because this flow automatically on page reload and will disrupted user experience. To achive that, simply run this code
+
+
+```
+await loop.autoConnect()
+```
+
 ---
 
 ## 3. Using the Provider

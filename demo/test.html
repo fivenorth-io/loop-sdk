@@ -15,6 +15,7 @@
         import { loop } from './dist/index.js';
 
         const html = htm.bind(h);
+        const networkEnv = 'local';
 
         const getDamlCommandTemplate = (partyId = '') => ({
             commands: [{
@@ -93,14 +94,14 @@
             const [customTxMessage, setCustomTxMessage] = useState('');
             const [accountInfo, setAccountInfo] = useState(null);
 
-            useEffect(() => {
+            useEffect(async () => {
                 loop.init({
-                    appName: 'My Test DApp',
-                    network: 'local',
+                    appName: 'Demo DAPP',
+                    network: networkEnv,
                     options: {
                         openMode: 'popup', // 'popup' (default) or 'tab'
                         requestSigningMode: 'popup', // 'popup' (default) | 'tab'
-                        redirectUrl: 'https://myapp.com/after-connect', // optional redirect after approval
+                        redirectUrl: 'https://example.com/after-connect', // optional redirect after approval
                     },
                     onAccept: (prov) => {
                         setProvider(prov);
@@ -114,6 +115,8 @@
                         setHoldings([]);
                     },
                 });
+
+                await loop.autoConnect();
             }, []);
 
             useEffect(() => {
@@ -158,6 +161,13 @@
                 } finally {
                     setIsLoading(false);
                 }
+            };
+
+            const handleLogout = () => {
+                loop.logout();
+                setAccount(null);
+                setProvider(null);
+                setHoldings([]);
             };
 
             const handleWalletTransfer = async () => {
@@ -335,6 +345,10 @@
                             <h2>Connected!</h2>
                             <p>Party ID: ${account.partyId}</p>
                             <p>Puplic Key: ${account.publicKey}</p>
+
+                            <button onClick=${handleLogout}>
+                                Logout
+                            </button>
 
                             <button onClick=${handleGetAccount} disabled=${isLoading}>
                                 ${isLoading ? 'Loading...' : 'Get Account Info'}
