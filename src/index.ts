@@ -9,7 +9,7 @@ import { extractErrorCode, isUnauthCode, UnauthorizedError } from './errors';
 import { SessionInfo } from './session';
 
 class LoopSDK {
-  private version: string = '0.0.1';
+  private version: string = '0.7.3';
   private appName: string = 'Unknown';
   private connection: Connection | null = null;
   private session: SessionInfo | null = null;

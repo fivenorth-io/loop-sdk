@@ -105,6 +105,4 @@ export class SessionInfo  {
       email: this.email,
     });
   }
-
-
 }

@@ -14,7 +14,6 @@ export type Account = {
   usdc_bridge_access?: UsdcBridgeAccessType;
 };
 
-
 export enum MessageType {
   HANDSHAKE_ACCEPT = 'handshake_accept',
   HANDSHAKE_REJECT = 'handshake_reject',
