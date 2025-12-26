@@ -163,6 +163,13 @@
                 }
             };
 
+            const handleLogout = () => {
+                loop.logout();
+                setAccount(null);
+                setProvider(null);
+                setHoldings([]);
+            };
+
             const handleWalletTransfer = async () => {
                 if (!loop || !loop.wallet) {
                     alert('SDK not ready');
@@ -338,6 +345,10 @@
                             <h2>Connected!</h2>
                             <p>Party ID: ${account.partyId}</p>
                             <p>Puplic Key: ${account.publicKey}</p>
+
+                            <button onClick=${handleLogout}>
+                                Logout
+                            </button>
 
                             <button onClick=${handleGetAccount} disabled=${isLoading}>
                                 ${isLoading ? 'Loading...' : 'Get Account Info'}

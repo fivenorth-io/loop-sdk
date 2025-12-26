@@ -200,6 +200,7 @@ export class Provider {
 
                     requestContext = await this.hooks?.onRequestStart?.(messageType, options?.requestLabel);
                 } catch (error) {
+                    console.error('[LoopSDK] error when checking connection status', error);
                     this.hooks?.onRequestFinish?.({
                         status: 'error',
                         messageType,
@@ -227,7 +228,14 @@ export class Provider {
                     }
                 }
 
-                this.connection.ws!.send(JSON.stringify(requestBody));
+                console.debug('[LoopSDK] sending request', requestBody, this.connection.ws);
+                try {
+                  this.connection.ws!.send(JSON.stringify(requestBody));
+                } catch (error) {
+                  console.error('[LoopSDK] error when sending request', error);
+                  reject(error);
+                  return;
+                }
 
                 const intervalTime = 300; // 300ms
                 let elapsedTime = 0;
