@@ -8,7 +8,7 @@
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
 ## v0.7.3
-- Add `autoconnect` and `logout` methods to enhance user experience on auto login on page load and control wallet logout flow
+- Add `autoConnect` and `logout` methods to enhance user experience on auto login on page load and control wallet logout flow
 
 ## v0.7.2
 - Expose `has_preapproval`, `has_merge_delegation` and `usdc_bridge_access` to account object for dapp to check and ensure an account is setup to avoid UTXO size growing up.

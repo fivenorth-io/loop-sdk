@@ -85,7 +85,7 @@ A common pattern is if user already connect, approved the connection, and have a
 
 
 ```
-await loop.autoconnect()
+await loop.autoConnect()
 ```
 
 ---
