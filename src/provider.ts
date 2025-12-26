@@ -172,14 +172,12 @@ export class Provider {
 
     private async ensureConnected(): Promise<void> {
         if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
-            return;
+            return Promise.resolve();
         }
 
-        if (typeof this.connection.reconnectWebSocket === 'function') {
-            await this.connection.reconnectWebSocket();
-            if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
-                return;
-            }
+        await this.connection.reconnect();
+        if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
+            return;
         }
 
         throw new Error('Not connected.');
@@ -228,7 +226,6 @@ export class Provider {
                     }
                 }
 
-                console.debug('[LoopSDK] sending request', requestBody, this.connection.ws);
                 try {
                   this.connection.ws!.send(JSON.stringify(requestBody));
                 } catch (error) {

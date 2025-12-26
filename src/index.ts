@@ -91,8 +91,7 @@ class LoopSDK {
       const verifiedAccount = await this.connection?.verifySession(this.session.authToken!);
       if (!verifiedAccount || verifiedAccount?.party_id !== this.session.partyId) {
         console.warn('[LoopSDK] Stored partyId does not match verified account. Clearing cached session.');
-        // this.logout();
-        this.session.reset();
+        this.logout();
         return;
       }
 
@@ -142,6 +141,10 @@ class LoopSDK {
     }
 
     await this.autoConnect();
+
+    if (this.connection?.connectInProgress() === true) {
+      return;
+    }
 
     if (this.session && this.session.isAuthorized()) {
       // if successfully connected from autoConnect, return early nothing we need to do

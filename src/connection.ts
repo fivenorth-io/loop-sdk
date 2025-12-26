@@ -9,8 +9,8 @@ export class Connection {
     private network: Network = 'main';
     private ticketId: string | null = null;
     private onMessageHandler: ((event: MessageEvent) => void) | null = null;
-    private connecting: boolean = false;
     private reconnectPromise: Promise<void> | null = null;
+    private status: 'connected' | 'disconnected' | 'connecting' = 'disconnected';
 
     constructor({ network, walletUrl, apiUrl }: { network?: Network, walletUrl?: string, apiUrl?: string }) {
         this.network = network || 'main';
@@ -45,6 +45,10 @@ export class Connection {
         if (apiUrl) {
             this.apiUrl = apiUrl;
         }
+    }
+
+    connectInProgress(): boolean {
+        return this.status === 'connecting' || this.status === 'connected';
     }
 
     async getTicket(appName: string, sessionId: string, version: string): Promise<{ ticket_id: string }> {
@@ -182,82 +186,36 @@ export class Connection {
         return account;
     }
 
-    private websocketUrl(ticketId: string): string {
-        return `${this.network === 'local' ? 'ws' : 'wss'}://${this.apiUrl.replace('https://', '').replace('http://', '')}/api/v1/.connect/pair/ws/${ticketId}`;
-    }
-
-    private attachWebSocket(
-        ticketId: string,
-        onMessage: (event: MessageEvent) => void,
-        onOpen?: () => void,
-        onError?: (event: Event) => void,
-        onClose?: (event: CloseEvent) => void,
-    ) {
-        const wsUrl = this.websocketUrl(ticketId);
-        const ws = new WebSocket(wsUrl);
-
-        ws.onmessage = onMessage;
-        ws.onopen = () => {
-            console.log('Connected to ticket server.');
-            onOpen?.();
-        };
-        ws.onclose = (event: CloseEvent) => {
-            if (this.ws === ws) {
-                this.ws = null;
-            }
-            console.log('Disconnected from ticket server.');
-            onClose?.(event);
-        };
-        ws.onerror = (event) => {
-            if (this.ws === ws) {
-                this.ws = null;
-            }
-            onError?.(event);
-        };
-
-        this.ws = ws;
-    }
-
     connectWebSocket(ticketId: string, onMessage: (event: MessageEvent) => void) {
-        this.ticketId = ticketId;
-        this.onMessageHandler = onMessage;
-
         if (
             this.ws &&
             (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) &&
-            this.ticketId === ticketId
+            this.ticketId !== ticketId
         ) {
-            this.ws.onmessage = onMessage;
-            return;
-        }
-
-        // prevent opening multiple sockets for same ticket
-        if (this.connecting) {
-            return;
-        }
-
-        if (this.ws) {
+            // When connecting to a new ticket, we need to close the existing socket first
+            this.ws.close();
             this.ws = null;
         }
 
-        this.connecting = true;
-        const clearConnecting = () => {
-            this.connecting = false;
-        };
-        this.attachWebSocket(ticketId, onMessage, clearConnecting, clearConnecting, clearConnecting);
-    }
+        // prevent opening multiple sockets for same ticket
+        if (this.status === 'connecting' || this.status === 'connected') {
+            return;
+        }
 
-    private reconnect(): Promise<void> {
+        // set the message handler and ticket id to re-use for reconnecting
+        this.onMessageHandler = onMessage;
+        this.ticketId = ticketId;
+
+        this.status = 'connecting';
+        this.attachWebSocket(ticketId, onMessage);
+    }
+   
+    reconnect(): Promise<void> {
         if (!this.ticketId || !this.onMessageHandler) {
             return Promise.reject(new Error('Cannot reconnect without a known ticket.'));
         }
 
-        // Guard: if a reconnect is already in progress, share it.
-        if (this.reconnectPromise) {
-            return this.reconnectPromise;
-        }
-
-        this.reconnectPromise = new Promise<void>((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             let opened = false;
             this.attachWebSocket(
                 this.ticketId!,
@@ -279,19 +237,49 @@ export class Connection {
                     reject(new Error('Failed to reconnect to ticket server.'));
                 },
             );
-        }).finally(() => {
-            // clear the cached promise once done
-            this.reconnectPromise = null;
         });
-
-        return this.reconnectPromise;
     }
 
-    async reconnectWebSocket(): Promise<void> {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            return;
-        }
+    private websocketUrl(ticketId: string): string {
+        return `${this.network === 'local' ? 'ws' : 'wss'}://${this.apiUrl.replace('https://', '').replace('http://', '')}/api/v1/.connect/pair/ws/${encodeURIComponent(ticketId)}`;
+    }
 
-        return this.reconnect();
+    // attachWebSocket is a helper function to setup even handler on a websocket object and assign to our ws 
+    private attachWebSocket(
+        ticketId: string,
+        onMessage: (event: MessageEvent) => void,
+        onOpen?: () => void,
+        onError?: (event: Event) => void,
+        onClose?: (event: CloseEvent) => void,
+    ) {
+        const wsUrl = this.websocketUrl(ticketId);
+        const ws = new WebSocket(wsUrl);
+
+        ws.onmessage = onMessage;
+        ws.onopen = () => {
+            this.status = 'connected';
+            console.log('[LoopSDK] Connected to ticket server.');
+            onOpen?.();
+        };
+        ws.onclose = (event: CloseEvent) => {
+            this.status = 'disconnected';
+            if (this.ws === ws) {
+                this.ws = null;
+            }
+            console.log('[LoopSDK] Disconnected from ticket server.');
+            onClose?.(event);
+        };
+        ws.onerror = (event) => {
+            // if it's already close, another close is a no-op
+            this.status = 'disconnected';
+            ws.close();
+
+            if (this.ws === ws) {
+                this.ws = null;
+            }
+            onError?.(event);
+        };
+
+        this.ws = ws;
     }
 }

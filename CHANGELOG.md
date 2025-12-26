@@ -5,7 +5,7 @@ Full Changelog: [v0.7.2...v0.7.3](https://github.com/fivenorth-io/loop-sdk/compa
 
 ### Features
 
-* **sdk:** add `autoconnect` and `logout` method on `loop` object to auto login on page load and support log out properly
+* **sdk:** add `autoConnect` and `logout` method on `loop` object to auto login on page load and support log out properly
 * **demo:** add auto login and a log out button
 
 
