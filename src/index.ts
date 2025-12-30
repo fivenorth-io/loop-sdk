@@ -460,7 +460,8 @@ class LoopSDK {
 			}
 
 			const overlay = document.createElement("div");
-			overlay.className = "loop-connect";
+			overlay.id = "loop-sdk-connect-overlay";
+			overlay.className = "loop-sdk-connect-overlay loop-connect";
 
 			const dialog = document.createElement("dialog");
 			dialog.open = true;
@@ -524,7 +525,7 @@ class LoopSDK {
 
 			overlay.addEventListener("click", (e) => {
 				if (e.target === overlay) {
-					this.hideQrCode(true);
+					this.hideQrCode();
 				}
 			});
 
