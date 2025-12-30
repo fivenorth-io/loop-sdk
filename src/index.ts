@@ -1,409 +1,582 @@
-import QRCode from 'qrcode';
-import type { Account, Network, TransferOptions, InstrumentSpec, Wallet } from './types';
-import { MessageType } from './types';
-import { Connection } from './connection';
-import { Provider, generateRequestId } from './provider';
-import type { ProviderHooks } from './provider';
-import { LoopWallet } from './wallet';
-import { extractErrorCode, isUnauthCode, UnauthorizedError } from './errors';
-import { SessionInfo } from './session';
+import QRCode from "qrcode";
+import { Connection } from "./connection";
+import { extractErrorCode, isUnauthCode, UnauthorizedError } from "./errors";
+import type { ProviderHooks } from "./provider";
+import { generateRequestId, Provider } from "./provider";
+import { SessionInfo } from "./session";
+import type {
+	Account,
+	InstrumentSpec,
+	Network,
+	TransferOptions,
+	Wallet,
+} from "./types";
+import { MessageType } from "./types";
+import { LoopWallet } from "./wallet";
 
 class LoopSDK {
-  private version: string = '0.7.3';
-  private appName: string = 'Unknown';
-  private connection: Connection | null = null;
-  private session: SessionInfo | null = null;
-  private provider: Provider | null = null;
-  private openMode: 'popup' | 'tab' = 'popup';
-  private requestSigningMode: 'popup' | 'tab' = 'popup';
-  private popupWindow: Window | null = null; 
-  private redirectUrl?: string;
+	private version: string = "0.7.3";
+	private appName: string = "Unknown";
+	private connection: Connection | null = null;
+	private session: SessionInfo | null = null;
+	private provider: Provider | null = null;
+	private openMode: "popup" | "tab" = "popup";
+	private requestSigningMode: "popup" | "tab" = "popup";
+	private popupWindow: Window | null = null;
+	private redirectUrl?: string;
 
-  private onAccept: ((provider: Provider) => void) | null = null;
-  private onReject: (() => void) | null = null;
-  private overlay: HTMLDivElement | null = null;
-  public wallet: Wallet;
+	private onAccept: ((provider: Provider) => void) | null = null;
+	private onReject: (() => void) | null = null;
+	private overlay: HTMLDivElement | null = null;
+	public wallet: Wallet;
 
-  constructor() {
-    this.wallet = new LoopWallet(() => this.provider);
-  }
+	constructor() {
+		this.wallet = new LoopWallet(() => this.provider);
+	}
 
-  init({ 
-    appName, 
-    network, 
-    walletUrl, 
-    apiUrl, 
-    onAccept, 
-    onReject,
-    options,  
-  }: { 
-    appName: string, 
-    network?: Network, 
-    walletUrl?: string, 
-    apiUrl?: string, 
-    onAccept?: (provider: Provider) => void, 
-    onReject?: () => void, 
-    options?: {
-      openMode?: 'popup' | 'tab' 
-      requestSigningMode?: 'popup' | 'tab',
-      redirectUrl?: string, 
-    };
-  }) {
-    if (typeof window === 'undefined' || typeof document === 'undefined' || typeof localStorage === 'undefined') {
-      throw new Error('LoopSDK can only be initialized in a browser environment with localStorage support.');
-    }
+	init({
+		appName,
+		network,
+		walletUrl,
+		apiUrl,
+		onAccept,
+		onReject,
+		options,
+	}: {
+		appName: string;
+		network?: Network;
+		walletUrl?: string;
+		apiUrl?: string;
+		onAccept?: (provider: Provider) => void;
+		onReject?: () => void;
+		options?: {
+			openMode?: "popup" | "tab";
+			requestSigningMode?: "popup" | "tab";
+			redirectUrl?: string;
+		};
+	}) {
+		if (
+			typeof window === "undefined" ||
+			typeof document === "undefined" ||
+			typeof localStorage === "undefined"
+		) {
+			throw new Error(
+				"LoopSDK can only be initialized in a browser environment with localStorage support.",
+			);
+		}
 
-    this.appName = appName;
-    this.onAccept = onAccept || null;
-    this.onReject = onReject || null;
+		this.appName = appName;
+		this.onAccept = onAccept || null;
+		this.onReject = onReject || null;
 
-    const resolvedOptions = {
-      openMode: 'popup' as 'popup' | 'tab',
-      requestSigningMode: 'popup' as 'popup' | 'tab',
-      redirectUrl: undefined as string | undefined,
-      ...(options ?? {}),
-    };
+		const resolvedOptions = {
+			openMode: "popup" as "popup" | "tab",
+			requestSigningMode: "popup" as "popup" | "tab",
+			redirectUrl: undefined as string | undefined,
+			...(options ?? {}),
+		};
 
-    this.openMode = resolvedOptions.openMode;
-    this.requestSigningMode = resolvedOptions.requestSigningMode;
-    this.redirectUrl = resolvedOptions.redirectUrl;
-    
-    this.connection = new Connection({ network, walletUrl, apiUrl });
-  }
+		this.openMode = resolvedOptions.openMode;
+		this.requestSigningMode = resolvedOptions.requestSigningMode;
+		this.redirectUrl = resolvedOptions.redirectUrl;
 
-  // attempt to load a session from storage if it exists, parse it and validate it
-  // if the session is valid, set the session object and return it
-  // otherwise, clear the session storage and initialize a new session
-  private async loadSessionInfo(): Promise<void> {
-    if (this.session) {
-      // session already loaded, no need to reload again
-      return;
-    }
+		this.connection = new Connection({ network, walletUrl, apiUrl });
+	}
 
-    this.session = SessionInfo.fromStorage();
+	// attempt to load a session from storage if it exists, parse it and validate it
+	// if the session is valid, set the session object and return it
+	// otherwise, clear the session storage and initialize a new session
+	private async loadSessionInfo(): Promise<void> {
+		if (this.session) {
+			// session already loaded, no need to reload again
+			return;
+		}
 
-    // At this stage, session is initialize fresh or from storage with existing preauth information
-    // If we had preauth information, we will proeed to verify it, if not, we will return early
-    if (!this.session.isPreAuthorized()) { return; }
+		this.session = SessionInfo.fromStorage();
 
-    try {
-      // when authorized, authToken is always defined
-      const verifiedAccount = await this.connection?.verifySession(this.session.authToken!);
-      if (!verifiedAccount || verifiedAccount?.party_id !== this.session.partyId) {
-        console.warn('[LoopSDK] Stored partyId does not match verified account. Clearing cached session.');
-        this.logout();
-        return;
-      }
+		// At this stage, session is initialize fresh or from storage with existing preauth information
+		// If we had preauth information, we will proeed to verify it, if not, we will return early
+		if (!this.session.isPreAuthorized()) {
+			return;
+		}
 
-      this.session.authorized();
-    } catch (err) {
-      if (err instanceof UnauthorizedError) { 
-        console.error('Unauthorized error when verifying session.', err);
-        this.session.reset();
-        return;
-      }
-      // This could be a network error or a server outage, we will not clear out the session
-      console.error('[LoopSDK] Failed to verify session.', err);
-      // re-raise the error to let upstream layer handle it
-      throw err;
-    }
-  }
+		try {
+			// when authorized, authToken is always defined
+			const verifiedAccount = await this.connection?.verifySession(
+				this.session.authToken!,
+			);
+			if (
+				!verifiedAccount ||
+				verifiedAccount?.party_id !== this.session.partyId
+			) {
+				console.warn(
+					"[LoopSDK] Stored partyId does not match verified account. Clearing cached session.",
+				);
+				this.logout();
+				return;
+			}
 
-  // auto connect attempts to establish a connection without user interaction if detected a valid session aleady exists
-  async autoConnect(): Promise<void> {
-    if (!this.connection) {
-      throw new Error('SDK not initialized. Call init() first.');
-    }
+			this.session.authorized();
+		} catch (err) {
+			if (err instanceof UnauthorizedError) {
+				console.error("Unauthorized error when verifying session.", err);
+				this.session.reset();
+				return;
+			}
+			// This could be a network error or a server outage, we will not clear out the session
+			console.error("[LoopSDK] Failed to verify session.", err);
+			// re-raise the error to let upstream layer handle it
+			throw err;
+		}
+	}
 
-    await this.loadSessionInfo();
-    if (!this.session) {
-      throw new Error('No valid session found. The network connection maynot available or the backend is not reachable.');
-    }
+	// auto connect attempts to establish a connection without user interaction if detected a valid session aleady exists
+	async autoConnect(): Promise<void> {
+		if (!this.connection) {
+			throw new Error("SDK not initialized. Call init() first.");
+		}
 
-    if (this.session.isAuthorized()) {
-      this.provider = new Provider({ 
-        connection: this.connection, 
-        party_id: this.session!.partyId!, 
-        auth_token: this.session!.authToken!, 
-        public_key: this.session!.publicKey!, 
-        email: this.session!.email!,
-        hooks: this.createProviderHooks(),
-      });
-      this.onAccept?.(this.provider);
-      this.connection.connectWebSocket(this.session!.ticketId!, this.handleWebSocketMessage.bind(this));
-      return Promise.resolve();
-    }
-  }
+		await this.loadSessionInfo();
+		if (!this.session) {
+			throw new Error(
+				"No valid session found. The network connection maynot available or the backend is not reachable.",
+			);
+		}
 
-  async connect() {
-    if (!this.connection) {
-      throw new Error('SDK not initialized. Call init() first.');
-    }
+		if (this.session.isAuthorized()) {
+			this.provider = new Provider({
+				connection: this.connection,
+				party_id: this.session!.partyId!,
+				auth_token: this.session!.authToken!,
+				public_key: this.session!.publicKey!,
+				email: this.session!.email!,
+				hooks: this.createProviderHooks(),
+			});
+			this.onAccept?.(this.provider);
+			this.connection.connectWebSocket(
+				this.session!.ticketId!,
+				this.handleWebSocketMessage.bind(this),
+			);
+			return Promise.resolve();
+		}
+	}
 
-    await this.autoConnect();
+	async connect() {
+		if (!this.connection) {
+			throw new Error("SDK not initialized. Call init() first.");
+		}
 
-    if (this.connection?.connectInProgress() === true) {
-      return;
-    }
+		await this.autoConnect();
 
-    if (this.session && this.session.isAuthorized()) {
-      // if successfully connected from autoConnect, return early nothing we need to do
-      // if the auto connect attempt failed, we will proceed to the connect flow with qr code
-      return;
-    }
+		if (this.connection?.connectInProgress() === true) {
+			return;
+		}
 
-    try {
-        const { ticket_id: ticketId } = await this.connection.getTicket(this.appName, this.session!.sessionId, this.version);
+		if (this.session && this.session.isAuthorized()) {
+			// if successfully connected from autoConnect, return early nothing we need to do
+			// if the auto connect attempt failed, we will proceed to the connect flow with qr code
+			return;
+		}
 
-        this.session!.setTicketId(ticketId);
-        
-        const connectUrl = this.buildConnectUrl(ticketId);
-        this.showQrCode(connectUrl);
+		try {
+			const { ticket_id: ticketId } = await this.connection.getTicket(
+				this.appName,
+				this.session!.sessionId,
+				this.version,
+			);
 
-        this.connection.connectWebSocket(ticketId, this.handleWebSocketMessage.bind(this));
-    } catch (error) {
-        console.error(error);
-        return;
-    }
-  }
+			this.session!.setTicketId(ticketId);
 
-  private handleWebSocketMessage(event: MessageEvent) {
-    const message = JSON.parse(event.data);
+			const connectUrl = this.buildConnectUrl(ticketId);
+			this.showQrCode(connectUrl);
 
-    const errCode = extractErrorCode(message);
+			this.connection.connectWebSocket(
+				ticketId,
+				this.handleWebSocketMessage.bind(this),
+			);
+		} catch (error) {
+			console.error(error);
+			return;
+		}
+	}
 
-    if (isUnauthCode(errCode)) {
-      console.warn('[LoopSDK] Detected session invalidation:', errCode, { message });
-      this.logout();
-      return;
-    }
+	private handleWebSocketMessage(event: MessageEvent) {
+		const message = JSON.parse(event.data);
 
-    console.log('[LoopSDK] WS message received:', message);
-    if (message.type === MessageType.HANDSHAKE_ACCEPT) {
-      console.log('[LoopSDK] Entering HANDSHAKE_ACCEPT flow');
-      const { authToken, partyId, publicKey, email } = message.payload || {};
-      if (authToken && partyId && publicKey) {
-        this.provider = new Provider({ 
-          connection: this.connection!, 
-          party_id: partyId, 
-          auth_token: authToken, 
-          public_key: publicKey, 
-          email,
-          hooks: this.createProviderHooks(),
-        });
+		const errCode = extractErrorCode(message);
 
-        try {
-          // By the time this code hit, session is already set
-          this.session!.authToken = authToken;
-          this.session!.partyId = partyId;
-          this.session!.publicKey = publicKey;
-          this.session!.email = email;
-          this.session!.authorized();
-          this.session!.save();
+		if (isUnauthCode(errCode)) {
+			console.warn("[LoopSDK] Detected session invalidation:", errCode, {
+				message,
+			});
+			this.logout();
+			return;
+		}
 
-          this.onAccept?.(this.provider);
-          this.hideQrCode();
+		console.log("[LoopSDK] WS message received:", message);
+		if (message.type === MessageType.HANDSHAKE_ACCEPT) {
+			console.log("[LoopSDK] Entering HANDSHAKE_ACCEPT flow");
+			const { authToken, partyId, publicKey, email } = message.payload || {};
+			if (authToken && partyId && publicKey) {
+				this.provider = new Provider({
+					connection: this.connection!,
+					party_id: partyId,
+					auth_token: authToken,
+					public_key: publicKey,
+					email,
+					hooks: this.createProviderHooks(),
+				});
 
-          console.log('[LoopSDK] HANDSHAKE_ACCEPT: closing popup (if exists)');
-          this.popupWindow = null;
+				try {
+					// By the time this code hit, session is already set
+					this.session!.authToken = authToken;
+					this.session!.partyId = partyId;
+					this.session!.publicKey = publicKey;
+					this.session!.email = email;
+					this.session!.authorized();
+					this.session!.save();
 
-        } catch (error) {
-          console.error('Failed to update local storage with auth token.', error);
-        }
-      }
-    } else if (message.type === MessageType.HANDSHAKE_REJECT) {
-      console.log('[LoopSDK] Entering HANDSHAKE_REJECT flow');
-      this.connection?.ws?.close();
-      this.onReject?.();
-      this.hideQrCode();
-      this.session?.reset()
+					this.onAccept?.(this.provider);
+					this.hideQrCode();
 
-      console.log('[LoopSDK] HANDSHAKE_REJECT: closing popup (if exists)');
-      this.popupWindow = null;
-    } else if (this.provider) {
-      this.provider.handleResponse(message);
-    }
-  }
+					console.log("[LoopSDK] HANDSHAKE_ACCEPT: closing popup (if exists)");
+					this.popupWindow = null;
+				} catch (error) {
+					console.error(
+						"Failed to update local storage with auth token.",
+						error,
+					);
+				}
+			}
+		} else if (message.type === MessageType.HANDSHAKE_REJECT) {
+			console.log("[LoopSDK] Entering HANDSHAKE_REJECT flow");
+			this.connection?.ws?.close();
+			this.onReject?.();
+			this.hideQrCode();
+			this.session?.reset();
 
-  private buildConnectUrl(ticketId: string): string {
-    const url = new URL('/.connect/', this.connection!.walletUrl);
-    url.searchParams.set('ticketId', ticketId);
-    if (this.redirectUrl) {
-      url.searchParams.set('redirectUrl', this.redirectUrl);
-    }
-    return url.toString();
-  }
+			console.log("[LoopSDK] HANDSHAKE_REJECT: closing popup (if exists)");
+			this.popupWindow = null;
+		} else if (this.provider) {
+			this.provider.handleResponse(message);
+		}
+	}
 
-  private buildDashboardUrl() {
-    if (!this.connection) {
-      throw new Error('Connection not initialized');
-    }
-    return this.connection.walletUrl;
-  }
+	private buildConnectUrl(ticketId: string): string {
+		const url = new URL("/.connect/", this.connection!.walletUrl);
+		url.searchParams.set("ticketId", ticketId);
+		if (this.redirectUrl) {
+			url.searchParams.set("redirectUrl", this.redirectUrl);
+		}
+		return url.toString();
+	}
 
-  private openRequestUi(): Window | null {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-    if (!this.session?.ticketId) {
-      console.warn('[LoopSDK] Cannot open wallet UI for request: no active ticket.');
-      return null;
-    }
+	private buildDashboardUrl() {
+		if (!this.connection) {
+			throw new Error("Connection not initialized");
+		}
+		return this.connection.walletUrl;
+	}
 
-    const dashboardUrl = this.buildDashboardUrl();
-    const targetMode = this.requestSigningMode === 'tab' ? 'tab' : 'popup';
-    const opened = this.openWallet(dashboardUrl, targetMode);
-    if (opened) {
-      this.popupWindow = opened;
-      return opened;
-    }
-    return null;
-  }
+	private openRequestUi(): Window | null {
+		if (typeof window === "undefined") {
+			return null;
+		}
+		if (!this.session?.ticketId) {
+			console.warn(
+				"[LoopSDK] Cannot open wallet UI for request: no active ticket.",
+			);
+			return null;
+		}
 
-  private closePopupIfExists() {
-    if (this.popupWindow && !this.popupWindow.closed) {
-      try {
-        this.popupWindow.close();
-      } catch {
-        // ignore close errors
-      }
-    }
-    this.popupWindow = null;
-  }
+		const dashboardUrl = this.buildDashboardUrl();
+		const targetMode = this.requestSigningMode === "tab" ? "tab" : "popup";
+		const opened = this.openWallet(dashboardUrl, targetMode);
+		if (opened) {
+			this.popupWindow = opened;
+			return opened;
+		}
+		return null;
+	}
 
-  private openWallet(url: string, mode?: 'popup' | 'tab'): Window | null {
-    if (typeof window === 'undefined') {
-      return null;
-    }
+	private closePopupIfExists() {
+		if (this.popupWindow && !this.popupWindow.closed) {
+			try {
+				this.popupWindow.close();
+			} catch {
+				// ignore close errors
+			}
+		}
+		this.popupWindow = null;
+	}
 
-    const targetMode = mode || this.openMode;
+	private openWallet(url: string, mode?: "popup" | "tab"): Window | null {
+		if (typeof window === "undefined") {
+			return null;
+		}
 
-    if (targetMode === 'popup') {
-      const width = 480;
-      const height = 720;
+		const targetMode = mode || this.openMode;
 
-      const left = (window.innerWidth - width) / 2 + window.screenX;
-      const top = (window.innerWidth - height) / 2 + window.screenY;
+		if (targetMode === "popup") {
+			const width = 480;
+			const height = 720;
 
-      const features =
-        `width=${width},height=${height},` +
-        `left=${left},top=${top},` +
-        'menubar=no,toolbar=no,location=no,' +
-        'resizable=yes,scrollbars=yes,status=no';
-      
-      const popup = window.open(url, 'loop-wallet', features);
+			const left = (window.innerWidth - width) / 2 + window.screenX;
+			const top = (window.innerWidth - height) / 2 + window.screenY;
 
-      if (!popup) {
-        return window.open(url, '_blank', 'noopener,noreferrer');
-      }
+			const features =
+				`width=${width},height=${height},` +
+				`left=${left},top=${top},` +
+				"menubar=no,toolbar=no,location=no," +
+				"resizable=yes,scrollbars=yes,status=no";
 
-      this.popupWindow = popup;
+			const popup = window.open(url, "loop-wallet", features);
 
-      try { 
-        popup.focus();
-      } catch {
-        // focus errors
-      }
+			if (!popup) {
+				return window.open(url, "_blank", "noopener,noreferrer");
+			}
 
-      return popup;
-    }
+			this.popupWindow = popup;
 
-    return window.open(url, '_blank', 'noopener,noreferrer');
-  }
-  private showQrCode(url: string) {
-    QRCode.toDataURL(url, (err, dataUrl) => {
-      if (err) {
-        console.error('Failed to generate QR code', err);
-        return;
-      }
-      
-      const overlay = document.createElement('div');
-      overlay.id = 'loop-sdk-connect-overlay';
-      overlay.className = 'loop-sdk-connect-overlay';
-      overlay.style.position = 'fixed';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100%';
-      overlay.style.height = '100%';
-      overlay.style.backgroundColor = 'rgba(0,0,0,0.9)';
-      overlay.style.display = 'flex';
-      overlay.style.justifyContent = 'center';
-      overlay.style.alignItems = 'center';
-      overlay.style.zIndex = '1000';
-      overlay.style.flexDirection = 'column';
-      
-      const content = document.createElement('div');
-      content.className = 'loop-sdk-connect-content';
-      content.style.display = 'flex';
-      content.style.flexDirection = 'column';
-      content.style.alignItems = 'center';
+			try {
+				popup.focus();
+			} catch {
+				// focus errors
+			}
 
-      const img = document.createElement('img');
-      img.src = dataUrl;
-      content.appendChild(img);
+			return popup;
+		}
 
-      const link = document.createElement('a');
-      link.href = url;
-      link.textContent = 'Or click here to connect';
-      link.style.color = 'white';
-      link.style.marginTop = '20px';
-      //link.target = '_blank';
-      link.onclick = (e) => {
-        e.preventDefault();
-        this.openWallet(url);
-      };
-      content.appendChild(link);
-      overlay.appendChild(content);
-      
-      overlay.onclick = (e) => {
-        if (e.target === overlay) {
-          this.hideQrCode();
-        }
-      };
+		return window.open(url, "_blank", "noopener,noreferrer");
+	}
+	private injectModalStyles() {
+		if (document.getElementById("loop-connect-styles")) return;
 
-      document.body.appendChild(overlay);
-      this.overlay = overlay;
-    });
-  }
+		const style = document.createElement("style");
+		style.id = "loop-connect-styles";
+		style.textContent = `
+			.loop-connect {
+				position: fixed;
+				inset: 0;
+				background: oklch(0.222 0 0 / 0.85);
+				backdrop-filter: blur(8px);
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				z-index: 10000;
+				font-family: system-ui, -apple-system, sans-serif;
+				animation: fadeIn 0.2s ease-out;
+			}
+			.loop-connect dialog {
+				position: relative;
+				overflow: hidden;
+				background: oklch(0.253 0.008 274.6);
+				box-shadow: 0 4px 24px oklch(0 0 0 / 0.1);
+				border: 1px solid oklch(0.41 0.01 278.4);
+				border-radius: 32px;
+				padding: 24px;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 16px;
+				color: oklch(0.975 0.005 280);
+			}
+			.loop-connect .bg-logo {
+				position: absolute;
+				right: -20px;
+				top: -40px;
+				width: 140px;
+				height: auto;
+				opacity: 0.06;
+				pointer-events: none;
+			}
+			.loop-connect h3 {
+				margin: 0;
+				font-size: 18px;
+				font-weight: 600;
+				letter-spacing: -0.015em;
+			}
+			.loop-connect figure {
+				margin: 0;
+				background: oklch(1 0 0);
+				padding: 8px;
+				border-radius: 24px;
+				display: flex;
+				justify-content: center;
+				border: 2px solid oklch(0.41 0.01 278.4);
+				box-shadow: 0 4px 24px oklch(0 0 0 / 0.1);
+			}
+			.loop-connect img {
+				display: block;
+				width: 225px;
+				height: 225px;
+			}
+			.loop-connect .divider {
+				width: 100%;
+				display: flex;
+				align-items: center;
+				gap: 16px;
+				color: oklch(0.554 0.012 280.3);
+				font-size: 13px;
+				font-weight: 600;
+			}
+			.loop-connect .divider::before,
+			.loop-connect .divider::after {
+				content: "";
+				flex: 1;
+				height: 1px;
+				background: oklch(0.45 0.01 278);
+			}
+			.loop-connect button {
+				background: oklch(0.976 0.101 112.3);
+				border: 1px solid oklch(0.82 0.16 110);
+				color: oklch(0.222 0 0);
+				padding: 16px 32px;
+				border-radius: 24px;
+				font-size: 15px;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				width: 100%;
+			}
+			.loop-connect button:hover {
+				background: oklch(0.98 0.105 112.5);
+			}
+			@keyframes fadeIn {
+				from { opacity: 0; }
+				to { opacity: 1; }
+			}
+		`;
+		document.head.appendChild(style);
+	}
 
-  private hideQrCode() {
-    if (this.overlay && this.overlay.parentElement) {
-      this.overlay.parentElement.removeChild(this.overlay);
-      this.overlay = null;
-    }
-  }
+	private showQrCode(url: string) {
+		this.injectModalStyles();
 
-  logout() {
-    this.session?.reset();
+		QRCode.toDataURL(url, (err, dataUrl) => {
+			if (err) {
+				console.error("Failed to generate QR code", err);
+				return;
+			}
 
-    this.provider = null;
-    this.connection?.ws?.close();
-    this.hideQrCode();
-  }
+			const overlay = document.createElement("div");
+			overlay.className = "loop-connect";
 
-  private requireProvider(): Provider {
-    if (!this.provider) {
-      throw new Error('SDK not connected. Call connect() and wait for acceptance first.');
-    }
-    return this.provider;
-  }
+			const dialog = document.createElement("dialog");
+			dialog.open = true;
 
-  private createProviderHooks(): ProviderHooks {
-    return {
-      onRequestStart: () => this.openRequestUi(),
-      onRequestFinish: ({ requestContext }) => {
-        const win = requestContext as Window | null | undefined;
-        if (win) {
-          // Delay closing to allow wallet UI to visibly transition / finalize
-          setTimeout(() => {
-            this.closePopupIfExists();
-          }, 800);
-        }
-      },
-    };
-  }
+			const bgLogo = document.createElementNS(
+				"http://www.w3.org/2000/svg",
+				"svg",
+			);
+			bgLogo.setAttribute("class", "bg-logo");
+			bgLogo.setAttribute("viewBox", "0 0 124.05 305.64");
+			const path = document.createElementNS(
+				"http://www.w3.org/2000/svg",
+				"path",
+			);
+			path.setAttribute(
+				"d",
+				"M24.58,99.47L124.05,0v224.42L24.58,124.95c-7.04-7.04-7.04-18.45,0-25.49Z",
+			);
+			path.setAttribute("fill", "currentColor");
+			const rect = document.createElementNS(
+				"http://www.w3.org/2000/svg",
+				"rect",
+			);
+			rect.setAttribute("x", "12.89");
+			rect.setAttribute("y", "194.48");
+			rect.setAttribute("width", "98.27");
+			rect.setAttribute("height", "98.27");
+			rect.setAttribute("rx", "18.02");
+			rect.setAttribute("ry", "18.02");
+			rect.setAttribute("transform", "translate(-154.1 115.21) rotate(-45)");
+			rect.setAttribute("fill", "currentColor");
+			bgLogo.appendChild(path);
+			bgLogo.appendChild(rect);
+
+			const title = document.createElement("h3");
+			title.textContent = "Scan with Phone";
+
+			const figure = document.createElement("figure");
+			const img = document.createElement("img");
+			img.src = dataUrl;
+			img.alt = "QR Code";
+			figure.appendChild(img);
+
+			const divider = document.createElement("div");
+			divider.className = "divider";
+			divider.textContent = "OR";
+
+			const button = document.createElement("button");
+			button.type = "button";
+			button.textContent = "Continue in Browser";
+			button.addEventListener("click", () => {
+				this.openWallet(url);
+			});
+
+			dialog.appendChild(bgLogo);
+			dialog.appendChild(title);
+			dialog.appendChild(figure);
+			dialog.appendChild(divider);
+			dialog.appendChild(button);
+			overlay.appendChild(dialog);
+
+			overlay.addEventListener("click", (e) => {
+				if (e.target === overlay) {
+					this.hideQrCode(true);
+				}
+			});
+
+			document.body.appendChild(overlay);
+			this.overlay = overlay;
+		});
+	}
+
+	private hideQrCode(resetConnection = false) {
+		if (this.overlay && this.overlay.parentElement) {
+			this.overlay.parentElement.removeChild(this.overlay);
+			this.overlay = null;
+		}
+		if (resetConnection) {
+			this.connection?.ws?.close();
+			this.session?.reset();
+		}
+	}
+
+	logout() {
+		this.session?.reset();
+
+		this.provider = null;
+		this.connection?.ws?.close();
+		this.hideQrCode();
+	}
+
+	private requireProvider(): Provider {
+		if (!this.provider) {
+			throw new Error(
+				"SDK not connected. Call connect() and wait for acceptance first.",
+			);
+		}
+		return this.provider;
+	}
+
+	private createProviderHooks(): ProviderHooks {
+		return {
+			onRequestStart: () => this.openRequestUi(),
+			onRequestFinish: ({ requestContext }) => {
+				const win = requestContext as Window | null | undefined;
+				if (win) {
+					// Delay closing to allow wallet UI to visibly transition / finalize
+					setTimeout(() => {
+						this.closePopupIfExists();
+					}, 800);
+				}
+			},
+		};
+	}
 }
 
 export const loop = new LoopSDK();
-export * from './types';
-export * from './extensions/usdc/types';
+export * from "./extensions/usdc/types";
+export * from "./types";
