@@ -17,7 +17,7 @@
         import { loop } from './dist/index.js';
 
         const html = htm.bind(h);
-        const networkEnv = 'local';
+        const networkEnv = 'devnet';
 
         const getDamlCommandTemplate = (partyId = '') => ({
             commands: [ {
@@ -394,6 +394,13 @@
                 }
             };
 
+            const handleGetConnectUrl = () =>
+            {
+                const url = loop.getConnectUrl();
+                console.log('Connect URL:', url);
+                alert('Connect URL: ' + url);
+            };
+
             return html`
                 <div>
                     <h1>Loop SDK Preact Test</h1>
@@ -409,6 +416,10 @@
 
                             <button onClick=${handleGetAccount} disabled=${isLoading}>
                                 ${isLoading ? 'Loading...' : 'Get Account Info'}
+                            </button>
+
+                            <button onClick=${handleGetConnectUrl}>
+                                Get Connect URL
                             </button>
 
                             ${accountInfo && !isLoading && html`

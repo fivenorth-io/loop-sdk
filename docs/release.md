@@ -7,6 +7,10 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+
+## v0.7.6
+- Add `getConnectUrl` method to get link to wallet connect.
+
 ## v0.7.5
 - Fix not able to re-connect when aborting a connection half way without complete the handshake.
 

@@ -15,7 +15,7 @@ import { MessageType } from "./types";
 import { LoopWallet } from "./wallet";
 
 class LoopSDK {
-	private version: string = "0.7.5";
+	private version: string = "0.7.6";
 
 	private appName: string = "Unknown";
 	private connection: Connection | null = null;
@@ -265,6 +265,13 @@ class LoopSDK {
 		} else if (this.provider) {
 			this.provider.handleResponse(message);
 		}
+	}
+
+	public getConnectUrl(): string {
+		if (!this.session?.ticketId) {
+			throw new Error("No ticket ID found. Please call connect() first.");
+		}
+		return this.buildConnectUrl(this.session!.ticketId!);
 	}
 
 	private buildConnectUrl(ticketId: string): string {
