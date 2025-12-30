@@ -168,7 +168,8 @@ class LoopSDK {
 
 		await this.autoConnect();
 
-		if (this.connection?.connectInProgress() === true) {
+		if (this.session?.ticketId) {
+			this.showQrCode(this.buildConnectUrl(this.session!.ticketId!));
 			return;
 		}
 
@@ -186,8 +187,7 @@ class LoopSDK {
 			);
 
 			this.session!.setTicketId(ticketId);
-
-			const connectUrl = this.buildConnectUrl(ticketId);
+			const connectUrl = this.buildConnectUrl(this.session!.ticketId!);
 			this.showQrCode(connectUrl);
 
 			this.connection.connectWebSocket(
