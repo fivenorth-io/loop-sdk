@@ -15,7 +15,8 @@ import { MessageType } from "./types";
 import { LoopWallet } from "./wallet";
 
 class LoopSDK {
-	private version: string = "0.7.3";
+	private version: string = "0.7.5";
+
 	private appName: string = "Unknown";
 	private connection: Connection | null = null;
 	private session: SessionInfo | null = null;
@@ -168,35 +169,39 @@ class LoopSDK {
 
 		await this.autoConnect();
 
-		if (this.session?.ticketId) {
-			this.showQrCode(this.buildConnectUrl(this.session!.ticketId!));
-			return;
+		if (!this.session) {
+			throw new Error("No valid session found. The network connection maynot available or the backend is not reachable.");
 		}
 
-		if (this.session && this.session.isAuthorized()) {
+		if (this.session.isAuthorized()) {
 			// if successfully connected from autoConnect, return early nothing we need to do
 			// if the auto connect attempt failed, we will proceed to the connect flow with qr code
 			return;
 		}
 
+
 		try {
-			const { ticket_id: ticketId } = await this.connection.getTicket(
-				this.appName,
-				this.session!.sessionId,
-				this.version,
-			);
+			// acquire a ticket id from the backend if necessary
+			if (!this.session.ticketId) {
+				const { ticket_id: ticketId } = await this.connection.getTicket(
+					this.appName,
+					this.session!.sessionId,
+					this.version,
+				);
+				this.session!.setTicketId(ticketId);
+			}
 
-			this.session!.setTicketId(ticketId);
-			const connectUrl = this.buildConnectUrl(this.session!.ticketId!);
-			this.showQrCode(connectUrl);
+			if (!this.connection.connectInProgress()) {
+				this.connection.connectWebSocket(
+					this.session!.ticketId!,
+					this.handleWebSocketMessage.bind(this),
+				);
+			}
 
-			this.connection.connectWebSocket(
-				ticketId,
-				this.handleWebSocketMessage.bind(this),
-			);
+			this.showQrCode(this.buildConnectUrl(this.session!.ticketId!));
 		} catch (error) {
 			console.error(error);
-			return;
+			throw error;
 		}
 	}
 
