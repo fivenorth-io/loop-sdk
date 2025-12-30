@@ -7,6 +7,10 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.7.5
+- Improve style of the Loop connect modal.
+- Fix bug connect modal not showing up when calling `connect` again after hiding it and resume the connect flow.
+
 ## v0.7.3
 - Add `autoConnect` and `logout` methods to enhance user experience on auto login on page load and control wallet logout flow
 
