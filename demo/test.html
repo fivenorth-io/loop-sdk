@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Loop SDK Demo dApp</title>
 </head>
+
 <body>
     <div id="app"></div>
 
@@ -18,7 +20,7 @@
         const networkEnv = 'local';
 
         const getDamlCommandTemplate = (partyId = '') => ({
-            commands: [{
+            commands: [ {
                 ExerciseCommand: {
                     templateId: "#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferFactory",
                     contractId: '009f00e5bf00640118d849080aaf22bc963a8458d322585cebf1119cb7bf37a955ca11122065b775fb8a4199904ed32fa9277fd9c0e82bb82319a7151249df124182072381',
@@ -37,7 +39,7 @@
                             executeBefore: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
                             lock: null,
                             meta: { values: {} },
-                            inputHoldingCids: ['list-of-holing-amulet-cid'],
+                            inputHoldingCids: [ 'list-of-holing-amulet-cid' ],
                             meta: {
                                 values: {
                                     "splice.lfdecentralizedtrust.org/reason": "demo transfer by LoopSDK"
@@ -45,7 +47,7 @@
                             },
                         },
                         extraArgs: {
-                            context: { 
+                            context: {
                                 values: {
                                     "get-these-from-factory": ""
                                 }
@@ -56,45 +58,47 @@
                         },
                     }
                 }
-            }],
+            } ],
             packageIdSelectionPreference: [],
             disclosedContracts: [],
         });
 
-        function App() {
-            const [account, setAccount] = useState(null);
-            const [provider, setProvider] = useState(null);
-            const [holdings, setHoldings] = useState([]);
-            const [isLoading, setIsLoading] = useState(false);
-            const [templateId, setTemplateId] = useState('');
-            const [activeContract, setActiveContract] = useState([]);
-            const [isFindingContract, setIsFindingContract] = useState(false);
-            const [interfaceId, setInterfaceId] = useState('');
-            const [contractByInterface, setContractByInterface] = useState([]);
-            const [isFindingByInterface, setIsFindingByInterface] = useState(false);
-            const [damlCommand, setDamlCommand] = useState(JSON.stringify(getDamlCommandTemplate(), null, 2));
-            const [isSubmittingTx, setIsSubmittingTx] = useState(false);
-            const [txResult, setTxResult] = useState(null);
-            const [rawMessage, setRawMessage] = useState('Hello, Loop!');
-            const [signature, setSignature] = useState(null);
-            const [isSigning, setIsSigning] = useState(false);
-            const [transferRecipient, setTransferRecipient] = useState('');
-            const [transferAmount, setTransferAmount] = useState('');
-            const [transferInstrumentAdmin, setTransferInstrumentAdmin] = useState('');
-            const [transferInstrumentId, setTransferInstrumentId] = useState('');
-            const [transferRequestTimeout, setTransferRequestTimeout] = useState('');
-            const [transferResult, setTransferResult] = useState(null);
-            const [isTransferring, setIsTransferring] = useState(false);
-            const [withdrawRecipient, setWithdrawRecipient] = useState('');
-            const [withdrawAmount, setWithdrawAmount] = useState('');
-            const [withdrawReference, setWithdrawReference] = useState('');
-            const [withdrawRequestTimeout, setWithdrawRequestTimeout] = useState('');
-            const [withdrawResult, setWithdrawResult] = useState(null);
-            const [isWithdrawing, setIsWithdrawing] = useState(false);
-            const [customTxMessage, setCustomTxMessage] = useState('');
-            const [accountInfo, setAccountInfo] = useState(null);
+        function App ()
+        {
+            const [ account, setAccount ] = useState(null);
+            const [ provider, setProvider ] = useState(null);
+            const [ holdings, setHoldings ] = useState([]);
+            const [ isLoading, setIsLoading ] = useState(false);
+            const [ templateId, setTemplateId ] = useState('');
+            const [ activeContract, setActiveContract ] = useState([]);
+            const [ isFindingContract, setIsFindingContract ] = useState(false);
+            const [ interfaceId, setInterfaceId ] = useState('');
+            const [ contractByInterface, setContractByInterface ] = useState([]);
+            const [ isFindingByInterface, setIsFindingByInterface ] = useState(false);
+            const [ damlCommand, setDamlCommand ] = useState(JSON.stringify(getDamlCommandTemplate(), null, 2));
+            const [ isSubmittingTx, setIsSubmittingTx ] = useState(false);
+            const [ txResult, setTxResult ] = useState(null);
+            const [ rawMessage, setRawMessage ] = useState('Hello, Loop!');
+            const [ signature, setSignature ] = useState(null);
+            const [ isSigning, setIsSigning ] = useState(false);
+            const [ transferRecipient, setTransferRecipient ] = useState('');
+            const [ transferAmount, setTransferAmount ] = useState('');
+            const [ transferInstrumentAdmin, setTransferInstrumentAdmin ] = useState('');
+            const [ transferInstrumentId, setTransferInstrumentId ] = useState('');
+            const [ transferRequestTimeout, setTransferRequestTimeout ] = useState('');
+            const [ transferResult, setTransferResult ] = useState(null);
+            const [ isTransferring, setIsTransferring ] = useState(false);
+            const [ withdrawRecipient, setWithdrawRecipient ] = useState('');
+            const [ withdrawAmount, setWithdrawAmount ] = useState('');
+            const [ withdrawReference, setWithdrawReference ] = useState('');
+            const [ withdrawRequestTimeout, setWithdrawRequestTimeout ] = useState('');
+            const [ withdrawResult, setWithdrawResult ] = useState(null);
+            const [ isWithdrawing, setIsWithdrawing ] = useState(false);
+            const [ customTxMessage, setCustomTxMessage ] = useState('');
+            const [ accountInfo, setAccountInfo ] = useState(null);
 
-            useEffect(async () => {
+            useEffect(async () =>
+            {
                 loop.init({
                     appName: 'Demo DAPP',
                     network: networkEnv,
@@ -103,12 +107,14 @@
                         requestSigningMode: 'popup', // 'popup' (default) | 'tab'
                         redirectUrl: 'https://example.com/after-connect', // optional redirect after approval
                     },
-                    onAccept: (prov) => {
+                    onAccept: (prov) =>
+                    {
                         setProvider(prov);
                         console.log('Provider:', prov);
                         setAccount({ partyId: prov.party_id, publicKey: prov.public_key });
                     },
-                    onReject: () => {
+                    onReject: () =>
+                    {
                         console.log('Connection Rejected');
                         setAccount(null);
                         setProvider(null);
@@ -119,179 +125,222 @@
                 await loop.autoConnect();
             }, []);
 
-            useEffect(() => {
-                if (account?.partyId) {
+            useEffect(() =>
+            {
+                if (account?.partyId)
+                {
                     setDamlCommand(JSON.stringify(getDamlCommandTemplate(account.partyId), null, 2));
                 }
-            }, [account]);
+            }, [ account ]);
 
 
-            const handleConnect = () => {
+            const handleConnect = () =>
+            {
                 loop.connect();
             };
-            
-            const handleGetHolding = async () => {
+
+            const handleGetHolding = async () =>
+            {
                 if (!provider) return;
                 setIsLoading(true);
-                try {
+                try
+                {
                     const fetchedHoldings = await provider.getHolding();
                     console.log('Holdings:', fetchedHoldings);
                     setHoldings(fetchedHoldings);
-                } catch (error) {
+                } catch (error)
+                {
                     console.error('Failed to get holdings:', error);
                     alert('Failed to get holdings. See console.');
-                } finally {
+                } finally
+                {
                     setIsLoading(false);
                 }
             };
 
-            const handleGetAccount = async () => {
-                if (!provider) {
+            const handleGetAccount = async () =>
+            {
+                if (!provider)
+                {
                     alert('Not connected');
                     return;
                 }
                 setIsLoading(true);
                 setAccountInfo(null);
-                try {
+                try
+                {
                     const acc = await provider.getAccount();
                     setAccountInfo(acc);
-                } catch (error) {
+                } catch (error)
+                {
                     console.error('Failed to get account:', error);
                     alert('Failed to get account. See console.');
-                } finally {
+                } finally
+                {
                     setIsLoading(false);
                 }
             };
 
-            const handleLogout = () => {
+            const handleLogout = () =>
+            {
                 loop.logout();
                 setAccount(null);
                 setProvider(null);
                 setHoldings([]);
             };
 
-            const handleWalletTransfer = async () => {
-                if (!loop || !loop.wallet) {
+            const handleWalletTransfer = async () =>
+            {
+                if (!loop || !loop.wallet)
+                {
                     alert('SDK not ready');
                     return;
                 }
-                if (!transferRecipient || !transferAmount) {
+                if (!transferRecipient || !transferAmount)
+                {
                     alert('Enter recipient and amount');
                     return;
                 }
                 const requestTimeoutMs = transferRequestTimeout ? Number(transferRequestTimeout) : undefined;
-                if (requestTimeoutMs !== undefined && Number.isNaN(requestTimeoutMs)) {
+                if (requestTimeoutMs !== undefined && Number.isNaN(requestTimeoutMs))
+                {
                     alert('Request timeout must be a number (milliseconds).');
                     return;
                 }
                 const message = customTxMessage.trim();
                 setIsTransferring(true);
                 setTransferResult(null);
-                try {
+                try
+                {
                     const now = new Date();
                     const executeBefore = new Date(now.getTime() + 48 * 60 * 60 * 1000);
                     const res = await loop.wallet.transfer(
-                      transferRecipient,
-                      transferAmount,
-                      {
-                        instrument_id: transferInstrumentId || 'Amulet',
-                        instrument_admin: transferInstrumentAdmin || undefined,
-                      },
-                      {
-                        requestedAt: now.toISOString(),
-                        executeBefore: executeBefore.toISOString(),
-                        requestTimeout: requestTimeoutMs,
-                        message: message || undefined,
-                      },
+                        transferRecipient,
+                        transferAmount,
+                        {
+                            instrument_id: transferInstrumentId || 'Amulet',
+                            instrument_admin: transferInstrumentAdmin || undefined,
+                        },
+                        {
+                            requestedAt: now.toISOString(),
+                            executeBefore: executeBefore.toISOString(),
+                            requestTimeout: requestTimeoutMs,
+                            message: message || undefined,
+                        },
                     );
                     setTransferResult(res);
-                } catch (error) {
+                } catch (error)
+                {
                     console.error('Transfer failed', error);
                     setTransferResult({ error: error?.message || 'Transfer failed' });
-                } finally {
+                } finally
+                {
                     setIsTransferring(false);
                 }
             };
 
-            const handleFindContract = async () => {
-                if (!provider || !templateId) {
+            const handleFindContract = async () =>
+            {
+                if (!provider || !templateId)
+                {
                     alert('Please connect and enter a template ID.');
                     return;
                 }
                 setIsFindingContract(true);
                 setActiveContract([]);
-                try {
+                try
+                {
                     const contracts = await provider.getActiveContracts({ templateId });
                     console.log('Found contracts:', contracts);
-                    if (contracts && contracts.length > 0) {
+                    if (contracts && contracts.length > 0)
+                    {
                         setActiveContract(contracts);
-                    } else {
+                    } else
+                    {
                         alert('No active contract found with that template ID.');
                     }
-                } catch (error) {
+                } catch (error)
+                {
                     console.error('Failed to find active contract:', error);
                     alert('Failed to find active contract. See console.');
-                } finally {
+                } finally
+                {
                     setIsFindingContract(false);
                 }
             };
 
-            const handleFindContractByInterface = async () => {
-                if (!provider || !interfaceId) {
+            const handleFindContractByInterface = async () =>
+            {
+                if (!provider || !interfaceId)
+                {
                     alert('Please connect and enter an Interface ID.');
                     return;
                 }
                 setIsFindingByInterface(true);
                 setContractByInterface([]);
-                try {
+                try
+                {
                     console.log('Finding contract by interface:', interfaceId);
                     const contracts = await provider.getActiveContracts({ interfaceId });
                     console.log('Found contract by interface:', contracts);
-                    if (contracts && contracts.length > 0) {
+                    if (contracts && contracts.length > 0)
+                    {
                         setContractByInterface(contracts);
-                    } else {
+                    } else
+                    {
                         alert('No active contract found with that interface ID.');
                     }
-                } catch (error) {
+                } catch (error)
+                {
                     console.error('Failed to find active contract by interface:', error);
                     alert('Failed to find active contract by interface. See console.');
-                } finally {
+                } finally
+                {
                     setIsFindingByInterface(false);
                 }
             };
 
-            const handleRunTransaction = async () => {
-                if (!provider) {
+            const handleRunTransaction = async () =>
+            {
+                if (!provider)
+                {
                     alert('Please connect first.');
                     return;
                 }
                 setIsSubmittingTx(true);
                 setTxResult(null);
-                try {
+                try
+                {
                     const command = JSON.parse(damlCommand);
                     const message = customTxMessage?.trim();
                     const result = await provider.submitTransaction(command, { message: message || undefined });
                     setTxResult(result);
-                } catch (error) {
+                } catch (error)
+                {
                     console.error('Failed to submit transaction:', error);
                     alert('Failed to submit transaction. See console.');
                     setTxResult({ error: error.message });
-                } finally {
+                } finally
+                {
                     setIsSubmittingTx(false);
                 }
             };
 
-            const handleWithdrawUsdc = async () => {
-                if (!loop || !loop.wallet) {
+            const handleWithdrawUsdc = async () =>
+            {
+                if (!loop || !loop.wallet)
+                {
                     alert('SDK not ready');
                     return;
                 }
-                if (!withdrawRecipient || !withdrawAmount) {
+                if (!withdrawRecipient || !withdrawAmount)
+                {
                     alert('Enter recipient and amount');
                     return;
                 }
                 const requestTimeoutMs = withdrawRequestTimeout ? Number(withdrawRequestTimeout) : undefined;
-                if (requestTimeoutMs !== undefined && Number.isNaN(requestTimeoutMs)) {
+                if (requestTimeoutMs !== undefined && Number.isNaN(requestTimeoutMs))
+                {
                     alert('Request timeout must be a number (milliseconds).');
                     return;
                 }
@@ -299,7 +348,8 @@
 
                 setIsWithdrawing(true);
                 setWithdrawResult(null);
-                try {
+                try
+                {
                     const res = await loop.wallet.extension.usdcBridge.withdrawalUSDCxToEthereum(
                         withdrawRecipient,
                         withdrawAmount,
@@ -310,29 +360,36 @@
                         },
                     );
                     setWithdrawResult(res);
-                } catch (error) {
+                } catch (error)
+                {
                     console.error('Withdrawal failed', error);
                     setWithdrawResult({ error: error?.message || 'Withdrawal failed' });
-                } finally {
+                } finally
+                {
                     setIsWithdrawing(false);
                 }
             };
 
-            const handleSignMessage = async () => {
-                if (!provider) {
+            const handleSignMessage = async () =>
+            {
+                if (!provider)
+                {
                     alert('Please connect first.');
                     return;
                 }
                 setIsSigning(true);
                 setSignature(null);
-                try {
+                try
+                {
                     const result = await provider.signMessage(rawMessage);
                     setSignature(result);
-                } catch (error) {
+                } catch (error)
+                {
                     console.error('Failed to sign message:', error);
                     alert('Failed to sign message. See console.');
                     setSignature({ error: error.message });
-                } finally {
+                } finally
+                {
                     setIsSigning(false);
                 }
             };
@@ -589,4 +646,5 @@
         render(html`<${App} />`, document.getElementById('app'));
     </script>
 </body>
+
 </html>

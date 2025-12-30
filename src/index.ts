@@ -534,14 +534,10 @@ class LoopSDK {
 		});
 	}
 
-	private hideQrCode(resetConnection = false) {
+	private hideQrCode() {
 		if (this.overlay && this.overlay.parentElement) {
 			this.overlay.parentElement.removeChild(this.overlay);
 			this.overlay = null;
-		}
-		if (resetConnection) {
-			this.connection?.ws?.close();
-			this.session?.reset();
 		}
 	}
 
