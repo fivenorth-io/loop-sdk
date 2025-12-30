@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.5 (2025-12-29)
+Full Changelog: [v0.7.4...v0.7.5](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.4...v0.7.5)
+
+### Bug Fixes
+
+- improve connection reliability when aborting the connection half way.
+
 ## 0.7.4 (2025-12-29)
 Full Changelog: [v0.7.3...v0.7.4](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.3...v0.7.4)
 

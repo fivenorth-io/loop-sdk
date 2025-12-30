@@ -1,7 +1,7 @@
 {
 	"name": "@fivenorth/loop-sdk",
-	"version": "0.7.4",
-	"author": "hello@fivenorth.io",
+	"version": "0.7.5",
+	"author": "support@fivenorth.io",
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"devDependencies": {
