@@ -8,7 +8,7 @@ import type {
   InstrumentSpec,
   RunTransactionResponse,
 } from './types';
-import { MessageType, type Account } from './types';
+import { MessageType, type Account, type TransactionPayload } from './types';
 import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
@@ -24,15 +24,6 @@ export type ProviderHooks = {
   onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown | Promise<unknown>;
   onRequestFinish?: (args: RequestFinishArgs) => void;
   onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void;
-};
-
-type TransactionPayload = {
-  commands: any[];
-  disclosedContracts: any[];
-  packageIdSelectionPreference?: string[];
-  actAs?: string[];
-  readAs?: string[];
-  synchronizerId?: string;
 };
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)

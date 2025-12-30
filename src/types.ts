@@ -61,6 +61,15 @@ export type TransferRequest = {
   execute_before?: string;
 };
 
+export type TransactionPayload = {
+  commands: any[];
+  disclosedContracts: any[];
+  packageIdSelectionPreference?: string[];
+  actAs?: string[];
+  readAs?: string[];
+  synchronizerId?: string;
+};
+
 export type PreparedTransferPayload = {
   actAs: string[];
   readAs: string[];
@@ -95,4 +104,26 @@ export interface Wallet {
   extension: {
     usdcBridge: UsdcBridgeExtension;
   };
+}
+
+export type ExchangeApiKeyResponse = {
+  // api key is the jwt token to send request similar to how front-end send 
+  api_key: string;
+  // auth token is the token to send request and authenticate through the connect ticket system
+  auth_token: string;
+  email?: string;
+  ticket_id: string;
+  session_id: string;
+};
+
+export type PreparedSubmissionResponse = {
+  command_id: string;
+  transaction_hash: string;
+  transaction_data: string;
+};
+
+export type ExecuteSubmissionResquest = {
+  command_id: string;
+  transaction_data: string;
+  signature: string;
 }
