@@ -1,5 +1,13 @@
 # Changelog
 
+
+## 0.7.6 (2025-12-30)
+Full Changelog: [v0.7.5...v0.7.6](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.5...v0.7.6)
+
+### Improvements
+
+- **sdk** Add a new method `getConnectUrl` to allow dapp build their own connection modal instead
+
 ## 0.7.5 (2025-12-29)
 Full Changelog: [v0.7.4...v0.7.5](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.4...v0.7.5)
 
