@@ -98,7 +98,7 @@ export class Provider {
     public handleResponse(message: any) {
         console.log('Received response:', message);
 
-        if (message?.type === MessageType.RUN_TRANSACTION_RESPONSE && message?.payload?.update_id) {
+        if (message?.type === MessageType.TRANSACTION_COMPLETED && message?.payload?.update_id) {
             this.hooks?.onTransactionUpdate?.(message.payload as RunTransactionResponse, message);
         }
 
