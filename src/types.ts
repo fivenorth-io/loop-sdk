@@ -74,6 +74,13 @@ export type ConnectTransferResponse = {
   payload: PreparedTransferPayload;
 };
 
+export type RunTransactionResponse = {
+  command_id: string;
+  submission_id: string;
+  transaction_data: string;
+  update_id?: string;
+};
+
 export type TransferOptions = {
   requestedAt?: string | Date;
   executeBefore?: string | Date;

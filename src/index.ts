@@ -28,6 +28,7 @@ class LoopSDK {
 
 	private onAccept: ((provider: Provider) => void) | null = null;
 	private onReject: (() => void) | null = null;
+  private onTransactionUpdate: ((payload: RunTransactionResponse, message: any) => void) | null = null;
 	private overlay: HTMLDivElement | null = null;
 	public wallet: Wallet;
 
@@ -54,6 +55,7 @@ class LoopSDK {
 			openMode?: "popup" | "tab";
 			requestSigningMode?: "popup" | "tab";
 			redirectUrl?: string;
+      onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void,
 		};
 	}) {
 		if (
@@ -69,6 +71,7 @@ class LoopSDK {
 		this.appName = appName;
 		this.onAccept = onAccept || null;
 		this.onReject = onReject || null;
+    this.onTransactionUpdate = options?.onTransactionUpdate || null;
 
 		const resolvedOptions = {
 			openMode: "popup" as "popup" | "tab",
@@ -582,6 +585,7 @@ class LoopSDK {
 					}, 800);
 				}
 			},
+      onTransactionUpdate: this.onTransactionUpdate ?? undefined,
 		};
 	}
 }
