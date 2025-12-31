@@ -17,14 +17,13 @@
         import { loop } from './dist/index.js';
 
         const html = htm.bind(h);
-        const networkEnv = 'devnet';
-
+        const networkEnv = window.location.hostname === 'localhost' ? 'local' : 'devnet';
         const getLighthouseBaseUrl = (network) => {
             switch (network) {
-                case 'main':
+                case 'main' || 'mainnet':
                     return 'https://lighthouse.cantonloop.com';
-                case 'test':
-                    return 'https://lighthouse.test.cantonloop.com';
+                case 'test' || 'testnet':
+                    return 'https://lighthouse.testnet.cantonloop.com';
                 case 'devnet':
                     return 'https://lighthouse.devnet.cantonloop.com';
                 default:
@@ -118,15 +117,15 @@
                 loop.init({
                     appName: 'Demo DAPP',
                     network: networkEnv,
+                    onTransactionUpdate: (payload) => {
+                        console.log('Transaction update:', payload);
+                        setTxUpdate(payload);
+                        setTxUpdateLog(new Date().toISOString());
+                    },
                     options: {
                         openMode: 'popup', // 'popup' (default) or 'tab'
                         requestSigningMode: 'popup', // 'popup' (default) | 'tab'
                         redirectUrl: 'https://example.com/after-connect', // optional redirect after approval
-                        onTransactionUpdate: (payload) => {
-                            console.log('Transaction update:', payload);
-                            setTxUpdate(payload);
-                            setTxUpdateLog(new Date().toISOString());
-                        },
                     },
                     onAccept: (prov) =>
                     {
