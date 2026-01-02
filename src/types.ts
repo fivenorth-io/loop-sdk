@@ -76,7 +76,7 @@ export type ConnectTransferResponse = {
 
 export type RunTransactionResponse = {
   command_id: string;
-  submission_id: string;
+  submission_id?: string;
   update_data?: unknown;
   update_id?: string;
 };
