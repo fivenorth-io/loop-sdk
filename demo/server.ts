@@ -4,21 +4,21 @@
  * Where as the application have access to private key and can compose a singer
  */
 
-import { getSigner, loop } from '../src/server/index';
-
-const signer = getSigner(process.env.PRIVATE_KEY || '', process.env.PARTY_ID || '');
-
-console.log("###########DEBUG########################");
-console.log("public key:", signer.getPublicKey());
-console.log("party id:", signer.getPartyId());
-
-console.log("sign message as hex:", signer.signMessageAsHex('Hello, world!'));
-console.log("#########################################");
+import { loop } from '../src/server/index';
 
 loop.init({
-    signer: signer,
-    network: 'local',
+    privateKey: process.env.PRIVATE_KEY || '',
+    partyId: process.env.PARTY_ID || '',
+    network: 'devnet',
 });
+
+console.log("###########DEBUG########################");
+console.log("public key:", loop.getSigner().getPublicKey());
+console.log("party id:", loop.getSigner().getPartyId());
+
+console.log("sign message as hex:", loop.getSigner().signMessageAsHex('Hello, world!'));
+console.log("#########################################");
+
 
 await loop.authenticate();
 const provider = loop.getProvider();
@@ -56,5 +56,5 @@ if (process.env.TRANSFER_TO && process.env.TRANSFER_TO !== "") {
 
     // Submit the transaction
     const result = await loop.executeTransaction(preparedPayload);
-    console.log("dauhu", JSON.stringify(result, null, 2));
+    console.log("Transfer Result", JSON.stringify(result, null, 2));
 }

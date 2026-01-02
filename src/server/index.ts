@@ -1,73 +1,9 @@
-import * as forge from 'node-forge';
 import { Provider, type ProviderHooks } from '../provider';
 import { Connection } from '../connection';
 import { SessionInfo } from '../session';
 import type { Network, TransferRequest, PreparedTransferPayload, TransferOptions, Instrument, TransactionPayload, PreparedSubmissionResponse, ExecuteSubmissionResquest } from '../types';
 import { time } from 'console';
-
-export const getSigner = (privateKeyHex: string, partyId: string): Signer => {
-    return new Signer(privateKeyHex, partyId);
-}
-
-export class Signer {
-    private privateKey: Uint8Array<ArrayBuffer>;
-    private publicKey: Uint8Array<ArrayBuffer>;
-    private publicKeyHex: string;
-    private partyId: string;
-
-    constructor(privateKeyHex: string, partyId: string) {
-        if (!privateKeyHex || !partyId) {
-            throw new Error('Private key and party ID are required');
-        }
-
-        this.privateKey = forge.util.hexToBytes(privateKeyHex);
-        this.partyId = partyId;
-        this.publicKey = forge.pki.ed25519.publicKeyFromPrivateKey({
-            privateKey: this.privateKey,
-        });
-        this.publicKeyHex = forge.util.bytesToHex(this.publicKey);
-    }
-
-    public getPublicKey(): string {
-        return this.publicKeyHex;
-    }
-
-    public signMessage(message: string): Uint8Array<ArrayBuffer> {
-        return forge.pki.ed25519.sign({
-            message: message,
-            encoding: 'utf8',
-            privateKey: this.privateKey,
-        });
-    }
-
-    public signMessageAsHex(message: string): string {
-        const signature = forge.pki.ed25519.sign({
-            message: message,
-            encoding: 'utf8',
-            privateKey: this.privateKey,
-        });
-        return forge.util.bytesToHex(signature);
-    }
-
-    public getPartyId(): string {
-        return this.partyId;
-    }
-
-    // sign the transaction hash in base64 format and return the signature in hex format
-    public signTransactionHash(transactionHash: string): string {
-        if (!transactionHash) {
-            throw new Error('Transaction hash is required');
-        }
-
-        // Now we will sign the transaction hash
-        const signedRequest = forge.pki.ed25519.sign({
-            message: forge.util.decode64(transactionHash),
-            encoding: 'binary',
-            privateKey: this.privateKey,
-        });   
-        return forge.util.bytesToHex(signedRequest);
-    }
-}
+import { getSigner, Signer } from './signer';
 
 class RpcProvider extends Provider {
     private ticket_id: string;
@@ -118,8 +54,8 @@ export class LoopSDK {
     private isAuthenticated: boolean = false;
     private session?: SessionInfo;
 
-    init({signer, network, walletUrl, apiUrl}: {signer: Signer, network?: Network, walletUrl?: string, apiUrl?: string}) {
-        this.signer = signer;
+    init({privateKey, partyId, network, walletUrl, apiUrl}: { privateKey: string, partyId: string, network?: Network, walletUrl?: string, apiUrl?: string}) {
+        this.signer = getSigner(privateKey, partyId);
         this.connection = new Connection({ network: network || 'local', walletUrl, apiUrl });
 
         this.isAuthenticated = false;
@@ -178,21 +114,26 @@ export class LoopSDK {
     }
 
     public async executeTransaction(payload: TransactionPayload): Promise<any> {
+        if (!this.provider || !this.signer) {
+            throw new Error('Provider and signer are required');
+        }
+
+        // Prepare the transaction with interactive submission to get unsigned transaction hash
         const preparedPayload = await this.provider?.prepareSubmission(payload);
         if (!preparedPayload) {
             throw new Error('Failed to prepare submission');
         }
-        // Now we will sign the transaction hash
+
+        // now we sign the transaction hash which is base64 encoded from the response
         const signedTransactionHash = this.getSigner().signTransactionHash(preparedPayload.transaction_hash);
 
-        // Now we will submit the signed transaction to ledger
+        // Combine the signed transaction hash with the transaction data to submit to the ledger
         const submissionResponse = await this.provider?.executeSubmission({
             command_id: preparedPayload.command_id,
             transaction_data: preparedPayload.transaction_data,
             signature: signedTransactionHash,
         });
 
-        console.log("submittedTransaction", submissionResponse);
         return submissionResponse;
     }
 }

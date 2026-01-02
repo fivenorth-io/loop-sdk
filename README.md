@@ -222,8 +222,7 @@ Coming soon
 
 ## Loop Server Signing API
 
-Beside allow dapp to connect and signing transaction for user, Loop SDK also allow a Loop user to extract their private key and script it to submit transaction to loop validator pragamatically
-
+Beside allow dapp to connect and signing transaction for user, Loop SDK also allow a Loop user to extract their private key and script it to submit transaction to loop wallet programmatically.
 
 
 # Development Guide

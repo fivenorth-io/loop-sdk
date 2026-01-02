@@ -1,52 +1,28 @@
 # Server API
 
-Beside enabling dapp to connect to a user's wallet and sign transaction inside browser, LoopSDK also enables a user extracts their private key to sign and submit DAML transaction programmatically using any programming language. At this moment, the SDK only support JavaScript.
-
+Beside enabling dapp to connect to a user's wallet and sign transaction inside browser, LoopSDK also enables a user extracts their private key to sign and submit DAML transaction programmatically.
 
 ## Install the SDK
 
-Using Bun:
+Follow the same step in [Install SDK](https://docs.fivenorth.io/loop-sdk/usage/#install-the-sdk) to install the SDK.
 
-```bash
-bun add @fivenorth/loop-sdk
-```
+Secondly, add [node-forge](https://www.npmjs.com/package/node-forge) to your project dependencies
 
-Then import into your script
+Now, you're ready to use the LoopSDK to sign from server instead of from dapp browser.
 
-```javascript
-import { loop } from '@fivenorth/loop-sdk/server';
-```
-
----
-
-```
-loop.init()
-
-const unsignTx = loop.prepare({...daml transaction...});
-const signatue = signer.Sign(..);
-
-loop.submit();
-```
+If you just want a quick example, look over the file at [demo server signing](https://github.com/fivenorth-io/loop-sdk/blob/main/demo/test.html)
 
 ## 1. Initialize the SDK
 
 Call `loop.init()` once when your application loads:
 
 ```javascript
+import { loop } from '../src/server/index';
+
 loop.init({
-    appName: 'My Awesome dApp',
-    network: 'local', // or 'devnet', 'mainnet'
-    options: {
-        openMode: 'popup', // or 'tab'
-        requestSigningMode: 'popup', // 'popup' (default) | 'tab'
-        redirectUrl: 'https://mydapp.com/after-connect', // optional
-    },
-    onAccept: (provider) => {
-        console.log('Connected!', provider);
-    },
-    onReject: () => {
-        console.log('Connection rejected by user.');
-    },
+    privateKey: process.env.PRIVATE_KEY || '',
+    partyId: process.env.PARTY_ID || '',
+    network: 'local',
 });
 ```
 
@@ -54,272 +30,46 @@ loop.init({
 
 | Field | Description |
 |-------|-------------|
-| `appName` | Name shown to the user in Loop wallet |
+| `privateKey` | Private key in hex format, extract from Loop wallet UI |
+| `partyId` | your party id |
 | `network` | `local`, `devnet`, or `mainnet` |
-| `onAccept(provider)` | Called when the user approves connection |
-| `onReject()` | Called when the user rejects connection |
 
-### Options
+## 2. Authenticate yourself
 
-| Field | Description |
-|-------|-------------|
-| `openMode` | `'popup'` (default) or `'tab'` |
-| `requestSigningMode` | Controls how signing/transaction requests open the wallet UI: `'popup'` (default) or `'tab'` |
-| `redirectUrl` | Optional URL your user will return to after connecting |
-
----
-
-## 2. Connect to the Wallet
-
-To start the connection:
+Ideally do this once when your application boot and initialize the SDK. After init, you will authenticate yourself to the server.
 
 ```javascript
-loop.connect();
+await loop.authenticate()
 ```
 
-`redirectUrl` and `openMode` are read from the `options` in `init()`.
+Upon authenticate succesfully you will now have 2 object `signer` and `provider` that you can get through `getSigner` and `getProvider`.
 
-This opens a QR modal for the user to scan with their Loop wallet.
-
-If you set `requestSigningMode` to `'popup'` (or `'tab'`), the SDK will also open the wallet dashboard for signing/transaction requests and auto-close the popup when the wallet responds.
-
-Usually you will want to run this when user initiate some action and they had not login to wallet yet. To automatically connect on pageload, follow the next section.
-
-### Auto reconnect on page reload
-
-A common pattern is if user already connect, approved the connection, and have a valid session, then they close the browser or the tab, later on when user resume to the app, we want to automatically connect them on page load. If user has not connect wallet, or has not approved the connection previously, we do not want to show them the QR code onboarding screen because this flow automatically on page reload and will disrupted user experience. To achive that, simply run this code
-
-
-```
-await loop.autoConnect()
-```
+Majority of time you don't need to use these directly and can use the high level signing process of `loop` object instead.
 
 ---
+
+## 3. Submit DAML transaction
+
+With the signer and provider ready after authenticate, you can submit any DAML transaction
+
+```javascript
+await loop.executeTransaction({
+"commands": [
+    {
+      "ExerciseCommand": {
+        "templateId": "template",
+        "contractId": "contractid",
+        "choice": "choice",
+        "choiceArgument": {
+            "arg1": "val1",
+        }
+      }
+    }
+  ],
+  "disclosedContracts": []
+})
+```
+
+And that's all
 
 ## 3. Using the Provider
-
-When the user accepts, the `provider` object gives you access to wallet data and ledger operations.
-
-The provider object includes:
-
-- `party_id`
-- `public_key`
-- `email` 
-
----
-
-### Get Account
-
-Retrieve extra information about the account connected to the provider
-
-```javascript
-const account = await provider.getAccount();
-console.log(account);
-```
-
----
-
-### Get Holdings
-
-```javascript
-const holdings = await provider.getHolding();
-console.log(holdings);
-```
-
----
-
-### Get Active Contracts
-
-By Template ID:
-
-```javascript
-const contracts = await provider.getActiveContracts({
-    templateId: '#splice-amulet:Splice.Amulet:Amulet'
-});
-console.log(contracts);
-```
-
-By Interface ID:
-
-```javascript
-const contracts = await provider.getActiveContracts({
-    interfaceId: '#splice-api-token-holding-v1:Splice.Api.Token.HoldingV1:Holding'
-});
-console.log(contracts);
-```
-
----
-
-### Submit a Transaction
-
-```javascript
-const damlCommand = {
-    commands: [{
-        ExerciseCommand: {
-            templateId: "#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferFactory",
-            contractId: 'your-contract-id', 
-            choice: 'TransferFactory_Transfer',
-            choiceArgument: {
-                // ... your arguments
-            }
-        }
-    }],
-};
-
-try {
-    const result = await provider.submitTransaction(damlCommand, {
-        // Optional: show a custom message in the wallet prompt
-        message: 'Transfer 10 CC to RetailStore',
-    });
-    console.log('Transaction successful:', result);
-} catch (error) {
-    console.error('Transaction failed:', error);
-}
-```
-
----
-
-### Sign a Message
-
-```javascript
-const message = 'Hello, Loop!';
-try {
-    const signature = await provider.signMessage(message);
-    console.log('Signature:', signature);
-} catch (error) {
-    console.error('Signing failed:', error);
-}
-```
-
----
-
-### Transfer (built-in helper)
-
-```javascript
-// Fast path: uses your wallet connection to build and run a transfer
-await loop.wallet.transfer(
-  'receiver::fingerprint',
-  '5', // amount as string or number
-  {
-    // Optional overrides. Defaults to Amulet/DSO if omitted.
-    instrument_admin: 'issuer::fingerprint', // optional
-    instrument_id: 'LOOP',                   // optional
-  },
-  {
-    // Optional: show a custom message in the wallet prompt
-    message: 'Send 5 CC to Alice',
-    requestedAt: new Date().toISOString(),   // optional
-    executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
-    requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes
-  },
-);
-```
-
-Notes:
-- You must have spendable holdings for the specified instrument (admin + id). If left blank, the SDK defaults to the native token.
-- The helper handles: fetching holdings, building the transfer factory payload, and submitting via Wallet Connect.
-- Requests time out after 5 minutes by default; override with `requestTimeout` in milliseconds.
-
----
-
-### USDC withdraw helper
-
-```javascript
-await loop.wallet.extension.usdcBridge.withdrawalUSDCxToEthereum(
-  '0xYourEthAddress',
-  '10.5',
-  {
-    reference: 'optional memo',
-    message: 'Withdraw 10.5 USDCx to 0xabc', // optional custom prompt text
-    requestTimeout: 5 * 60 * 1000,
-  },
-);
-```
-
-Notes:
-- Uses the connect-based withdraw endpoint to prepare the transaction and sends it over Wallet Connect.
-- The helper auto-reconnects the websocket if it was closed before sending the request.
-
----
-
-## How the Loop Connect Flow Works
-
-This section explains the code path from your dApp to the Loop wallet and back.
-
-### 1. Your dApp initializes the SDK
-
-You call `loop.init()` once your app loads:
-
-```javascript
-loop.init({
-    appName: 'My Test dApp',
-    network: 'devnet',
-    options: {
-        openMode: 'popup',
-        redirectUrl: 'https://mydapp.com/connected',
-    },
-    walletUrl,
-    apiUrl,
-    onAccept: (provider) => setProvider(provider),
-    onReject: () => console.log('User rejected connection'),
-});
-```
-
-This step only configures the SDK.
-**No connection is made yet.**
-
----
-
-### 2. User clicks "Connect" in your dApp
-
-```javascript
-loop.connect();
-```
-
-When called, the SDK:
-
-1. Checks localStorage to see if there is a previous session.
-2. If not, it asks the Loop backend for a **connect ticket**.
-3. Builds the wallet URL:
-    `/.connect/?ticketId=xxxx`
-4. Opens the connection flow (QR, popup, or new tab).
-5. Opens a WebSocket to wait for approve/reject.
-
-If a valid session is already cached, the SDK may skip the QR step and reconnect automatically.
-
----
-
-### 3. User approves in the Loop wallet
-
-When the user approves:
-
-1. The wallet updates the backend with "approved".
-2. The backend sends a `handshake_accept` message over WebSocket.
-3. The SDK creates a `Provider` object containing:
-
-- `party_id`
-- `public_key`
-- `email`
-- `authToken`
-
-4. SDK calls your `onAccept(provider)` callback.
-
-At this point, **your dApp is connected**.
-
----
-
-### 4. Your dApp uses the Provider
-
-After you store the provider in your component/state, you can call:
-
-```javascript
-provider.getHolding();
-provider.getActiveContracts({ templateId });
-provider.submitTransaction(damlCommand);
-provider.signMessage("Hello");
-```
-
-This is the same flow used in the CodePen demo.
-You initialize once, connect on the button click, then use the provider to interact with the wallet and ledger.
-
----
