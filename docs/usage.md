@@ -11,7 +11,7 @@ bun add @fivenorth/loop-sdk
 Or via CDN (no build process required):
 
 ```javascript
-import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.3.0/dist";
+import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.8.0/dist";
 ```
 
 Then import into your dApp:
@@ -30,6 +30,9 @@ Call `loop.init()` once when your application loads:
 loop.init({
     appName: 'My Awesome dApp',
     network: 'local', // or 'devnet', 'mainnet'
+    onTransactionUpdate: (payload) => {
+        console.log('Transaction update:', payload);
+    },
     options: {
         openMode: 'popup', // or 'tab'
         requestSigningMode: 'popup', // 'popup' (default) | 'tab'
@@ -52,6 +55,7 @@ loop.init({
 | `network` | `local`, `devnet`, or `mainnet` |
 | `onAccept(provider)` | Called when the user approves connection |
 | `onReject()` | Called when the user rejects connection |
+| `onTransactionUpdate(payload)` | Called when a transaction update is finalized (includes `update_id` and optional `update_data`) |
 
 ### Options
 
@@ -170,6 +174,8 @@ try {
     console.error('Transaction failed:', error);
 }
 ```
+
+Transaction responses include `command_id`, `submission_id`, `transaction_data`, and `update_id` when available. For token transfers, `update_id` may arrive later (once indexed), in which case `onTransactionUpdate` fires with the finalized `update_id`. Non-transfer transactions do not receive an `update_id` via this mechanism.
 
 ---
 

@@ -17,7 +17,19 @@
         import { loop } from './dist/index.js';
 
         const html = htm.bind(h);
-        const networkEnv = 'devnet';
+        const networkEnv = window.location.hostname === 'localhost' ? 'local' : 'devnet';
+        const getLighthouseBaseUrl = (network) => {
+            switch (network) {
+                case 'main' || 'mainnet':
+                    return 'https://lighthouse.cantonloop.com';
+                case 'test' || 'testnet':
+                    return 'https://lighthouse.testnet.cantonloop.com';
+                case 'devnet':
+                    return 'https://lighthouse.devnet.cantonloop.com';
+                default:
+                    return 'https://lighthouse.devnet.cantonloop.com';
+            }
+        };
 
         const getDamlCommandTemplate = (partyId = '') => ({
             commands: [ {
@@ -78,6 +90,8 @@
             const [ damlCommand, setDamlCommand ] = useState(JSON.stringify(getDamlCommandTemplate(), null, 2));
             const [ isSubmittingTx, setIsSubmittingTx ] = useState(false);
             const [ txResult, setTxResult ] = useState(null);
+            const [ txUpdate, setTxUpdate ] = useState(null);
+            const [ txUpdateLog, setTxUpdateLog ] = useState('');
             const [ rawMessage, setRawMessage ] = useState('Hello, Loop!');
             const [ signature, setSignature ] = useState(null);
             const [ isSigning, setIsSigning ] = useState(false);
@@ -88,6 +102,7 @@
             const [ transferRequestTimeout, setTransferRequestTimeout ] = useState('');
             const [ transferResult, setTransferResult ] = useState(null);
             const [ isTransferring, setIsTransferring ] = useState(false);
+            const [ lastTxSource, setLastTxSource ] = useState(null);
             const [ withdrawRecipient, setWithdrawRecipient ] = useState('');
             const [ withdrawAmount, setWithdrawAmount ] = useState('');
             const [ withdrawReference, setWithdrawReference ] = useState('');
@@ -102,6 +117,11 @@
                 loop.init({
                     appName: 'Demo DAPP',
                     network: networkEnv,
+                    onTransactionUpdate: (payload) => {
+                        console.log('Transaction update:', payload);
+                        setTxUpdate(payload);
+                        setTxUpdateLog(new Date().toISOString());
+                    },
                     options: {
                         openMode: 'popup', // 'popup' (default) or 'tab'
                         requestSigningMode: 'popup', // 'popup' (default) | 'tab'
@@ -209,6 +229,9 @@
                 }
                 const message = customTxMessage.trim();
                 setIsTransferring(true);
+                setLastTxSource('transfer');
+                setTxUpdate(null);
+                setTxUpdateLog('');
                 setTransferResult(null);
                 try
                 {
@@ -308,6 +331,9 @@
                     return;
                 }
                 setIsSubmittingTx(true);
+                setLastTxSource('run');
+                setTxUpdate(null);
+                setTxUpdateLog('');
                 setTxResult(null);
                 try
                 {
@@ -347,6 +373,9 @@
                 const message = customTxMessage.trim();
 
                 setIsWithdrawing(true);
+                setLastTxSource('withdraw');
+                setTxUpdate(null);
+                setTxUpdateLog('');
                 setWithdrawResult(null);
                 try
                 {
@@ -393,6 +422,23 @@
                     setIsSigning(false);
                 }
             };
+
+            const updateId = txUpdate?.update_id || '';
+            const lighthouseBaseUrl = getLighthouseBaseUrl(networkEnv);
+            const updateUrl = updateId ? `${lighthouseBaseUrl}/transactions/${updateId}` : '';
+            const txUpdateSection = txUpdate ? html`
+                <div style="margin-top: 20px; color: #444;">
+                    Transaction Update (${txUpdateLog || 'unknown timestamp'}):
+                </div>
+                <div style="margin-top: 6px; background: #f4f4f4; padding: 10px; border-radius: 5px;">
+                    ${updateId ? html`
+                        <div style="font-family: monospace; margin-bottom: 6px;">"update_id": "${updateId}"</div>
+                        <a href=${updateUrl} target="_blank" rel="noopener noreferrer">${updateUrl}</a>
+                    ` : html`
+                        <div style="color: #b00020;">Missing update_id in transaction update.</div>
+                    `}
+                </div>
+            ` : '';
 
             const handleGetConnectUrl = () =>
             {
@@ -579,6 +625,7 @@
                                 ${transferResult && html`
                                     <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(transferResult, null, 2)}</pre>
                                 `}
+                                ${lastTxSource === 'transfer' ? txUpdateSection : ''}
                             </div>
 
                             <hr style="margin: 20px 0;" />
@@ -622,6 +669,7 @@
                                 ${withdrawResult && html`
                                     <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px; margin-top: 10px;">${JSON.stringify(withdrawResult, null, 2)}</pre>
                                 `}
+                                ${lastTxSource === 'withdraw' ? txUpdateSection : ''}
                             </div>
                             
                             <hr style="margin: 20px 0;" />
@@ -645,6 +693,7 @@
                                     <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(txResult, null, 2)}</pre>
                                 </div>
                             `}
+                            ${lastTxSource === 'run' ? txUpdateSection : ''}
 
                         </div>
                     ` : html`

@@ -29,7 +29,7 @@ import { loop } from '@fivenorth/loop-sdk';
 Note that, If you don't want to implement a build process, you can include the file directly with `unpkg` such as 
 
 ```javascript
-import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.1.1/dist';
+import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.8.0/dist';
 ```
 
 An example of how we use it in that manner is on our [loopsdk demo](https://codepen.io/kureikain/pen/KwVGgLX)
@@ -42,6 +42,9 @@ Before you can connect, you need to initialize the SDK. This is typically done o
 loop.init({
     appName: 'My Awesome dApp',
     network: 'local', // or 'devnet', 'mainnet'
+    onTransactionUpdate: (payload) => {
+        console.log('Transaction update:', payload);
+    },
     options: {
         openMode: 'popup', // 'popup' (default) or 'tab'
         requestSigningMode: 'popup', // 'popup' (default) or 'tab'
@@ -60,6 +63,7 @@ loop.init({
 The `init` method takes a configuration object with the following properties:
 - `appName`: The name of your application, which will be displayed to the user in the Loop wallet.
 - `network`: The network to connect to. Can be `local`, `devnet`, or `mainnet`.
+- `onTransactionUpdate`: Called when a transaction update is finalized (includes `update_id` and optional `update_data`).
 - `options`: Optional object containing:
   - `openMode`: Controls how Loop opens: `'popup'` (default) or `'tab'`.
   - `requestSigningMode`: Controls how signing/transaction requests open the wallet UI after you're connected: `'popup'` (default) or `'tab'`.
@@ -144,6 +148,8 @@ try {
     console.error('Transaction failed:', error);
 }
 ```
+
+Transaction responses include `command_id`, `submission_id`, `transaction_data`, and `update_id` when available. For token transfers, `update_id` may arrive later (once indexed), in which case `onTransactionUpdate` fires with the finalized `update_id`. Non-transfer transactions do not receive an `update_id` via this mechanism.
 
 #### Sign a Message
 

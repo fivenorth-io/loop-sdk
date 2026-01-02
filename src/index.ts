@@ -10,6 +10,7 @@ import type {
 	Network,
 	TransferOptions,
 	Wallet,
+	RunTransactionResponse,
 } from "./types";
 import { MessageType } from "./types";
 import { LoopWallet } from "./wallet";
@@ -28,6 +29,7 @@ class LoopSDK {
 
 	private onAccept: ((provider: Provider) => void) | null = null;
 	private onReject: (() => void) | null = null;
+  	private onTransactionUpdate: ((payload: RunTransactionResponse, message: any) => void) | null = null;
 	private overlay: HTMLDivElement | null = null;
 	public wallet: Wallet;
 
@@ -42,6 +44,7 @@ class LoopSDK {
 		apiUrl,
 		onAccept,
 		onReject,
+		onTransactionUpdate,
 		options,
 	}: {
 		appName: string;
@@ -50,6 +53,7 @@ class LoopSDK {
 		apiUrl?: string;
 		onAccept?: (provider: Provider) => void;
 		onReject?: () => void;
+		onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void;
 		options?: {
 			openMode?: "popup" | "tab";
 			requestSigningMode?: "popup" | "tab";
@@ -69,6 +73,7 @@ class LoopSDK {
 		this.appName = appName;
 		this.onAccept = onAccept || null;
 		this.onReject = onReject || null;
+		this.onTransactionUpdate = onTransactionUpdate || null;
 
 		const resolvedOptions = {
 			openMode: "popup" as "popup" | "tab",
@@ -582,6 +587,7 @@ class LoopSDK {
 					}, 800);
 				}
 			},
+      onTransactionUpdate: this.onTransactionUpdate ?? undefined,
 		};
 	}
 }

@@ -1,5 +1,13 @@
 import type { Connection } from './connection';
-import type { Holding, ActiveContract, TransferRequest, PreparedTransferPayload, TransferOptions, InstrumentSpec } from './types';
+import type {
+  Holding,
+  ActiveContract,
+  TransferRequest,
+  PreparedTransferPayload,
+  TransferOptions,
+  InstrumentSpec,
+  RunTransactionResponse,
+} from './types';
 import { MessageType, type Account } from './types';
 import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
 
@@ -15,6 +23,7 @@ export type RequestFinishArgs = {
 export type ProviderHooks = {
   onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown | Promise<unknown>;
   onRequestFinish?: (args: RequestFinishArgs) => void;
+  onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void;
 };
 
 type TransactionPayload = {
@@ -89,6 +98,9 @@ export class Provider {
     public handleResponse(message: any) {
         console.log('Received response:', message);
 
+        if (message?.type === MessageType.TRANSACTION_COMPLETED && message?.payload?.update_id) {
+            this.hooks?.onTransactionUpdate?.(message.payload as RunTransactionResponse, message);
+        }
 
         if (message.request_id) {
             this.requests.set(message.request_id, message);

@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.8.0 (2026-01-02)
+Full Changelog: [v0.7.6...v0.8.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.6...v0.7.7)
+
+### Documentation
+
+- **sdk** `onTransactionUpdate` now returns `update_id` and `update_data` in the update payload (`update_data` is the transaction tree).
+
 ## 0.7.6 (2025-12-30)
 Full Changelog: [v0.7.5...v0.7.6](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.5...v0.7.6)
 

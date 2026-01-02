@@ -19,7 +19,7 @@ export enum MessageType {
   HANDSHAKE_REJECT = 'handshake_reject',
 
   RUN_TRANSACTION = 'run_transaction',
-  RUN_TRANSACTION_RESPONSE = 'run_transaction_response',
+  TRANSACTION_COMPLETED = 'transaction_completed',
 
   SIGN_RAW_MESSAGE = 'sign_raw_message',
   SIGN_RAW_MESSAGE_RESPONSE = 'sign_raw_message_response',
@@ -72,6 +72,13 @@ export type PreparedTransferPayload = {
 
 export type ConnectTransferResponse = {
   payload: PreparedTransferPayload;
+};
+
+export type RunTransactionResponse = {
+  command_id: string;
+  submission_id?: string;
+  update_data?: unknown;
+  update_id?: string;
 };
 
 export type TransferOptions = {
