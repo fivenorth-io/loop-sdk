@@ -7,9 +7,6 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
-## v0.8.1
-- Demo page now shows `update_data` for finalized transaction updates.
-
 ## v0.8.0
 - `onTransactionUpdate` now returns `update_id` and `update_data` in the update payload.
   `update_data` is the ledger transaction tree (includes `eventsById`, `workflowId`, `effectiveAt`, etc.).

@@ -1,13 +1,6 @@
 # Changelog
 
 
-## 0.8.1 (2026-01-02)
-Full Changelog: [v0.8.0...v0.8.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.8.0...v0.8.1)
-
-### Documentation
-
-- **demo** display `update_data` in the SDK test/demo page for finalized transaction updates.
-
 ## 0.8.0 (2026-01-02)
 Full Changelog: [v0.7.6...v0.8.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.6...v0.8.0)
 
