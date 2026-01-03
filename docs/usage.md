@@ -175,7 +175,7 @@ try {
 }
 ```
 
-Transaction responses include `command_id`, `submission_id`, `transaction_data`, and `update_id` when available. For token transfers, `update_id` may arrive later (once indexed), in which case `onTransactionUpdate` fires with the finalized `update_id`. Non-transfer transactions do not receive an `update_id` via this mechanism.
+Transaction responses include `command_id` and `submission_id`. When the transaction is completed on-ledger, `update_id` arrives and `onTransactionUpdate` fires with `update_id` and `update_data` (ledger transaction tree).
 
 ---
 
