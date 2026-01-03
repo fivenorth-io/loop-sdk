@@ -27,12 +27,14 @@ loop.init({
     },
     onAccept: (provider: Provider) => void,
     onReject: () => void,
+    onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void,
 });
 ```
 
 #### Notes
 - `onAccept(provider)` is called when user approves via wallet.
 - `onReject()` is called when user rejects.
+- `onTransactionUpdate(payload)` is called when a ledger update is finalized (`update_id` + `update_data`).
 - `openMode` and `redirectUrl` configure connection UI behavior.
 - `requestSigningMode` controls whether signing/transaction requests open the wallet dashboard automatically after you are connected (`'popup'` default or `'tab'`).
 

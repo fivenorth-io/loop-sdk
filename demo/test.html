@@ -424,6 +424,7 @@
             };
 
             const updateId = txUpdate?.update_id || '';
+            const updateDataText = txUpdate?.update_data ? JSON.stringify(txUpdate.update_data, null, 2) : '';
             const lighthouseBaseUrl = getLighthouseBaseUrl(networkEnv);
             const updateUrl = updateId ? `${lighthouseBaseUrl}/transactions/${updateId}` : '';
             const txUpdateSection = txUpdate ? html`
@@ -434,6 +435,10 @@
                     ${updateId ? html`
                         <div style="font-family: monospace; margin-bottom: 6px;">"update_id": "${updateId}"</div>
                         <a href=${updateUrl} target="_blank" rel="noopener noreferrer">${updateUrl}</a>
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer;">update_data</summary>
+                            <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${updateDataText || 'No update_data available.'}</pre>
+                        </details>
                     ` : html`
                         <div style="color: #b00020;">Missing update_id in transaction update.</div>
                     `}

@@ -2,7 +2,7 @@
 
 
 ## 0.8.0 (2026-01-02)
-Full Changelog: [v0.7.6...v0.8.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.6...v0.7.7)
+Full Changelog: [v0.7.6...v0.8.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.6...v0.8.0)
 
 ### Documentation
 
