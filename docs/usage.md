@@ -175,7 +175,7 @@ try {
 }
 ```
 
-Transaction responses include `command_id` and `submission_id`. For token transfers, `update_id` arrives when the ledger update is finalized, at which point `onTransactionUpdate` fires with `update_id` and `update_data` (ledger transaction tree). Non-transfer transactions do not receive an `update_id` via this mechanism.
+Transaction responses include `command_id` and `submission_id`. When the transaction is completed on-ledger, `update_id` arrives and `onTransactionUpdate` fires with `update_id` and `update_data` (ledger transaction tree).
 
 ---
 
