@@ -1,7 +1,8 @@
 /**
  * This file is used to show how to use the Loop SDK in a server side application
  * 
- * Where as the application have access to private key and can compose a singer
+ * Where as the application have access to private key and can compose a singer DAML
+ * transaction to be executed
  */
 
 import { loop } from '../src/server/index';
