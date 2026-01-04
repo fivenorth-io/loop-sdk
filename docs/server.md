@@ -17,7 +17,7 @@ If you just want a quick example, look over the file at [demo server signing](ht
 Call `loop.init()` once when your application loads:
 
 ```javascript
-import { loop } from '../src/server/index';
+import { loop } from '@fivenorth/loops-dk/server';
 
 loop.init({
     privateKey: process.env.PRIVATE_KEY,
