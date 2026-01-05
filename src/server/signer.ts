@@ -5,8 +5,8 @@ export const getSigner = (privateKeyHex: string, partyId: string): Signer => {
 }
 
 export class Signer {
-    private privateKey: Uint8Array<ArrayBuffer>;
-    private publicKey: Uint8Array<ArrayBuffer>;
+    private privateKey: forge.Bytes;
+    private publicKey: forge.Bytes;
     private publicKeyHex: string;
     private partyId: string;
 
@@ -17,22 +17,23 @@ export class Signer {
 
         this.privateKey = forge.util.hexToBytes(privateKeyHex);
         this.partyId = partyId;
-        this.publicKey = forge.pki.ed25519.publicKeyFromPrivateKey({
+        const publicKey = forge.pki.ed25519.publicKeyFromPrivateKey({
             privateKey: this.privateKey,
-        });
-        this.publicKeyHex = forge.util.bytesToHex(this.publicKey);
+        }) as unknown as forge.Bytes;
+        this.publicKey = publicKey;
+        this.publicKeyHex = forge.util.bytesToHex(publicKey);
     }
 
     public getPublicKey(): string {
         return this.publicKeyHex;
     }
 
-    public signMessage(message: string): Uint8Array<ArrayBuffer> {
+    public signMessage(message: string): forge.Bytes {
         return forge.pki.ed25519.sign({
             message: message,
             encoding: 'utf8',
             privateKey: this.privateKey,
-        });
+        }) as unknown as forge.Bytes;
     }
 
     public signMessageAsHex(message: string): string {
@@ -40,7 +41,7 @@ export class Signer {
             message: message,
             encoding: 'utf8',
             privateKey: this.privateKey,
-        });
+        }) as unknown as forge.Bytes;
         return forge.util.bytesToHex(signature);
     }
 
@@ -59,7 +60,7 @@ export class Signer {
             message: forge.util.decode64(transactionHash),
             encoding: 'binary',
             privateKey: this.privateKey,
-        });   
+        }) as unknown as forge.Bytes;
         return forge.util.bytesToHex(signedRequest);
     }
 }

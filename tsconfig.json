@@ -12,9 +12,9 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "noEmit": false,
     "outDir": "./dist",
     "declaration": true,
+    "emitDeclarationOnly": true,
     "declarationMap": true,
 
     // Best practices
