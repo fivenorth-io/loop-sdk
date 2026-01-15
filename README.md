@@ -149,7 +149,7 @@ try {
 }
 ```
 
-Transaction responses include `command_id` and `submission_id`. When the transaction is completed on-ledger, `update_id` arrives and `onTransactionUpdate` fires with `update_id` and `update_data` (ledger transaction tree).
+`onTransactionUpdate` fires once per transaction with a single payload that includes `command_id` and `submission_id`. On success it also includes `update_id` and `update_data` (ledger transaction tree); on failure it includes `status: "failed"` and `error_message`.
 
 #### Sign a Message
 
