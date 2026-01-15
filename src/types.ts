@@ -79,6 +79,8 @@ export type RunTransactionResponse = {
   submission_id?: string;
   update_data?: unknown;
   update_id?: string;
+  status?: 'succeeded' | 'failed';
+  error_message?: string; // present if status is 'failed'
 };
 
 export type TransferOptions = {
