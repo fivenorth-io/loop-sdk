@@ -125,7 +125,15 @@ Fetches DAML active contracts filtered by template or interface.
 
 #### `provider.submitTransaction(command): Promise<any>`
 
-Submits a DAML ExcerciseCommand or multi-command transaction.
+Submits a DAML ExcerciseCommand or multi-command transaction. This is the default async path (no `commit_mode`). It returns the submission result first (including `command_id` and `submission_id`), then the ledger update arrives later via `onTransactionUpdate` with `update_id` and `update_data`.
+
+---
+
+#### `provider.submitAndWaitForTransaction(command): Promise<any>`
+
+Submits a DAML ExcerciseCommand or multi-command transaction and waits for the result. This is opt-in and sends `commit_mode: "wait"` so the wallet uses the execute-and-wait endpoint. The final result arrives as a single `onTransactionUpdate` payload (command/submission IDs plus update data or failure status).
+
+Note: errors from the wait endpoint do not always mean the transaction failed. A 4xx error (e.g., 400) is a definite failure. A 5xx/timeout can mean the ledger is slow; the transaction may still be committed later, so clients should keep listening for updates rather than assume failure.
 
 ---
 
@@ -146,6 +154,7 @@ await provider.transfer(
     executeBefore?: string | Date;
     requestTimeout?: number;
     message?: string;
+    commitMode?: 'async' | 'wait';
   }
 );
 ```

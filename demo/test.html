@@ -92,6 +92,7 @@
             const [ txResult, setTxResult ] = useState(null);
             const [ txUpdate, setTxUpdate ] = useState(null);
             const [ txUpdateLog, setTxUpdateLog ] = useState('');
+            const [ commitMode, setCommitMode ] = useState('async');
             const [ rawMessage, setRawMessage ] = useState('Hello, Loop!');
             const [ signature, setSignature ] = useState(null);
             const [ isSigning, setIsSigning ] = useState(false);
@@ -249,6 +250,7 @@
                             executeBefore: executeBefore.toISOString(),
                             requestTimeout: requestTimeoutMs,
                             message: message || undefined,
+                            commitMode: commitMode,
                         },
                     );
                     setTransferResult(res);
@@ -339,7 +341,10 @@
                 {
                     const command = JSON.parse(damlCommand);
                     const message = customTxMessage?.trim();
-                    const result = await provider.submitTransaction(command, { message: message || undefined });
+                    const submitFn = commitMode === 'wait'
+                        ? provider.submitAndWaitForTransaction.bind(provider)
+                        : provider.submitTransaction.bind(provider);
+                    const result = await submitFn(command, { message: message || undefined });
                     setTxResult(result);
                 } catch (error)
                 {
@@ -430,6 +435,10 @@
             const updateDataText = txPayload?.update_data ? JSON.stringify(txPayload.update_data, null, 2) : '';
             const status = txPayload?.status || '';
             const errorMessage = txPayload?.error_message || '';
+            const submissionCommandId = txResult?.command_id || '';
+            const submissionIdOnly = txResult?.submission_id || '';
+            const transferSubmissionCommandId = transferResult?.command_id || '';
+            const transferSubmissionIdOnly = transferResult?.submission_id || '';
             const lighthouseBaseUrl = getLighthouseBaseUrl(networkEnv);
             const updateUrl = updateId ? `${lighthouseBaseUrl}/transactions/${updateId}` : '';
             const txSummarySection = txPayload ? html`
@@ -449,6 +458,18 @@
                         <summary style="cursor: pointer;">update data</summary>
                         <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${updateDataText || 'No transaction data available.'}</pre>
                     </details>
+                </div>
+            ` : '';
+            const txSubmissionSection = txResult ? html`
+                <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+                    <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${submissionCommandId || 'n/a'}</div>
+                    <div style="font-family: monospace;">submission_id: ${submissionIdOnly || 'n/a'}</div>
+                </div>
+            ` : '';
+            const transferSubmissionSection = transferResult ? html`
+                <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+                    <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${transferSubmissionCommandId || 'n/a'}</div>
+                    <div style="font-family: monospace;">submission_id: ${transferSubmissionIdOnly || 'n/a'}</div>
                 </div>
             ` : '';
 
@@ -592,6 +613,23 @@
                             <hr style="margin: 20px 0;" />
 
                             <div>
+                                <h3>Commit Mode</h3>
+                                <p>Choose how the wallet submits transactions: async returns immediately; wait returns once the ledger update is ready.</p>
+                                <label style="font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                    Commit Mode:
+                                    <select
+                                        value=${commitMode}
+                                        onChange=${(e) => setCommitMode(e.target.value)}
+                                    >
+                                        <option value="async">async</option>
+                                        <option value="wait">wait</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <hr style="margin: 20px 0;" />
+
+                            <div>
                                 <h3>Transfer Helper</h3>
                                 <p>Instrument admin/id and timeout are optional; leave blank to default to Amulet/DSO/300000ms.</p>
                                 <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
@@ -634,7 +672,8 @@
                                 <button onClick=${handleWalletTransfer} disabled=${isTransferring} style="margin-top: 8px;">
                                     ${isTransferring ? 'Sending...' : 'Send'}
                                 </button>
-                                ${lastTxSource === 'transfer' ? txSummarySection : ''}
+                                ${lastTxSource === 'transfer' ? (commitMode === 'async' ? transferSubmissionSection : '') : ''}
+                                ${lastTxSource === 'transfer' ? (commitMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
                             </div>
 
                             <hr style="margin: 20px 0;" />
@@ -693,7 +732,8 @@
                                 </button>
                             </div>
 
-                            ${lastTxSource === 'run' ? txSummarySection : ''}
+                            ${lastTxSource === 'run' ? (commitMode === 'async' ? txSubmissionSection : '') : ''}
+                            ${lastTxSource === 'run' ? (commitMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
 
                         </div>
                     ` : html`

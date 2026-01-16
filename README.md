@@ -151,6 +151,20 @@ try {
 
 `onTransactionUpdate` fires once per transaction with a single payload that includes `command_id` and `submission_id`. On success it also includes `update_id` and `update_data` (ledger transaction tree); on failure it includes `status: "failed"` and `error_message`.
 
+`submitTransaction` is the default async path. It returns the submission result first (including `command_id` and `submission_id`), then the ledger update arrives later via `onTransactionUpdate` with `update_id` and `update_data`.
+
+To wait for the transaction result directly (opt-in), use:
+
+```javascript
+await provider.submitAndWaitForTransaction(damlCommand, {
+    message: 'Transfer 10 CC to RetailStore',
+});
+```
+
+In wait mode, the final result is returned as a single `onTransactionUpdate` payload (command/submission IDs plus update data or failure status).
+
+Note: `submitAndWaitForTransaction` errors do not always mean the transaction failed. A 4xx error (e.g., 400) indicates a definite failure. A 5xx/timeout can mean the ledger is slow or backed up; the transaction may still be committed later, so clients should continue to listen for updates rather than assume failure.
+
 #### Sign a Message
 
 You can request the user to sign an arbitrary message:
@@ -179,6 +193,7 @@ await loop.wallet.transfer(
   {
     // Optional: show a custom message in the wallet prompt
     message: 'Send 5 CC to Alice',
+    commitMode: 'wait',                      // optional: 'async' (default) or 'wait'
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
     requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes
