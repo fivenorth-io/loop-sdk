@@ -135,6 +135,8 @@ Submits a DAML ExcerciseCommand or multi-command transaction and waits for the r
 
 Note: errors from the wait endpoint do not always mean the transaction failed. A 4xx error (e.g., 400) is a definite failure. A 5xx/timeout can mean the ledger is slow; the transaction may still be committed later, so clients should keep listening for updates rather than assume failure.
 
+Deduplication: both async execute and execute-and-wait use a 1 hour deduplication window. If you retry within that window, resubmit the same `command_id` and `submission_id` so the request is idempotent.
+
 ---
 
 #### `provider.transfer(recipient, amount, instrument?, options?): Promise<any>`

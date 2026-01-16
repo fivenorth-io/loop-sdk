@@ -165,6 +165,8 @@ In wait mode, the final result is returned as a single `onTransactionUpdate` pay
 
 Note: `submitAndWaitForTransaction` errors do not always mean the transaction failed. A 4xx error (e.g., 400) indicates a definite failure. A 5xx/timeout can mean the ledger is slow or backed up; the transaction may still be committed later, so clients should continue to listen for updates rather than assume failure.
 
+Deduplication: both async execute and execute-and-wait use a 1 hour deduplication window. If you retry within that window, resubmit the same `command_id` and `submission_id` so the request is idempotent.
+
 #### Sign a Message
 
 You can request the user to sign an arbitrary message:
