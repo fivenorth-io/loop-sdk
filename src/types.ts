@@ -80,7 +80,11 @@ export type RunTransactionResponse = {
   update_data?: unknown;
   update_id?: string;
   status?: 'succeeded' | 'failed';
-  error_message?: string; // present if status is 'failed'
+  error?: SubmissionError;
+};
+
+export type SubmissionError = {
+  message: string;
 };
 
 export type TransferOptions = {

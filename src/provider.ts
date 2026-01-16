@@ -103,6 +103,10 @@ export class Provider {
             message?.type === MessageType.TRANSACTION_COMPLETED &&
             (message?.payload?.update_id || message?.payload?.update_data || message?.payload?.status)
         ) {
+            if (message?.payload?.error_message) {
+                message.payload.error = { message: message.payload.error_message };
+                delete message.payload.error_message;
+            }
             this.hooks?.onTransactionUpdate?.(message.payload as RunTransactionResponse, message);
         }
 
