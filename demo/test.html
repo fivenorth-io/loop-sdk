@@ -434,7 +434,7 @@
             const updateId = txPayload?.update_id || '';
             const updateDataText = txPayload?.update_data ? JSON.stringify(txPayload.update_data, null, 2) : '';
             const status = txPayload?.status || '';
-            const errorMessage = txPayload?.error_message || '';
+            const errorMessage = txPayload?.error?.error_message || '';
             const submissionCommandId = txResult?.command_id || '';
             const submissionIdOnly = txResult?.submission_id || '';
             const transferSubmissionCommandId = transferResult?.command_id || '';

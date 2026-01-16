@@ -84,7 +84,7 @@ export type RunTransactionResponse = {
 };
 
 export type SubmissionError = {
-  message: string;
+  error_message: string;
 };
 
 export type TransferOptions = {
