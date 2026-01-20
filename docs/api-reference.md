@@ -155,6 +155,7 @@ await provider.transfer(
     requestedAt?: string | Date;
     executeBefore?: string | Date;
     requestTimeout?: number;
+    reason?: string;
     message?: string;
     executionMode?: 'async' | 'wait';
   }

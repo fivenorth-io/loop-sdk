@@ -155,7 +155,7 @@ export class Provider {
       options?: TransferOptions & { executionMode?: 'async' | 'wait' },
     ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
-        const { requestedAt, executeBefore, requestTimeout } = options || {};
+        const { requestedAt, executeBefore, requestTimeout, reason } = options || {};
         const message = options?.message;
         const resolveDate = (value?: string | Date, fallbackMs?: number) => {
           if (value instanceof Date) {
@@ -183,6 +183,9 @@ export class Provider {
           requested_at: requestedAtIso,
           execute_before: executeBeforeIso,
         };
+        if (reason) {
+          transferRequest.reason = reason;
+        }
 
         const preparedPayload: PreparedTransferPayload = await this.connection.prepareTransfer(this.auth_token, transferRequest);
 

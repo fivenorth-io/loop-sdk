@@ -133,6 +133,9 @@ export class Connection {
         if (params.execute_before) {
             payload.execute_before = params.execute_before;
         }
+        if (params.reason) {
+            payload.reason = params.reason;
+        }
 
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/transfer`, {
             method: 'POST',
