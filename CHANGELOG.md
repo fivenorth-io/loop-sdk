@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.9.0 (2026-01-20)
+Full Changelog: [v0.8.0...v0.9.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.8.0...v0.9.0)
+
+### Features
+
+- **sdk:** add execute-and-wait connect execution path (selectable via options) that returns transaction results or failures immediately for dapp integrations.
+
 ## 0.8.0 (2026-01-02)
 Full Changelog: [v0.7.6...v0.8.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.7.6...v0.8.0)
 
