@@ -33,7 +33,7 @@ type TransactionPayload = {
   actAs?: string[];
   readAs?: string[];
   synchronizerId?: string;
-  commit_mode?: 'async' | 'wait';
+  execution_mode?: 'async' | 'wait';
 };
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
@@ -143,7 +143,7 @@ export class Provider {
     ): Promise<any> {
         return this.sendRequest(
           MessageType.RUN_TRANSACTION,
-          { ...payload, commit_mode: 'wait' },
+          { ...payload, execution_mode: 'wait' },
           options,
         );
     }
@@ -152,7 +152,7 @@ export class Provider {
       recipient: string,
       amount: string | number,
       instrument?: InstrumentSpec,
-      options?: TransferOptions & { commitMode?: 'async' | 'wait' },
+      options?: TransferOptions & { executionMode?: 'async' | 'wait' },
     ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
         const { requestedAt, executeBefore, requestTimeout } = options || {};
@@ -186,7 +186,7 @@ export class Provider {
 
         const preparedPayload: PreparedTransferPayload = await this.connection.prepareTransfer(this.auth_token, transferRequest);
 
-        const submitFn = options?.commitMode === 'wait'
+        const submitFn = options?.executionMode === 'wait'
           ? this.submitAndWaitForTransaction.bind(this)
           : this.submitTransaction.bind(this);
 

@@ -92,7 +92,7 @@ export type TransferOptions = {
   executeBefore?: string | Date;
   requestTimeout?: number;
   message?: string; // custom message to include in the request ticket
-  commitMode?: 'async' | 'wait';
+  executionMode?: 'async' | 'wait';
 };
 
 export type InstrumentSpec = Instrument;

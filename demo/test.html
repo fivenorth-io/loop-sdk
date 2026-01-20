@@ -92,7 +92,7 @@
             const [ txResult, setTxResult ] = useState(null);
             const [ txUpdate, setTxUpdate ] = useState(null);
             const [ txUpdateLog, setTxUpdateLog ] = useState('');
-            const [ commitMode, setCommitMode ] = useState('async');
+            const [ executionMode, setExecutionMode ] = useState('async');
             const [ rawMessage, setRawMessage ] = useState('Hello, Loop!');
             const [ signature, setSignature ] = useState(null);
             const [ isSigning, setIsSigning ] = useState(false);
@@ -250,7 +250,7 @@
                             executeBefore: executeBefore.toISOString(),
                             requestTimeout: requestTimeoutMs,
                             message: message || undefined,
-                            commitMode: commitMode,
+                            executionMode: executionMode,
                         },
                     );
                     setTransferResult(res);
@@ -341,7 +341,7 @@
                 {
                     const command = JSON.parse(damlCommand);
                     const message = customTxMessage?.trim();
-                    const submitFn = commitMode === 'wait'
+                    const submitFn = executionMode === 'wait'
                         ? provider.submitAndWaitForTransaction.bind(provider)
                         : provider.submitTransaction.bind(provider);
                     const result = await submitFn(command, { message: message || undefined });
@@ -618,8 +618,8 @@
                                 <label style="font-size: 13px; display: flex; align-items: center; gap: 6px;">
                                     Commit Mode:
                                     <select
-                                        value=${commitMode}
-                                        onChange=${(e) => setCommitMode(e.target.value)}
+                                        value=${executionMode}
+                                        onChange=${(e) => setExecutionMode(e.target.value)}
                                     >
                                         <option value="async">async</option>
                                         <option value="wait">wait</option>
@@ -672,8 +672,8 @@
                                 <button onClick=${handleWalletTransfer} disabled=${isTransferring} style="margin-top: 8px;">
                                     ${isTransferring ? 'Sending...' : 'Send'}
                                 </button>
-                                ${lastTxSource === 'transfer' ? (commitMode === 'async' ? transferSubmissionSection : '') : ''}
-                                ${lastTxSource === 'transfer' ? (commitMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
+                                ${lastTxSource === 'transfer' ? (executionMode === 'async' ? transferSubmissionSection : '') : ''}
+                                ${lastTxSource === 'transfer' ? (executionMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
                             </div>
 
                             <hr style="margin: 20px 0;" />
@@ -732,8 +732,8 @@
                                 </button>
                             </div>
 
-                            ${lastTxSource === 'run' ? (commitMode === 'async' ? txSubmissionSection : '') : ''}
-                            ${lastTxSource === 'run' ? (commitMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
+                            ${lastTxSource === 'run' ? (executionMode === 'async' ? txSubmissionSection : '') : ''}
+                            ${lastTxSource === 'run' ? (executionMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
 
                         </div>
                     ` : html`

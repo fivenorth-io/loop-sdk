@@ -195,7 +195,7 @@ await loop.wallet.transfer(
   {
     // Optional: show a custom message in the wallet prompt
     message: 'Send 5 CC to Alice',
-    commitMode: 'wait',                      // optional: 'async' (default) or 'wait'
+    executionMode: 'wait',                   // optional: 'async' (default) or 'wait'
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
     requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes
