@@ -77,6 +77,7 @@ export type ConnectTransferResponse = {
 export type RunTransactionResponse = {
   command_id: string;
   submission_id?: string;
+  estimated_traffic?: unknown;
   update_data?: unknown;
   update_id?: string;
   status?: 'succeeded' | 'failed';
@@ -93,6 +94,7 @@ export type TransferOptions = {
   requestTimeout?: number;
   message?: string; // custom message to include in the request ticket
   executionMode?: 'async' | 'wait';
+  includeTraffic?: boolean;
 };
 
 export type InstrumentSpec = Instrument;
