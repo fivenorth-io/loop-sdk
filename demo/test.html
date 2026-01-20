@@ -92,6 +92,7 @@
             const [ txResult, setTxResult ] = useState(null);
             const [ txUpdate, setTxUpdate ] = useState(null);
             const [ txUpdateLog, setTxUpdateLog ] = useState('');
+            const [ executionMode, setExecutionMode ] = useState('async');
             const [ rawMessage, setRawMessage ] = useState('Hello, Loop!');
             const [ signature, setSignature ] = useState(null);
             const [ isSigning, setIsSigning ] = useState(false);
@@ -249,6 +250,7 @@
                             executeBefore: executeBefore.toISOString(),
                             requestTimeout: requestTimeoutMs,
                             message: message || undefined,
+                            executionMode: executionMode,
                         },
                     );
                     setTransferResult(res);
@@ -339,7 +341,10 @@
                 {
                     const command = JSON.parse(damlCommand);
                     const message = customTxMessage?.trim();
-                    const result = await provider.submitTransaction(command, { message: message || undefined });
+                    const submitFn = executionMode === 'wait'
+                        ? provider.submitAndWaitForTransaction.bind(provider)
+                        : provider.submitTransaction.bind(provider);
+                    const result = await submitFn(command, { message: message || undefined });
                     setTxResult(result);
                 } catch (error)
                 {
@@ -423,25 +428,48 @@
                 }
             };
 
-            const updateId = txUpdate?.update_id || '';
-            const updateDataText = txUpdate?.update_data ? JSON.stringify(txUpdate.update_data, null, 2) : '';
+            const txPayload = txUpdate || txResult;
+            const commandId = txPayload?.command_id || '';
+            const submissionId = txPayload?.submission_id || '';
+            const updateId = txPayload?.update_id || '';
+            const updateDataText = txPayload?.update_data ? JSON.stringify(txPayload.update_data, null, 2) : '';
+            const status = txPayload?.status || '';
+            const errorMessage = txPayload?.error?.error_message || '';
+            const submissionCommandId = txResult?.command_id || '';
+            const submissionIdOnly = txResult?.submission_id || '';
+            const transferSubmissionCommandId = transferResult?.command_id || '';
+            const transferSubmissionIdOnly = transferResult?.submission_id || '';
             const lighthouseBaseUrl = getLighthouseBaseUrl(networkEnv);
             const updateUrl = updateId ? `${lighthouseBaseUrl}/transactions/${updateId}` : '';
-            const txUpdateSection = txUpdate ? html`
+            const txSummarySection = txPayload ? html`
                 <div style="margin-top: 20px; color: #444;">
-                    Transaction Update (${txUpdateLog || 'unknown timestamp'}):
+                    Transaction Result (${txUpdateLog || 'unknown timestamp'}):
                 </div>
                 <div style="margin-top: 6px; background: #f4f4f4; padding: 10px; border-radius: 5px;">
-                    ${updateId ? html`
-                        <div style="font-family: monospace; margin-bottom: 6px;">"update_id": "${updateId}"</div>
+                    <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${commandId || 'n/a'}</div>
+                    <div style="font-family: monospace; margin-bottom: 6px;">submission_id: ${submissionId || 'n/a'}</div>
+                    <div style="font-family: monospace; margin-bottom: 6px;">update_id: ${updateId || 'n/a'}</div>
+                    ${status ? html`<div style="font-family: monospace; margin-bottom: 6px;">status: ${status}</div>` : ''}
+                    ${errorMessage ? html`<div style="font-family: monospace; margin-bottom: 6px; color: #b00020;">error: ${errorMessage}</div>` : ''}
+                    ${updateUrl ? html`
                         <a href=${updateUrl} target="_blank" rel="noopener noreferrer">${updateUrl}</a>
-                        <details style="margin-top: 10px;">
-                            <summary style="cursor: pointer;">update_data</summary>
-                            <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${updateDataText || 'No update_data available.'}</pre>
-                        </details>
-                    ` : html`
-                        <div style="color: #b00020;">Missing update_id in transaction update.</div>
-                    `}
+                    ` : ''}
+                    <details style="margin-top: 10px;">
+                        <summary style="cursor: pointer;">update data</summary>
+                        <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${updateDataText || 'No transaction data available.'}</pre>
+                    </details>
+                </div>
+            ` : '';
+            const txSubmissionSection = txResult ? html`
+                <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+                    <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${submissionCommandId || 'n/a'}</div>
+                    <div style="font-family: monospace;">submission_id: ${submissionIdOnly || 'n/a'}</div>
+                </div>
+            ` : '';
+            const transferSubmissionSection = transferResult ? html`
+                <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+                    <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${transferSubmissionCommandId || 'n/a'}</div>
+                    <div style="font-family: monospace;">submission_id: ${transferSubmissionIdOnly || 'n/a'}</div>
                 </div>
             ` : '';
 
@@ -585,6 +613,23 @@
                             <hr style="margin: 20px 0;" />
 
                             <div>
+                                <h3>Commit Mode</h3>
+                                <p>Choose how the wallet submits transactions: async returns immediately; wait returns once the ledger update is ready.</p>
+                                <label style="font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                    Commit Mode:
+                                    <select
+                                        value=${executionMode}
+                                        onChange=${(e) => setExecutionMode(e.target.value)}
+                                    >
+                                        <option value="async">async</option>
+                                        <option value="wait">wait</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <hr style="margin: 20px 0;" />
+
+                            <div>
                                 <h3>Transfer Helper</h3>
                                 <p>Instrument admin/id and timeout are optional; leave blank to default to Amulet/DSO/300000ms.</p>
                                 <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
@@ -627,10 +672,8 @@
                                 <button onClick=${handleWalletTransfer} disabled=${isTransferring} style="margin-top: 8px;">
                                     ${isTransferring ? 'Sending...' : 'Send'}
                                 </button>
-                                ${transferResult && html`
-                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(transferResult, null, 2)}</pre>
-                                `}
-                                ${lastTxSource === 'transfer' ? txUpdateSection : ''}
+                                ${lastTxSource === 'transfer' ? (executionMode === 'async' ? transferSubmissionSection : '') : ''}
+                                ${lastTxSource === 'transfer' ? (executionMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
                             </div>
 
                             <hr style="margin: 20px 0;" />
@@ -671,10 +714,7 @@
                                 <button onClick=${handleWithdrawUsdc} disabled=${isWithdrawing} style="margin-top: 8px;">
                                     ${isWithdrawing ? 'Submitting...' : 'Withdraw USDC'}
                                 </button>
-                                ${withdrawResult && html`
-                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px; margin-top: 10px;">${JSON.stringify(withdrawResult, null, 2)}</pre>
-                                `}
-                                ${lastTxSource === 'withdraw' ? txUpdateSection : ''}
+                                ${lastTxSource === 'withdraw' ? txSummarySection : ''}
                             </div>
                             
                             <hr style="margin: 20px 0;" />
@@ -692,13 +732,8 @@
                                 </button>
                             </div>
 
-                            ${txResult && !isSubmittingTx && html`
-                                <div style="margin-top: 20px;">
-                                    <h5>Transaction Result:</h5>
-                                    <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">${JSON.stringify(txResult, null, 2)}</pre>
-                                </div>
-                            `}
-                            ${lastTxSource === 'run' ? txUpdateSection : ''}
+                            ${lastTxSource === 'run' ? (executionMode === 'async' ? txSubmissionSection : '') : ''}
+                            ${lastTxSource === 'run' ? (executionMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
 
                         </div>
                     ` : html`

@@ -33,6 +33,7 @@ type TransactionPayload = {
   actAs?: string[];
   readAs?: string[];
   synchronizerId?: string;
+  execution_mode?: 'async' | 'wait';
 };
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
@@ -98,7 +99,14 @@ export class Provider {
     public handleResponse(message: any) {
         console.log('Received response:', message);
 
-        if (message?.type === MessageType.TRANSACTION_COMPLETED && message?.payload?.update_id) {
+        if (
+            message?.type === MessageType.TRANSACTION_COMPLETED &&
+            (message?.payload?.update_id || message?.payload?.update_data || message?.payload?.status)
+        ) {
+            if (message?.payload?.error_message) {
+                message.payload.error = { error_message: message.payload.error_message };
+                delete message.payload.error_message;
+            }
             this.hooks?.onTransactionUpdate?.(message.payload as RunTransactionResponse, message);
         }
 
@@ -129,11 +137,22 @@ export class Provider {
         return this.sendRequest(MessageType.RUN_TRANSACTION, payload, options);
     }
 
+    async submitAndWaitForTransaction(
+      payload: TransactionPayload,
+      options?: { requestTimeout?: number; message?: string; requestLabel?: string }
+    ): Promise<any> {
+        return this.sendRequest(
+          MessageType.RUN_TRANSACTION,
+          { ...payload, execution_mode: 'wait' },
+          options,
+        );
+    }
+
     async transfer(
       recipient: string,
       amount: string | number,
       instrument?: InstrumentSpec,
-      options?: TransferOptions,
+      options?: TransferOptions & { executionMode?: 'async' | 'wait' },
     ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
         const { requestedAt, executeBefore, requestTimeout } = options || {};
@@ -167,7 +186,11 @@ export class Provider {
 
         const preparedPayload: PreparedTransferPayload = await this.connection.prepareTransfer(this.auth_token, transferRequest);
 
-        return this.submitTransaction({
+        const submitFn = options?.executionMode === 'wait'
+          ? this.submitAndWaitForTransaction.bind(this)
+          : this.submitTransaction.bind(this);
+
+        return submitFn({
             commands: preparedPayload.commands,
             disclosedContracts: preparedPayload.disclosedContracts,
             packageIdSelectionPreference: preparedPayload.packageIdSelectionPreference,

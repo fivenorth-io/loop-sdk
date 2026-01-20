@@ -79,6 +79,12 @@ export type RunTransactionResponse = {
   submission_id?: string;
   update_data?: unknown;
   update_id?: string;
+  status?: 'succeeded' | 'failed';
+  error?: SubmissionError;
+};
+
+export type SubmissionError = {
+  error_message: string;
 };
 
 export type TransferOptions = {
@@ -86,6 +92,7 @@ export type TransferOptions = {
   executeBefore?: string | Date;
   requestTimeout?: number;
   message?: string; // custom message to include in the request ticket
+  executionMode?: 'async' | 'wait';
 };
 
 export type InstrumentSpec = Instrument;
