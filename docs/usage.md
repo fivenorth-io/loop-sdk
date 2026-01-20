@@ -323,3 +323,16 @@ This is the same flow used in the CodePen demo.
 You initialize once, connect on the button click, then use the provider to interact with the wallet and ledger.
 
 ---
+
+## FAQ
+
+### Why is my workflowId missing from transaction updates?
+
+The Loop SDK uses **Interactive Submission** (prepare -> sign -> execute) so external users can safely sign transactions in the wallet.
+
+In Canton, **workflowId is not supported for Interactive Submission.** It is only available in direct command submission (submit / submit-and-wait), where workflows may span multiple commands. Interactive Submission explicitly supports only a single command, so the ledger does not persist or return workflowId for these transactions.
+
+As a result, `update_data.workflowId` (and Lighthouse) may show it as empty even if you provided one.
+
+What to do instead
+- Use `commandId` / `submissionId` for correlation. Keep track of your workflow identifiers on your side and map them to command or submission IDs.
