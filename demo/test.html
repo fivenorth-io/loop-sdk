@@ -101,7 +101,7 @@
             const [ transferInstrumentAdmin, setTransferInstrumentAdmin ] = useState('');
             const [ transferInstrumentId, setTransferInstrumentId ] = useState('');
             const [ transferRequestTimeout, setTransferRequestTimeout ] = useState('');
-            const [ transferReason, setTransferReason ] = useState('');
+            const [ transferMemo, setTransferMemo ] = useState('');
             const [ transferResult, setTransferResult ] = useState(null);
             const [ isTransferring, setIsTransferring ] = useState(false);
             const [ lastTxSource, setLastTxSource ] = useState(null);
@@ -239,7 +239,7 @@
                 {
                     const now = new Date();
                     const executeBefore = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-                    const reason = transferReason.trim();
+                    const memo = transferMemo.trim();
                     const res = await loop.wallet.transfer(
                         transferRecipient,
                         transferAmount,
@@ -251,7 +251,7 @@
                             requestedAt: now.toISOString(),
                             executeBefore: executeBefore.toISOString(),
                             requestTimeout: requestTimeoutMs,
-                            reason: reason || undefined,
+                            memo: memo || undefined,
                             message: message || undefined,
                             executionMode: executionMode,
                         },
@@ -674,8 +674,8 @@
                                     <input
                                         type="text"
                                         placeholder="Memo (optional)"
-                                        value=${transferReason}
-                                        onInput=${(e) => setTransferReason(e.target.value)}
+                                        value=${transferMemo}
+                                        onInput=${(e) => setTransferMemo(e.target.value)}
                                         style="flex: 1; min-width: 240px;"
                                     />
                                 </div>
