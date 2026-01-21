@@ -101,6 +101,7 @@
             const [ transferInstrumentAdmin, setTransferInstrumentAdmin ] = useState('');
             const [ transferInstrumentId, setTransferInstrumentId ] = useState('');
             const [ transferRequestTimeout, setTransferRequestTimeout ] = useState('');
+            const [ transferMemo, setTransferMemo ] = useState('');
             const [ transferResult, setTransferResult ] = useState(null);
             const [ isTransferring, setIsTransferring ] = useState(false);
             const [ lastTxSource, setLastTxSource ] = useState(null);
@@ -238,6 +239,7 @@
                 {
                     const now = new Date();
                     const executeBefore = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+                    const memo = transferMemo.trim();
                     const res = await loop.wallet.transfer(
                         transferRecipient,
                         transferAmount,
@@ -249,6 +251,7 @@
                             requestedAt: now.toISOString(),
                             executeBefore: executeBefore.toISOString(),
                             requestTimeout: requestTimeoutMs,
+                            memo: memo || undefined,
                             message: message || undefined,
                             executionMode: executionMode,
                             estimateTraffic: true,
@@ -698,6 +701,13 @@
                                         value=${transferRequestTimeout}
                                         onInput=${(e) => setTransferRequestTimeout(e.target.value)}
                                         style="width: 220px;"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Memo (optional)"
+                                        value=${transferMemo}
+                                        onInput=${(e) => setTransferMemo(e.target.value)}
+                                        style="flex: 1; min-width: 240px;"
                                     />
                                 </div>
                                 <button onClick=${handleWalletTransfer} disabled=${isTransferring} style="margin-top: 8px;">

@@ -59,6 +59,7 @@ export type TransferRequest = {
   instrument?: Instrument;
   requested_at?: string;
   execute_before?: string;
+  memo?: string;
 };
 
 export type PreparedTransferPayload = {
@@ -92,6 +93,7 @@ export type TransferOptions = {
   requestedAt?: string | Date;
   executeBefore?: string | Date;
   requestTimeout?: number;
+  memo?: string;
   message?: string; // custom message to include in the request ticket
   executionMode?: 'async' | 'wait';
   estimateTraffic?: boolean;

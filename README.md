@@ -187,15 +187,14 @@ try {
 ```javascript
 await loop.wallet.transfer(
   'receiver::fingerprint',
-  '5', // amount (string or number)
+  '5', 
   {
-    // Optional overrides. Defaults to Amulet/DSO if omitted.
-    instrument_admin: 'issuer::fingerprint', // optional
-    instrument_id: 'Amulet',                 // optional
+    instrument_admin: 'issuer::fingerprint', // optional: DSO (default)
+    instrument_id: 'Amulet',                 // optional: Amulet (default)
   },
   {
-    // Optional: show a custom message in the wallet prompt
-    message: 'Send 5 CC to Alice',
+    message: 'Send 5 CC to Alice', // optional: show a custom message in the wallet prompt
+    memo: 'optional memo for the transfer',   // optional: stored as transfer metadata
     executionMode: 'wait',                   // optional: 'async' (default) or 'wait'
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
@@ -208,7 +207,6 @@ await loop.wallet.transfer(
 Notes:
 - You must have spendable holdings for the specified instrument (admin + id). If left blank, the SDK defaults to the native token.
 - The helper handles fetching holdings, building the transfer factory payload, and submitting via Wallet Connect.
-- Requests time out after 5 minutes by default; override with `requestTimeout` in milliseconds.
 
 Common instrument overrides (pass into the `instrument` argument above):
 
