@@ -42,6 +42,8 @@ Latest installed DARs:
 | utility-settlement-app-v1 | 1.1.0 | 34ab886ee88b045637ff416f558734309f5650fec81a603cb5db76bbd863b950 |
 | utility-version-v0 | 0.0.1 | 42e902610f593c6fb5516d7a7401ad0892dc44507a777ace0a468a5f6c9d3381 |
 
+Reference: https://docs.digitalasset.com/utilities/devnet/index.html
+
 ---
 
 ## Security Considerations
