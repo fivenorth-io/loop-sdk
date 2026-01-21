@@ -254,6 +254,7 @@
                             memo: memo || undefined,
                             message: message || undefined,
                             executionMode: executionMode,
+                            estimateTraffic: true,
                         },
                     );
                     setTransferResult(res);
@@ -347,7 +348,10 @@
                     const submitFn = executionMode === 'wait'
                         ? provider.submitAndWaitForTransaction.bind(provider)
                         : provider.submitTransaction.bind(provider);
-                    const result = await submitFn(command, { message: message || undefined });
+                    const result = await submitFn(command, {
+                        message: message || undefined,
+                        estimateTraffic: true,
+                    });
                     setTxResult(result);
                 } catch (error)
                 {
@@ -440,10 +444,19 @@
             const errorMessage = txPayload?.error?.error_message || '';
             const submissionCommandId = txResult?.command_id || '';
             const submissionIdOnly = txResult?.submission_id || '';
+            const submissionEstimatedTrafficText = txResult?.estimated_traffic
+                ? JSON.stringify(txResult.estimated_traffic, null, 2)
+                : '';
             const transferSubmissionCommandId = transferResult?.command_id || '';
             const transferSubmissionIdOnly = transferResult?.submission_id || '';
+            const transferEstimatedTrafficText = transferResult?.estimated_traffic
+                ? JSON.stringify(transferResult.estimated_traffic, null, 2)
+                : '';
             const lighthouseBaseUrl = getLighthouseBaseUrl(networkEnv);
             const updateUrl = updateId ? `${lighthouseBaseUrl}/transactions/${updateId}` : '';
+            const estimatedTrafficText = txPayload?.estimated_traffic
+                ? JSON.stringify(txPayload.estimated_traffic, null, 2)
+                : '';
             const txSummarySection = txPayload ? html`
                 <div style="margin-top: 20px; color: #444;">
                     Transaction Result (${txUpdateLog || 'unknown timestamp'}):
@@ -457,6 +470,12 @@
                     ${updateUrl ? html`
                         <a href=${updateUrl} target="_blank" rel="noopener noreferrer">${updateUrl}</a>
                     ` : ''}
+                    ${estimatedTrafficText ? html`
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer;">estimated traffic</summary>
+                            <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${estimatedTrafficText}</pre>
+                        </details>
+                    ` : ''}
                     <details style="margin-top: 10px;">
                         <summary style="cursor: pointer;">update data</summary>
                         <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${updateDataText || 'No transaction data available.'}</pre>
@@ -467,12 +486,24 @@
                 <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
                     <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${submissionCommandId || 'n/a'}</div>
                     <div style="font-family: monospace;">submission_id: ${submissionIdOnly || 'n/a'}</div>
+                    ${submissionEstimatedTrafficText ? html`
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer;">estimated traffic</summary>
+                            <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${submissionEstimatedTrafficText}</pre>
+                        </details>
+                    ` : ''}
                 </div>
             ` : '';
             const transferSubmissionSection = transferResult ? html`
                 <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
                     <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${transferSubmissionCommandId || 'n/a'}</div>
                     <div style="font-family: monospace;">submission_id: ${transferSubmissionIdOnly || 'n/a'}</div>
+                    ${transferEstimatedTrafficText ? html`
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer;">estimated traffic</summary>
+                            <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${transferEstimatedTrafficText}</pre>
+                        </details>
+                    ` : ''}
                 </div>
             ` : '';
 

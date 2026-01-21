@@ -125,7 +125,7 @@ Fetches DAML active contracts filtered by template or interface.
 
 #### `provider.submitTransaction(command): Promise<any>`
 
-Submits a DAML ExcerciseCommand or multi-command transaction. This is the default async path (no `execution_mode`). It returns the submission result first (including `command_id` and `submission_id`), then the ledger update arrives later via `onTransactionUpdate` with `update_id` and `update_data`.
+Submits a DAML ExcerciseCommand or multi-command transaction. This is the default async path (no `execution_mode`). It returns the submission result first (including `command_id` and `submission_id`), then the ledger update arrives later via `onTransactionUpdate` with `update_id` and `update_data`. Use `estimateTraffic: true` in the options to return estimated traffic in the submission response.
 
 ---
 

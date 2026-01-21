@@ -34,6 +34,7 @@ type TransactionPayload = {
   readAs?: string[];
   synchronizerId?: string;
   execution_mode?: 'async' | 'wait';
+  estimate_traffic?: boolean;
 };
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
@@ -132,18 +133,20 @@ export class Provider {
     // submit a transaction to be signed by the wallet to the websocket
     async submitTransaction(
       payload: TransactionPayload, 
-      options?: { requestTimeout?: number; message?: string; requestLabel?: string }
+      options?: { requestTimeout?: number; message?: string; requestLabel?: string; estimateTraffic?: boolean }
     ): Promise<any> {
-        return this.sendRequest(MessageType.RUN_TRANSACTION, payload, options);
+        const requestPayload = options?.estimateTraffic ? { ...payload, estimate_traffic: true } : payload;
+        return this.sendRequest(MessageType.RUN_TRANSACTION, requestPayload, options);
     }
 
     async submitAndWaitForTransaction(
       payload: TransactionPayload,
-      options?: { requestTimeout?: number; message?: string; requestLabel?: string }
+      options?: { requestTimeout?: number; message?: string; requestLabel?: string; estimateTraffic?: boolean }
     ): Promise<any> {
+        const requestPayload = options?.estimateTraffic ? { ...payload, estimateTraffic: true } : payload;
         return this.sendRequest(
           MessageType.RUN_TRANSACTION,
-          { ...payload, execution_mode: 'wait' },
+          { ...requestPayload, execution_mode: 'wait' },
           options,
         );
     }
@@ -155,7 +158,7 @@ export class Provider {
       options?: TransferOptions & { executionMode?: 'async' | 'wait' },
     ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
-        const { requestedAt, executeBefore, requestTimeout, memo } = options || {};
+        const { requestedAt, executeBefore, requestTimeout, estimateTraffic, memo } = options || {};
         const message = options?.message;
         const resolveDate = (value?: string | Date, fallbackMs?: number) => {
           if (value instanceof Date) {
@@ -200,7 +203,7 @@ export class Provider {
             actAs: preparedPayload.actAs,
             readAs: preparedPayload.readAs,
             synchronizerId: preparedPayload.synchronizerId,
-        }, { requestTimeout, message });
+        }, { requestTimeout, message, estimateTraffic });
     }
 
     // submit a raw message to be signed by the wallet to the websocket
