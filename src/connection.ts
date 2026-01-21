@@ -133,8 +133,8 @@ export class Connection {
         if (params.execute_before) {
             payload.execute_before = params.execute_before;
         }
-        if (params.reason) {
-            payload.reason = params.reason;
+        if (params.memo) {
+            payload.memo = params.memo;
         }
 
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/transfer`, {

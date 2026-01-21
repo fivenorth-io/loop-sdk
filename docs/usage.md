@@ -206,7 +206,7 @@ await loop.wallet.transfer(
   },
   {
     message: 'Send 5 CC to Alice', // optional: show a custom message in the wallet prompt
-    reason: 'optional memo for the transfer', // optional: stored as transfer metadata
+    memo: 'optional memo for the transfer',   // optional: stored as transfer metadata
     executionMode: 'wait',                   // optional: 'async' (default) or 'wait'
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
