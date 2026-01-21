@@ -7,6 +7,14 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.10.0
+- Add `memo` to the transfer helper payload and store it as transfer metadata.
+- Add `estimateTraffic` option to return estimated traffic in submit responses.
+- Docs: add installed DAR versions list for Canton nodes.
+
+## v0.9.0
+- Add execute-and-wait connect execution path (selectable via options) that returns transaction results or failures immediately for dapp integrations.
+
 ## v0.8.0
 - `onTransactionUpdate` now returns `update_id` and `update_data` in the update payload.
   `update_data` is the ledger transaction tree (includes `eventsById`, `workflowId`, `effectiveAt`, etc.).

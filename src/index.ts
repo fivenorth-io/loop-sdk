@@ -375,28 +375,31 @@ class LoopSDK {
 			.loop-connect {
 				position: fixed;
 				inset: 0;
-				background: oklch(0.222 0 0 / 0.85);
+				background: rgba(0, 0, 0, 0.85);
 				backdrop-filter: blur(8px);
 				display: flex;
 				justify-content: center;
 				align-items: center;
 				z-index: 10000;
-				font-family: system-ui, -apple-system, sans-serif;
+				font-family: "Inter", system-ui, -apple-system, sans-serif;
 				animation: fadeIn 0.2s ease-out;
 			}
 			.loop-connect dialog {
 				position: relative;
 				overflow: hidden;
-				background: oklch(0.253 0.008 274.6);
-				box-shadow: 0 4px 24px oklch(0 0 0 / 0.1);
-				border: 1px solid oklch(0.41 0.01 278.4);
-				border-radius: 32px;
-				padding: 24px;
+				background: #080808;
+				box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.5);
+				border-radius: 40px;
+				border: none;
+				width: 340px;
+				height: 534px;
+				box-sizing: border-box;
+				padding: 32px;
 				display: flex;
 				flex-direction: column;
 				align-items: center;
-				gap: 16px;
-				color: oklch(0.975 0.005 280);
+				gap: 0;
+				color: #ffffff;
 			}
 			.loop-connect .bg-logo {
 				position: absolute;
@@ -408,56 +411,89 @@ class LoopSDK {
 				pointer-events: none;
 			}
 			.loop-connect h3 {
+				position: absolute;
+				top: 32px;
+				left: 32px;
+				right: 32px;
 				margin: 0;
 				font-size: 18px;
-				font-weight: 600;
-				letter-spacing: -0.015em;
+				font-weight: 700;
+				line-height: 27px;
+				letter-spacing: -0.45px;
+				text-align: center;
 			}
 			.loop-connect figure {
+				position: absolute;
+				top: 91px;
+				left: 32px;
+				width: 276px;
+				height: 276px;
 				margin: 0;
-				background: oklch(1 0 0);
-				padding: 8px;
-				border-radius: 24px;
+				background: #ffffff;
+				padding: 20px;
+				border-radius: 8px;
 				display: flex;
 				justify-content: center;
-				border: 2px solid oklch(0.41 0.01 278.4);
-				box-shadow: 0 4px 24px oklch(0 0 0 / 0.1);
+				border: none;
+				box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+				box-sizing: border-box;
 			}
 			.loop-connect img {
 				display: block;
-				width: 225px;
-				height: 225px;
+				width: 236px;
+				height: 236px;
+				object-fit: contain;
+				border-radius: 12px;
 			}
 			.loop-connect .divider {
-				width: 100%;
+				position: absolute;
+				top: 399px;
+				left: 36px;
+				right: 36px;
+				width: auto;
 				display: flex;
 				align-items: center;
-				gap: 16px;
-				color: oklch(0.554 0.012 280.3);
-				font-size: 13px;
-				font-weight: 600;
+				justify-content: center;
+				gap: 12px;
+				color: #64748b;
+				font-size: 11px;
+				font-weight: 700;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				text-align: center;
 			}
 			.loop-connect .divider::before,
 			.loop-connect .divider::after {
 				content: "";
 				flex: 1;
 				height: 1px;
-				background: oklch(0.45 0.01 278);
+				background: #1e293b;
 			}
 			.loop-connect button {
-				background: oklch(0.976 0.101 112.3);
-				border: 1px solid oklch(0.82 0.16 110);
-				color: oklch(0.222 0 0);
-				padding: 16px 32px;
-				border-radius: 24px;
+				position: absolute;
+				top: 447.5px;
+				left: 32px;
+				right: 32px;
+				background: #f2ff96;
+				border: none;
+				color: #0f172a;
+				text-align: center;
+				font-family: "Inter", system-ui, -apple-system, sans-serif;
+				font-style: normal;
+				padding: 0 24px;
+				border-radius: 8px;
 				font-size: 15px;
 				font-weight: 600;
+				line-height: 22.5px;
 				cursor: pointer;
 				transition: all 0.2s ease;
-				width: 100%;
+				width: auto;
+				height: 54.5px;
+				box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2),
+					0 4px 6px -4px rgba(0, 0, 0, 0.2);
 			}
 			.loop-connect button:hover {
-				background: oklch(0.98 0.105 112.5);
+				background: #f6ffb4;
 			}
 			@keyframes fadeIn {
 				from { opacity: 0; }
@@ -470,7 +506,7 @@ class LoopSDK {
 	private showQrCode(url: string) {
 		this.injectModalStyles();
 
-		QRCode.toDataURL(url, (err, dataUrl) => {
+		QRCode.toDataURL(url, { margin: 0 }, (err, dataUrl) => {
 			if (err) {
 				console.error("Failed to generate QR code", err);
 				return;

@@ -168,6 +168,7 @@ try {
     const result = await provider.submitTransaction(damlCommand, {
         // Optional: show a custom message in the wallet prompt
         message: 'Transfer 10 CC to RetailStore',
+        estimateTraffic: true, // optional: return estimated traffic in submission response
     });
     console.log('Transaction successful:', result);
 } catch (error) {
@@ -199,18 +200,19 @@ try {
 // Fast path: uses your wallet connection to build and run a transfer
 await loop.wallet.transfer(
   'receiver::fingerprint',
-  '5', // amount as string or number
+  '5', 
   {
-    // Optional overrides. Defaults to Amulet/DSO if omitted.
-    instrument_admin: 'issuer::fingerprint', // optional
-    instrument_id: 'LOOP',                   // optional
+    instrument_admin: 'issuer::fingerprint', // optional: DSO (default)
+    instrument_id: 'Amulet',                 // optional: Amulet (default)
   },
   {
-    // Optional: show a custom message in the wallet prompt
-    message: 'Send 5 CC to Alice',
+    message: 'Send 5 CC to Alice', // optional: show a custom message in the wallet prompt
+    memo: 'optional memo for the transfer',   // optional: stored as transfer metadata
+    executionMode: 'wait',                   // optional: 'async' (default) or 'wait'
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
     requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes
+    estimateTraffic: true,                   // optional: return estimated traffic in submission response
   },
 );
 ```
@@ -218,7 +220,6 @@ await loop.wallet.transfer(
 Notes:
 - You must have spendable holdings for the specified instrument (admin + id). If left blank, the SDK defaults to the native token.
 - The helper handles: fetching holdings, building the transfer factory payload, and submitting via Wallet Connect.
-- Requests time out after 5 minutes by default; override with `requestTimeout` in milliseconds.
 
 ---
 
@@ -323,3 +324,16 @@ This is the same flow used in the CodePen demo.
 You initialize once, connect on the button click, then use the provider to interact with the wallet and ledger.
 
 ---
+
+## FAQ
+
+### Why is my workflowId missing from transaction updates?
+
+The Loop SDK uses **Interactive Submission** (prepare -> sign -> execute) so external users can safely sign transactions in the wallet.
+
+In Canton, **workflowId is not supported for Interactive Submission.** It is only available in direct command submission (submit / submit-and-wait), where workflows may span multiple commands. Interactive Submission explicitly supports only a single command, so the ledger does not persist or return workflowId for these transactions.
+
+As a result, `update_data.workflowId` (and Lighthouse) may show it as empty even if you provided one.
+
+What to do instead
+- Use `commandId` / `submissionId` for correlation. Keep track of your workflow identifiers on your side and map them to command or submission IDs.

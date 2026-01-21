@@ -59,6 +59,7 @@ export type TransferRequest = {
   instrument?: Instrument;
   requested_at?: string;
   execute_before?: string;
+  memo?: string;
 };
 
 export type TransactionPayload = {
@@ -86,15 +87,25 @@ export type ConnectTransferResponse = {
 export type RunTransactionResponse = {
   command_id: string;
   submission_id?: string;
+  estimated_traffic?: unknown;
   update_data?: unknown;
   update_id?: string;
+  status?: 'succeeded' | 'failed';
+  error?: SubmissionError;
+};
+
+export type SubmissionError = {
+  error_message: string;
 };
 
 export type TransferOptions = {
   requestedAt?: string | Date;
   executeBefore?: string | Date;
   requestTimeout?: number;
+  memo?: string;
   message?: string; // custom message to include in the request ticket
+  executionMode?: 'async' | 'wait';
+  estimateTraffic?: boolean;
 };
 
 export type InstrumentSpec = Instrument;
