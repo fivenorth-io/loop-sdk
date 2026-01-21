@@ -1,6 +1,15 @@
 # Changelog
 
 
+## 0.10.0 (2026-01-20)
+Full Changelog: [v0.9.0...v0.10.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.9.0...v0.10.0)
+
+### Improvements
+
+- **sdk:** add `memo` to transfer helper payload and metadata.
+- **sdk:** add `estimateTraffic` option to return estimated traffic in submit responses.
+- **docs:** add installed DAR versions list for Canton nodes.
+
 ## 0.9.0 (2026-01-20)
 Full Changelog: [v0.8.0...v0.9.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.8.0...v0.9.0)
 
