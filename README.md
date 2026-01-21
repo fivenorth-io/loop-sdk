@@ -142,6 +142,7 @@ try {
     const result = await provider.submitTransaction(damlCommand, {
         // Optional: show a custom message in the wallet prompt
         message: 'Transfer 10 CC to RetailStore',
+        estimateTraffic: true, // optional: return estimated traffic in submission response
     });
     console.log('Transaction successful:', result);
 } catch (error) {
@@ -199,6 +200,7 @@ await loop.wallet.transfer(
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
     requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes
+    estimateTraffic: true,                   // optional: return estimated traffic in submission response
   },
 );
 ```
