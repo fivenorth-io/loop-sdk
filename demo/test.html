@@ -251,7 +251,7 @@
                             requestTimeout: requestTimeoutMs,
                             message: message || undefined,
                             executionMode: executionMode,
-                            includeTraffic: true,
+                            estimateTraffic: true,
                         },
                     );
                     setTransferResult(res);
@@ -347,7 +347,7 @@
                         : provider.submitTransaction.bind(provider);
                     const result = await submitFn(command, {
                         message: message || undefined,
-                        includeTraffic: true,
+                        estimateTraffic: true,
                     });
                     setTxResult(result);
                 } catch (error)

@@ -94,7 +94,7 @@ export type TransferOptions = {
   requestTimeout?: number;
   message?: string; // custom message to include in the request ticket
   executionMode?: 'async' | 'wait';
-  includeTraffic?: boolean;
+  estimateTraffic?: boolean;
 };
 
 export type InstrumentSpec = Instrument;
