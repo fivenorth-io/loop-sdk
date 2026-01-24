@@ -25,7 +25,10 @@ class LoopSDK {
 	private openMode: "popup" | "tab" = "popup";
 	private requestSigningMode: "popup" | "tab" = "popup";
 	private popupWindow: Window | null = null;
+	private pendingRequestCount = 0;
 	private redirectUrl?: string;
+	private walletOrigin?: string;
+	private messageListenerAttached = false;
 
 	private onAccept: ((provider: Provider) => void) | null = null;
 	private onReject: (() => void) | null = null;
@@ -87,6 +90,29 @@ class LoopSDK {
 		this.redirectUrl = resolvedOptions.redirectUrl;
 
 		this.connection = new Connection({ network, walletUrl, apiUrl });
+		this.walletOrigin = new URL(this.connection.walletUrl).origin;
+		this.attachMessageListener();
+	}
+
+	private attachMessageListener() {
+		if (this.messageListenerAttached || typeof window === "undefined") {
+			return;
+		}
+		this.messageListenerAttached = true;
+		window.addEventListener("message", (event: MessageEvent) => {
+			if (!event?.data || event.data.type !== "loop-wallet:close-popup") {
+				return;
+			}
+			if (this.walletOrigin && event.origin !== this.walletOrigin) {
+				return;
+			}
+			this.closePopupIfExists();
+			if (this.pendingRequestCount > 0) {
+				setTimeout(() => {
+					this.openRequestUi();
+				}, 150);
+			}
+		});
 	}
 
 	// attempt to load a session from storage if it exists, parse it and validate it
@@ -304,6 +330,15 @@ class LoopSDK {
 				"[LoopSDK] Cannot open wallet UI for request: no active ticket.",
 			);
 			return null;
+		}
+
+		if (this.popupWindow && !this.popupWindow.closed) {
+			try {
+				this.popupWindow.focus();
+			} catch {
+				// focus errors
+			}
+			return this.popupWindow;
 		}
 
 		const dashboardUrl = this.buildDashboardUrl();
@@ -613,15 +648,13 @@ class LoopSDK {
 
 	private createProviderHooks(): ProviderHooks {
 		return {
-			onRequestStart: () => this.openRequestUi(),
+			onRequestStart: () => {
+				this.pendingRequestCount += 1;
+				return this.openRequestUi();
+			},
 			onRequestFinish: ({ requestContext }) => {
-				const win = requestContext as Window | null | undefined;
-				if (win) {
-					// Delay closing to allow wallet UI to visibly transition / finalize
-					setTimeout(() => {
-						this.closePopupIfExists();
-					}, 800);
-				}
+				this.pendingRequestCount = Math.max(0, this.pendingRequestCount - 1);
+				void requestContext;
 			},
       onTransactionUpdate: this.onTransactionUpdate ?? undefined,
 		};
