@@ -133,6 +133,7 @@
                     {
                         setProvider(prov);
                         console.log('Provider:', prov);
+                        console.log('submitTransaction available:', typeof prov.submitTransaction);
                         setAccount({ partyId: prov.party_id, publicKey: prov.public_key });
                     },
                     onReject: () =>
@@ -252,9 +253,6 @@
                             executeBefore: executeBefore.toISOString(),
                             requestTimeout: requestTimeoutMs,
                             memo: memo || undefined,
-                            message: message || undefined,
-                            executionMode: executionMode,
-                            estimateTraffic: true,
                         },
                     );
                     setTransferResult(res);
@@ -345,13 +343,11 @@
                 {
                     const command = JSON.parse(damlCommand);
                     const message = customTxMessage?.trim();
-                    const submitFn = executionMode === 'wait'
-                        ? provider.submitAndWaitForTransaction.bind(provider)
-                        : provider.submitTransaction.bind(provider);
-                    const result = await submitFn(command, {
+                    const result = await provider.submitAndWaitForTransaction(command, {
                         message: message || undefined,
                         estimateTraffic: true,
                     });
+                    console.log('submitTransaction result', result);
                     setTxResult(result);
                 } catch (error)
                 {

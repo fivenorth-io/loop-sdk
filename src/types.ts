@@ -84,6 +84,18 @@ export type ConnectTransferResponse = {
   payload: PreparedTransferPayload;
 };
 
+export type TransactionPayload = {
+  commands: any[];
+  disclosedContracts: any[];
+  packageIdSelectionPreference?: string[];
+  actAs?: string[];
+  readAs?: string[];
+  synchronizerId?: string;
+  execution_mode?: 'async' | 'wait';
+  estimate_traffic?: boolean;
+};
+
+
 export type RunTransactionResponse = {
   command_id: string;
   submission_id?: string;

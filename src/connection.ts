@@ -166,7 +166,6 @@ export class Connection {
         const data: ConnectTransferResponse = await response.json();
         return data.payload;
     }
-
     async verifySession(authToken: string): Promise<Account> {
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/account`, {
             method: 'GET',
