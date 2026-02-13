@@ -241,9 +241,70 @@ Coming soon
 
 Loop SDK also supports a server-side signing flow. Instead of a wallet popup, your backend signs and submits transactions directly using the user's private key.
 
+### Installation
+
+For server-side usage, you need to install the SDK and `node-forge`:
+
+```bash
+bun add @fivenorth/loop-sdk node-forge
+# or
+npm install @fivenorth/loop-sdk node-forge
+```
+
+**Note:** `node-forge` is a peer dependency and must be installed manually when using the server SDK. It's not required for browser usage.
+
+### Usage
+
+```javascript
+import { loop } from '@fivenorth/loop-sdk/server';
+
+// Initialize with private key
+loop.init({
+    privateKey: process.env.PRIVATE_KEY, // hex-encoded Ed25519 private key
+    partyId: process.env.PARTY_ID,       // your party ID
+    network: 'local',                    // or 'devnet', 'mainnet'
+    walletUrl: process.env.WALLET_URL,   // optional
+    apiUrl: process.env.API_URL,         // optional
+});
+
+// Authenticate to get API access
+await loop.authenticate();
+
+// Get the provider to interact with the ledger
+const provider = loop.getProvider();
+
+// List holdings
+const holdings = await provider.getHolding();
+console.log(holdings);
+
+// Get active contracts
+const contracts = await provider.getActiveContracts({
+    templateId: '#splice-amulet:Splice.Amulet:Amulet'
+});
+
+// Transfer tokens
+const preparedPayload = await provider.transfer(
+    'recipient::partyId',
+    1,
+    {
+        instrument_admin: '',
+        instrument_id: 'Amulet',
+    },
+    {
+        requestedAt: new Date(),
+        executeBefore: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    }
+);
+
+// Execute the transaction
+const result = await loop.executeTransaction(preparedPayload);
+console.log('Transfer result:', result);
+```
+
 Example ideas:
 - List pending transfers
 - Accept a pending transfer
+- Automated transaction processing
 
 
 # Development Guide
