@@ -1,5 +1,7 @@
 # Usage Guide
 
+Looking for server-side signing (no wallet popup)? See `docs/server.md`.
+
 ## Install the SDK
 
 Using Bun:

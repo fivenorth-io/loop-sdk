@@ -1,23 +1,25 @@
 # Server API
 
-Beside enabling dapp to connect to a user's wallet and sign transaction in browser, LoopSDK also enables a user extracts their private key to sign and submit DAML transaction programmatically.
+Loop SDK also supports a server-side signing flow. Instead of asking the user to approve each action in the wallet UI, your backend signs and submits transactions directly using the user's private key.
+
+Important: this flow requires access to the user's private key. Party ID + public key alone is not enough.
 
 ## Install the SDK
 
 Follow the same step in [Install SDK](https://docs.fivenorth.io/loop-sdk/usage/#install-the-sdk) to install the SDK.
 
-Secondly, add [node-forge](https://www.npmjs.com/package/node-forge) to your project dependencies
+Secondly, add [node-forge](https://www.npmjs.com/package/node-forge) to your project dependencies.
 
-Now, you're ready to use the LoopSDK to sign from server instead of from dapp browser.
+Now, you're ready to use the Loop SDK to sign from your server instead of from a browser dApp.
 
-If you just want a quick example, look over the file at [demo server signing](https://github.com/fivenorth-io/loop-sdk/blob/main/demo/test.html)
+If you just want a quick example, look at `demo/server.ts`.
 
 ## 1. Initialize the SDK
 
-Call `loop.init()` once when your application loads:
+Call `loop.init()` once when your application starts:
 
 ```javascript
-import { loop } from '@fivenorth/loops-dk/server';
+import { loop } from '@fivenorth/loop-sdk/server';
 
 loop.init({
     privateKey: process.env.PRIVATE_KEY,
@@ -30,51 +32,51 @@ loop.init({
 
 | Field | Description |
 |-------|-------------|
-| `privateKey` | Private key in hex format, extract from Loop wallet UI |
-| `partyId` | your party id |
+| `privateKey` | Private key in hex format (exported from Loop wallet UI) |
+| `partyId` | Your party ID |
 | `network` | `local`, `devnet`, or `mainnet` |
 
 ## 2. Authenticate yourself
 
-Ideally do this once when your application boot and initialize the SDK. After init, you will authenticate yourself to the server.
+Ideally do this once when your application boots. After init, authenticate with the Loop backend:
 
 ```javascript
 await loop.authenticate()
 ```
 
-Upon authenticate succesfully you will now have 2 object `signer` and `provider` that you can get through `getSigner` and `getProvider`.
+Upon successful authentication, you will have two objects: `signer` and `provider`, accessible via `getSigner()` and `getProvider()`.
 
-Majority of time you don't need to use these directly and can use the high level signing process of `loop` object instead.
+Most of the time you won't need them directly and can use the high-level `loop.executeTransaction()` flow instead.
 
 ---
 
-## 3. Submit DAML transaction (simple)
+## 3. Submit a DAML transaction (simple)
 
-With the signer and provider ready after authenticate, you can submit any DAML transaction
+With the signer and provider ready, you can submit any DAML transaction:
 
 ```javascript
 await loop.executeTransaction({
-"commands": [
+  commands: [
     {
-      "ExerciseCommand": {
-        "templateId": "template",
-        "contractId": "contractid",
-        "choice": "choice",
-        "choiceArgument": {
-            "arg1": "val1",
-        }
-      }
-    }
+      ExerciseCommand: {
+        templateId: 'template',
+        contractId: 'contractid',
+        choice: 'choice',
+        choiceArgument: {
+          arg1: 'val1',
+        },
+      },
+    },
   ],
-  "disclosedContracts": []
-})
+  disclosedContracts: [],
+});
 ```
 
 And that's all
 
-## 4. Using the Provider
+## 4. Using the Provider (advanced)
 
-For more granular control over transaction submission, you can use the `provider` object directly. This gives you more control over the signing process. For example, you can use your own signing mechanism instead of the one provided by the SDK.
+For more granular control over transaction submission, you can use the `provider` object directly. This allows you to integrate your own signing mechanism instead of the SDK signer.
 
 The process involves two steps:
 
@@ -84,7 +86,7 @@ The process involves two steps:
 Here is an example of how to use the provider to submit a transaction:
 
 ```javascript
-import { loop } from '../src/server/index';
+import { loop } from '@fivenorth/loop-sdk/server';
 
 // Initialize and authenticate loop first
 // ...
@@ -95,19 +97,19 @@ const signer = loop.getSigner();
 
 // 1. Prepare the transaction
 const preparedPayload = await provider.prepareSubmission({
-    "commands": [
-        {
-          "ExerciseCommand": {
-            "templateId": "template",
-            "contractId": "contractid",
-            "choice": "choice",
-            "choiceArgument": {
-                "arg1": "val1",
-            }
-          }
-        }
-      ],
-      "disclosedContracts": []
+  commands: [
+    {
+      ExerciseCommand: {
+        templateId: 'template',
+        contractId: 'contractid',
+        choice: 'choice',
+        choiceArgument: {
+          arg1: 'val1',
+        },
+      },
+    },
+  ],
+  disclosedContracts: [],
 });
 
 // 2. Sign the transaction hash from the prepared payload
@@ -143,3 +145,32 @@ Executes a prepared transaction.
     -   `signature`: The signature of the `transaction_hash`.
 -   Returns: A `Promise` that resolves to the submission response.
 
+---
+
+## Examples
+
+These are high-level examples to show what the SDK enables. The key point: you can execute any DAML transaction, not just transfers.
+
+Common server-SDK flow for all examples:
+1. `loop.init({ privateKey, partyId, ... })`
+2. `await loop.authenticate()` (creates a server-SDK JWT via `/pair/apikey`)
+3. Build a DAML command payload
+4. `await loop.executeTransaction(payload)` (prepare → sign → execute)
+
+Example ideas:
+1. List pending transfers  
+   Functions: `loop.getProvider()`, `provider.getActiveContracts()`  
+   Use `getActiveContracts()` with the transfer instruction template or interface ID to list pending transfer contracts. This is a read call, no signing required.
+
+2. Accept a pending transfer  
+   Functions: `loop.executeTransaction()`  
+   Build an `ExerciseCommand` that accepts the transfer instruction contract and submit it with `loop.executeTransaction()`.
+
+If you can express it as a DAML transaction, you can submit it through the SDK.
+
+---
+
+## Security notes
+
+- The server flow only works if you can access the user's private key. This is a custody decision.
+- Rate limit: server-side signing requests are limited to **1 request per minute (1 RPM)**.
