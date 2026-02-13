@@ -10,7 +10,9 @@ import { loop } from '../src/server/index';
 loop.init({
     privateKey: process.env.PRIVATE_KEY || '',
     partyId: process.env.PARTY_ID || '',
-    network: 'devnet',
+    network: 'local',
+    walletUrl: process.env.WALLET_URL || 'http://localhost:3000',
+    apiUrl: process.env.API_URL || 'http://localhost:8080',
 });
 
 console.log("###########DEBUG########################");
