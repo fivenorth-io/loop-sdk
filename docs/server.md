@@ -152,19 +152,48 @@ Executes a prepared transaction.
 These are high-level examples to show what the SDK enables. The key point: you can execute any DAML transaction, not just transfers.
 
 Common server-SDK flow for all examples:
+
+
 1. `loop.init({ privateKey, partyId, ... })`
 2. `await loop.authenticate()` (creates a server-SDK JWT via `/pair/apikey`)
 3. Build a DAML command payload
 4. `await loop.executeTransaction(payload)` (prepare → sign → execute)
 
-Example ideas:
-1. List pending transfers  
+### Example 1: List pending transfers  
+
    Functions: `loop.getProvider()`, `provider.getActiveContracts()`  
    Use `getActiveContracts()` with the transfer instruction template or interface ID to list pending transfer contracts. This is a read call, no signing required.
+   The template is `#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferInstruction`
 
-2. Accept a pending transfer  
-   Functions: `loop.executeTransaction()`  
-   Build an `ExerciseCommand` that accepts the transfer instruction contract and submit it with `loop.executeTransaction()`.
+### Example 2: Accept a pending transfer  
+
+Functions: `loop.executeTransaction()`  
+Build an `ExerciseCommand` that accepts the transfer instruction contract and submit it with `loop.executeTransaction()`.
+
+The process of accepting a transfer instruction is:
+
+- Get the choice context. Post to <registry-api>/registry/transfer-instruction/v1/<transfer-instruction-contract-id>/choice-contexts/(accept|reject)
+- Build out the ExerciseCommand in below format
+
+```
+{
+  "templateId": "#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferInstruction",
+  "contractId": "<transafer-factory>",
+  "choice": "TransferInstruction_Accept",
+  "choiceArgument": {
+    "extraArgs": {
+      "context": {
+        "values": <these-are-return-from-the-choice-context-call>
+      },
+      "meta": {
+        "values": {}
+      }
+    }
+  }
+}
+
+```
+
 
 If you can express it as a DAML transaction, you can submit it through the SDK.
 
