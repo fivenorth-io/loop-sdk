@@ -10,6 +10,7 @@ The release notes below highlight only the major updates. Refer to the links abo
 ## v0.11.0
 - SDK: add server-side signing entrypoint. Backend authenticates with the user's private key, prepares a transaction, signs the returned hash, and submits without a wallet popup (headless flow).
 - Demo: add server demo (`demo/server.ts`) showing end-to-end headless signing.
+- Breaking: `TransactionPayload` no longer includes `execution_mode` or `estimate_traffic`. Use `submitTransaction` options (`executionMode`, `estimateTraffic`) instead.
 - Docs: clarify server SDK custody requirements and add headless usage examples.
 
 ## v0.10.0

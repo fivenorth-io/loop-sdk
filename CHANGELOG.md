@@ -9,6 +9,10 @@ Full Changelog: [v0.10.0...v0.11.0](https://github.com/fivenorth-io/loop-sdk/com
 - **sdk:** add server-side signing entrypoint: backend authenticates with the user's private key, prepares a transaction, signs the returned hash, and submits without a wallet popup (headless flow).
 - **demo:** add server demo showing end-to-end headless signing.
 
+### Breaking Changes
+
+- **types:** `TransactionPayload` no longer includes `execution_mode` or `estimate_traffic`. These are now provided via `submitTransaction` options (`executionMode`, `estimateTraffic`).
+
 ### Documentation
 
 - **docs:** clarify server SDK custody requirements and add headless usage examples.
