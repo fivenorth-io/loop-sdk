@@ -71,6 +71,17 @@ export type TransactionPayload = {
   synchronizerId?: string;
 };
 
+export type TransactionPayload = {
+  commands: any[];
+  disclosedContracts: any[];
+  packageIdSelectionPreference?: string[];
+  actAs?: string[];
+  readAs?: string[];
+  synchronizerId?: string;
+  execution_mode?: 'async' | 'wait';
+  estimate_traffic?: boolean;
+};
+
 export type PreparedTransferPayload = {
   actAs: string[];
   readAs: string[];

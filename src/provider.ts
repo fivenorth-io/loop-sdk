@@ -7,6 +7,7 @@ import type {
   TransferOptions,
   InstrumentSpec,
   RunTransactionResponse,
+  TransactionPayload,
 } from './types';
 import { MessageType, type Account, type TransactionPayload } from './types';
 import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
@@ -24,11 +25,6 @@ export type ProviderHooks = {
   onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown | Promise<unknown>;
   onRequestFinish?: (args: RequestFinishArgs) => void;
   onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void;
-};
-
-type ProviderTransactionPayload = TransactionPayload & {
-  execution_mode?: 'async' | 'wait';
-  estimate_traffic?: boolean;
 };
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
@@ -126,7 +122,7 @@ export class Provider {
 
     // submit a transaction to be signed by the wallet to the websocket
     async submitTransaction(
-      payload: ProviderTransactionPayload, 
+      payload: TransactionPayload, 
       options?: { requestTimeout?: number; message?: string; requestLabel?: string; estimateTraffic?: boolean }
     ): Promise<any> {
         const requestPayload = options?.estimateTraffic ? { ...payload, estimate_traffic: true } : payload;
@@ -134,7 +130,7 @@ export class Provider {
     }
 
     async submitAndWaitForTransaction(
-      payload: ProviderTransactionPayload,
+      payload: TransactionPayload,
       options?: { requestTimeout?: number; message?: string; requestLabel?: string; estimateTraffic?: boolean }
     ): Promise<any> {
         const requestPayload = options?.estimateTraffic ? { ...payload, estimateTraffic: true } : payload;
