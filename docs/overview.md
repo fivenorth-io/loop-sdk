@@ -14,6 +14,8 @@ Loop SDK is a lightweight JavaScript client that allows dApps to securely connec
 It handles the connection flow, performs session validation, and provides a Provider object so your
 application can fetch holdings, query DAML contracts, submit transactions, and sign messages.
 
+The SDK also includes a **server-side signing flow** for integrators who want to sign and submit transactions without a wallet popup. This server flow requires access to the user's private key.
+
 ## Limitation
 
 Currently, the SDK only supports DAML transactions from the built-in Splice DAR files and Utility app DAR files.
@@ -48,7 +50,7 @@ Reference: https://docs.digitalasset.com/utilities/devnet/index.html
 
 ## Security Considerations
 
-The Loop SDK is designed so your dApp never handles private keys directly.  
+Browser dApps should never handle private keys directly.  
 For best security:
 
 - Do not request or store private keys.
@@ -57,6 +59,20 @@ For best security:
 - Verify user identity on your backend before performing sensitive actions.
 
 ---
+
+## Server SDK (No Popup)
+
+The server SDK lets your backend sign and submit transactions programmatically. This removes the wallet popup but requires key custody.
+
+- Use `@fivenorth/loop-sdk/server`
+- Initialize with `privateKey` + `partyId`
+- Authenticate, then prepare → sign → execute
+
+If you do not control the private key, you must use the normal wallet popup flow instead.
+
+Example ideas:
+- List pending transfers
+- Accept a pending transfer
 
 ## Next steps
 

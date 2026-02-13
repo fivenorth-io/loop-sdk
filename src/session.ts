@@ -20,15 +20,17 @@ export class SessionInfo  {
   public partyId?: string;
   public publicKey?: string;
   public email?: string;
+  public userApiKey?: string;
   private _isAuthorized: boolean = false;
 
-  constructor({ sessionId, ticketId, authToken, partyId, publicKey, email }: {  sessionId: string, ticketId?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string }) {
+  constructor({ sessionId, ticketId, authToken, partyId, publicKey, email, userApiKey }: {  sessionId: string, ticketId?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string, userApiKey?: string }) {
     this.sessionId = sessionId;
     this.ticketId = ticketId;
     this.authToken = authToken;
     this.partyId = partyId;
     this.publicKey = publicKey;
     this.email = email;
+    this.userApiKey = userApiKey;
   }
 
   // set the ticket id when we exchange session id/appname, and user approve it and now we have a ticket id

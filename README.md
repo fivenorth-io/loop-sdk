@@ -237,6 +237,15 @@ Notes:
 
 Coming soon
 
+## Loop Server Signing API
+
+Loop SDK also supports a server-side signing flow. Instead of a wallet popup, your backend signs and submits transactions directly using the user's private key.
+
+Example ideas:
+- List pending transfers
+- Accept a pending transfer
+
+
 # Development Guide
 
 This section is only if you want to actively develop the SDK itself. To use the SDK, follow the `#Usage Guide` section

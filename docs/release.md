@@ -7,6 +7,11 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.11.0
+- SDK: add server-side signing entrypoint. Backend authenticates with the user's private key, prepares a transaction, signs the returned hash, and submits without a wallet popup (headless flow).
+- Demo: add server demo (`demo/server.ts`) showing end-to-end headless signing.
+- Docs: clarify server SDK custody requirements and add headless usage examples.
+
 ## v0.10.0
 - Add `memo` to the transfer helper payload and store it as transfer metadata.
 - Add `estimateTraffic` option to return estimated traffic in submit responses.

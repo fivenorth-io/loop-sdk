@@ -1,6 +1,18 @@
 # Changelog
 
 
+## 0.11.0 (2026-02-13)
+Full Changelog: [v0.10.0...v0.11.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.10.0...v0.11.0)
+
+### Features
+
+- **sdk:** add server-side signing entrypoint: backend authenticates with the user's private key, prepares a transaction, signs the returned hash, and submits without a wallet popup (headless flow).
+- **demo:** add server demo showing end-to-end headless signing.
+
+### Documentation
+
+- **docs:** clarify server SDK custody requirements and add headless usage examples.
+
 ## 0.10.0 (2026-01-20)
 Full Changelog: [v0.9.0...v0.10.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.9.0...v0.10.0)
 
