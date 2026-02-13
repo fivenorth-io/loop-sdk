@@ -26,13 +26,9 @@ export type ProviderHooks = {
   onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void;
 };
 
-type TransactionPayload = {
-  commands: any[];
-  disclosedContracts: any[];
-  packageIdSelectionPreference?: string[];
-  actAs?: string[];
-  readAs?: string[];
-  synchronizerId?: string;
+type ProviderTransactionPayload = TransactionPayload & {
+  execution_mode?: 'async' | 'wait';
+  estimate_traffic?: boolean;
 };
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
@@ -123,10 +119,23 @@ export class Provider {
 
     // submit a transaction to be signed by the wallet to the websocket
     async submitTransaction(
-      payload: TransactionPayload, 
-      options?: { requestTimeout?: number; message?: string; requestLabel?: string }
+      payload: ProviderTransactionPayload, 
+      options?: { requestTimeout?: number; message?: string; requestLabel?: string; estimateTraffic?: boolean }
     ): Promise<any> {
-        return this.sendRequest(MessageType.RUN_TRANSACTION, payload, options);
+        const requestPayload = options?.estimateTraffic ? { ...payload, estimate_traffic: true } : payload;
+        return this.sendRequest(MessageType.RUN_TRANSACTION, requestPayload, options);
+    }
+
+    async submitAndWaitForTransaction(
+      payload: ProviderTransactionPayload,
+      options?: { requestTimeout?: number; message?: string; requestLabel?: string; estimateTraffic?: boolean }
+    ): Promise<any> {
+        const requestPayload = options?.estimateTraffic ? { ...payload, estimateTraffic: true } : payload;
+        return this.sendRequest(
+          MessageType.RUN_TRANSACTION,
+          { ...requestPayload, execution_mode: 'wait' },
+          options,
+        );
     }
 
     async transfer(
