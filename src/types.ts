@@ -71,15 +71,6 @@ export type TransactionPayload = {
   synchronizerId?: string;
 };
 
-export type TransactionPayload = {
-  commands: any[];
-  disclosedContracts: any[];
-  packageIdSelectionPreference?: string[];
-  actAs?: string[];
-  readAs?: string[];
-  synchronizerId?: string;
-};
-
 export type PreparedTransferPayload = {
   actAs: string[];
   readAs: string[];

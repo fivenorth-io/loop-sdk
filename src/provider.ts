@@ -9,7 +9,7 @@ import type {
   RunTransactionResponse,
   TransactionPayload,
 } from './types';
-import { MessageType, type Account, type TransactionPayload } from './types';
+import { MessageType, type Account } from './types';
 import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
