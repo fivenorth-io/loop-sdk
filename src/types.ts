@@ -78,8 +78,6 @@ export type TransactionPayload = {
   actAs?: string[];
   readAs?: string[];
   synchronizerId?: string;
-  execution_mode?: 'async' | 'wait';
-  estimate_traffic?: boolean;
 };
 
 export type PreparedTransferPayload = {
