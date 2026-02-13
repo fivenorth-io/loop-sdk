@@ -7,6 +7,9 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.11.1
+- SDK: fix server-side SDK to not bundling and just compile TS -> JS
+
 ## v0.11.0
 - SDK: add server-side signing entrypoint. Backend authenticates with the user's private key, prepares a transaction, signs the returned hash, and submits without a wallet popup (headless flow).
 - Demo: add server demo (`demo/server.ts`) showing end-to-end headless signing.
