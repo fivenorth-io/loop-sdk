@@ -7,8 +7,9 @@ import type {
   TransferOptions,
   InstrumentSpec,
   RunTransactionResponse,
+  TransactionPayload,
 } from './types';
-import { MessageType, type Account, type TransactionPayload } from './types';
+import { MessageType, type Account } from './types';
 import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
@@ -26,15 +27,12 @@ export type ProviderHooks = {
   onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void;
 };
 
-type TransactionPayload = {
-  commands: any[];
-  disclosedContracts: any[];
-  packageIdSelectionPreference?: string[];
-  actAs?: string[];
-  readAs?: string[];
-  synchronizerId?: string;
-  execution_mode?: 'async' | 'wait';
-  estimate_traffic?: boolean;
+type SubmitOptions = {
+  requestTimeout?: number;
+  message?: string;
+  requestLabel?: string;
+  estimateTraffic?: boolean;
+  executionMode?: 'async' | 'wait';
 };
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
@@ -133,17 +131,21 @@ export class Provider {
     // submit a transaction to be signed by the wallet to the websocket
     async submitTransaction(
       payload: TransactionPayload, 
-      options?: { requestTimeout?: number; message?: string; requestLabel?: string; estimateTraffic?: boolean }
+      options?: SubmitOptions
     ): Promise<any> {
         const requestPayload = options?.estimateTraffic ? { ...payload, estimate_traffic: true } : payload;
-        return this.sendRequest(MessageType.RUN_TRANSACTION, requestPayload, options);
+        const executionMode = options?.executionMode;
+        const finalPayload = executionMode === 'wait'
+          ? { ...requestPayload, execution_mode: 'wait' }
+          : requestPayload;
+        return this.sendRequest(MessageType.RUN_TRANSACTION, finalPayload, options);
     }
 
     async submitAndWaitForTransaction(
       payload: TransactionPayload,
-      options?: { requestTimeout?: number; message?: string; requestLabel?: string; estimateTraffic?: boolean }
+      options?: SubmitOptions
     ): Promise<any> {
-        const requestPayload = options?.estimateTraffic ? { ...payload, estimateTraffic: true } : payload;
+        const requestPayload = options?.estimateTraffic ? { ...payload, estimate_traffic: true } : payload;
         return this.sendRequest(
           MessageType.RUN_TRANSACTION,
           { ...requestPayload, execution_mode: 'wait' },
