@@ -1,6 +1,18 @@
-import type { Network, Account, Holding, TransferRequest, PreparedTransferPayload, ConnectTransferResponse } from './types';
+import type {
+    Network,
+    Account,
+    Holding,
+    TransferRequest,
+    PreparedTransferPayload,
+    ConnectTransferResponse,
+    ExchangeApiKeyResponse,
+    TransactionPayload,
+    PreparedSubmissionResponse,
+    ExecuteSubmissionResquest,
+} from './types';
 import { UnauthorizedError } from './errors';
-
+import { SessionInfo } from './session';
+import { generateRequestId } from './provider';
 
 export class Connection {
     public walletUrl: string = 'https://cantonloop.com';
@@ -81,7 +93,7 @@ export class Connection {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to get holdings.');
+            throw new Error('Failed to get holdings. ' + await response.text());
         }
 
         return response.json();
@@ -133,6 +145,9 @@ export class Connection {
         if (params.execute_before) {
             payload.execute_before = params.execute_before;
         }
+        if (params.memo) {
+            payload.memo = params.memo;
+        }
 
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/transfer`, {
             method: 'POST',
@@ -144,6 +159,7 @@ export class Connection {
         });
 
         if (!response.ok) {
+            console.error('Failed to prepare transfer.', await response.text());
             throw new Error('Failed to prepare transfer.');
         }
 
@@ -239,6 +255,67 @@ export class Connection {
             );
         });
     }
+
+    // exchangeApiKey is used to exchange the API key for the public key and signature to use in a server session
+    async exchangeApiKey({publicKey, signature, epoch}: {publicKey: string, signature: string, epoch: number}): Promise<ExchangeApiKeyResponse> {
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/apikey`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                public_key: publicKey,
+                signature: signature,
+                epoch: epoch,
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to get API key from server.');
+        }
+
+        return response.json();
+    }
+
+    // send transaction to v2/interactive-submisison/prepare endpoint to get the prepared transaction
+    prepareTransaction(session: SessionInfo, params: TransactionPayload): Promise<PreparedSubmissionResponse> {
+        return fetch(`${this.apiUrl}/api/v1/.connect/tickets/prepare-transaction`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.userApiKey}`,
+            },
+            body: JSON.stringify({
+                payload: params,
+                ticket_id: session.ticketId!,
+            })
+        }).then(response => response.json());
+    }
+
+    // execute a signed transaction with v2/interactive-submisison/execute endpoint
+    async executeTransaction(session: SessionInfo, params: ExecuteSubmissionResquest): Promise<PreparedSubmissionResponse> {
+        if (!session.ticketId) {
+            throw new Error('Ticket ID is required');
+        }
+
+        const resp = fetch(`${this.apiUrl}/api/v1/.connect/tickets/execute-transaction`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.userApiKey}`,
+            },
+            body: JSON.stringify({
+                ticket_id: session.ticketId!,
+                request_id: generateRequestId(),
+                command_id: params.command_id,
+                signature: params.signature,
+                transaction_data: params.transaction_data,
+            }),
+        });
+
+        return (await resp).json();
+    }
+
 
     private websocketUrl(ticketId: string): string {
         return `${this.network === 'local' ? 'ws' : 'wss'}://${this.apiUrl.replace('https://', '').replace('http://', '')}/api/v1/.connect/pair/ws/${encodeURIComponent(ticketId)}`;

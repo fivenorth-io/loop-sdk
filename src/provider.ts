@@ -8,7 +8,7 @@ import type {
   InstrumentSpec,
   RunTransactionResponse,
 } from './types';
-import { MessageType, type Account } from './types';
+import { MessageType, type Account, type TransactionPayload } from './types';
 import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
@@ -94,7 +94,14 @@ export class Provider {
     public handleResponse(message: any) {
         console.log('Received response:', message);
 
-        if (message?.type === MessageType.TRANSACTION_COMPLETED && message?.payload?.update_id) {
+        if (
+            message?.type === MessageType.TRANSACTION_COMPLETED &&
+            (message?.payload?.update_id || message?.payload?.update_data || message?.payload?.status)
+        ) {
+            if (message?.payload?.error_message) {
+                message.payload.error = { error_message: message.payload.error_message };
+                delete message.payload.error_message;
+            }
             this.hooks?.onTransactionUpdate?.(message.payload as RunTransactionResponse, message);
         }
 
@@ -142,10 +149,10 @@ export class Provider {
       recipient: string,
       amount: string | number,
       instrument?: InstrumentSpec,
-      options?: TransferOptions,
+      options?: TransferOptions & { executionMode?: 'async' | 'wait' },
     ): Promise<any> {
         const amountStr = typeof amount === 'number' ? amount.toString() : amount;
-        const { requestedAt, executeBefore, requestTimeout } = options || {};
+        const { requestedAt, executeBefore, requestTimeout, estimateTraffic, memo } = options || {};
         const message = options?.message;
         const resolveDate = (value?: string | Date, fallbackMs?: number) => {
           if (value instanceof Date) {
@@ -173,17 +180,24 @@ export class Provider {
           requested_at: requestedAtIso,
           execute_before: executeBeforeIso,
         };
+        if (memo) {
+          transferRequest.memo = memo;
+        }
 
         const preparedPayload: PreparedTransferPayload = await this.connection.prepareTransfer(this.auth_token, transferRequest);
 
-        return this.submitTransaction({
+        const submitFn = options?.executionMode === 'wait'
+          ? this.submitAndWaitForTransaction.bind(this)
+          : this.submitTransaction.bind(this);
+
+        return submitFn({
             commands: preparedPayload.commands,
             disclosedContracts: preparedPayload.disclosedContracts,
             packageIdSelectionPreference: preparedPayload.packageIdSelectionPreference,
             actAs: preparedPayload.actAs,
             readAs: preparedPayload.readAs,
             synchronizerId: preparedPayload.synchronizerId,
-        }, { requestTimeout, message });
+        }, { requestTimeout, message, estimateTraffic });
     }
 
     // submit a raw message to be signed by the wallet to the websocket
