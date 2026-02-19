@@ -316,17 +316,6 @@ class LoopSDK {
 		return null;
 	}
 
-	private closePopupIfExists() {
-		if (this.popupWindow && !this.popupWindow.closed) {
-			try {
-				this.popupWindow.close();
-			} catch {
-				// ignore close errors
-			}
-		}
-		this.popupWindow = null;
-	}
-
 	private openWallet(url: string, mode?: "popup" | "tab"): Window | null {
 		if (typeof window === "undefined") {
 			return null;
@@ -614,15 +603,7 @@ class LoopSDK {
 	private createProviderHooks(): ProviderHooks {
 		return {
 			onRequestStart: () => this.openRequestUi(),
-			onRequestFinish: ({ requestContext }) => {
-				const win = requestContext as Window | null | undefined;
-				if (win) {
-					// Delay closing to allow wallet UI to visibly transition / finalize
-					setTimeout(() => {
-						this.closePopupIfExists();
-					}, 800);
-				}
-			},
+			onRequestFinish: () => undefined,
       onTransactionUpdate: this.onTransactionUpdate ?? undefined,
 		};
 	}
