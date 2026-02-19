@@ -5,8 +5,10 @@ export class RequestTimeoutError extends Error {
 }
 
 export class RejectRequestError extends Error {
-    constructor() {
-        super('Request was rejected by the wallet.');
+    public code?: string;
+    constructor(message?: string, code?: string) {
+        super(message || 'Request was rejected by the wallet.');
+        this.code = code;
     }
 }
 
