@@ -92,6 +92,7 @@
             const [ txResult, setTxResult ] = useState(null);
             const [ txUpdate, setTxUpdate ] = useState(null);
             const [ txUpdateLog, setTxUpdateLog ] = useState('');
+            const [ lastBroadcast, setLastBroadcast ] = useState(null);
             const [ executionMode, setExecutionMode ] = useState('async');
             const [ rawMessage, setRawMessage ] = useState('Hello, Loop!');
             const [ signature, setSignature ] = useState(null);
@@ -114,19 +115,26 @@
             const [ customTxMessage, setCustomTxMessage ] = useState('');
             const [ accountInfo, setAccountInfo ] = useState(null);
 
+            const normalizeError = (error, fallbackMessage) => ({
+                error: error?.message || fallbackMessage,
+                code: error?.code || '',
+                name: error?.name || '',
+            });
+
             useEffect(async () =>
             {
                 loop.init({
                     appName: 'Demo DAPP',
                     network: networkEnv,
-                    onTransactionUpdate: (payload) => {
-                        console.log('Transaction update:', payload);
+                    onTransactionUpdate: (payload, message) => {
+                        console.log('Transaction update:', payload, message);
                         setTxUpdate(payload);
                         setTxUpdateLog(new Date().toISOString());
+                        setLastBroadcast(message || null);
                     },
                     options: {
-                        openMode: 'popup', // 'popup' (default) or 'tab'
-                        requestSigningMode: 'popup', // 'popup' (default) | 'tab'
+                        openMode: 'tab', // 'popup' (default) or 'tab'
+                        requestSigningMode: 'tab', // 'popup' (default) | 'tab'
                         redirectUrl: 'https://example.com/after-connect', // optional redirect after approval
                     },
                     onAccept: (prov) =>
@@ -261,7 +269,7 @@
                 } catch (error)
                 {
                     console.error('Transfer failed', error);
-                    setTransferResult({ error: error?.message || 'Transfer failed' });
+                    setTransferResult(normalizeError(error, 'Transfer failed'));
                 } finally
                 {
                     setIsTransferring(false);
@@ -357,7 +365,7 @@
                 {
                     console.error('Failed to submit transaction:', error);
                     alert('Failed to submit transaction. See console.');
-                    setTxResult({ error: error.message });
+                    setTxResult(normalizeError(error, 'Failed to submit transaction'));
                 } finally
                 {
                     setIsSubmittingTx(false);
@@ -404,7 +412,7 @@
                 } catch (error)
                 {
                     console.error('Withdrawal failed', error);
-                    setWithdrawResult({ error: error?.message || 'Withdrawal failed' });
+                    setWithdrawResult(normalizeError(error, 'Withdrawal failed'));
                 } finally
                 {
                     setIsWithdrawing(false);
@@ -447,16 +455,21 @@
             const submissionEstimatedTrafficText = txResult?.estimated_traffic
                 ? JSON.stringify(txResult.estimated_traffic, null, 2)
                 : '';
+            const submissionError = txResult?.error || '';
+            const submissionErrorCode = txResult?.code || '';
             const transferSubmissionCommandId = transferResult?.command_id || '';
             const transferSubmissionIdOnly = transferResult?.submission_id || '';
             const transferEstimatedTrafficText = transferResult?.estimated_traffic
                 ? JSON.stringify(transferResult.estimated_traffic, null, 2)
                 : '';
+            const transferError = transferResult?.error || '';
+            const transferErrorCode = transferResult?.code || '';
             const lighthouseBaseUrl = getLighthouseBaseUrl(networkEnv);
             const updateUrl = updateId ? `${lighthouseBaseUrl}/transactions/${updateId}` : '';
             const estimatedTrafficText = txPayload?.estimated_traffic
                 ? JSON.stringify(txPayload.estimated_traffic, null, 2)
                 : '';
+            const broadcastText = lastBroadcast ? JSON.stringify(lastBroadcast, null, 2) : '';
             const txSummarySection = txPayload ? html`
                 <div style="margin-top: 20px; color: #444;">
                     Transaction Result (${txUpdateLog || 'unknown timestamp'}):
@@ -486,6 +499,12 @@
                 <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
                     <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${submissionCommandId || 'n/a'}</div>
                     <div style="font-family: monospace;">submission_id: ${submissionIdOnly || 'n/a'}</div>
+                    ${submissionError ? html`
+                        <div style="font-family: monospace; margin-top: 8px; color: #b00020;">error: ${submissionError}</div>
+                    ` : ''}
+                    ${submissionErrorCode ? html`
+                        <div style="font-family: monospace; margin-top: 4px; color: #b00020;">code: ${submissionErrorCode}</div>
+                    ` : ''}
                     ${submissionEstimatedTrafficText ? html`
                         <details style="margin-top: 10px;">
                             <summary style="cursor: pointer;">estimated traffic</summary>
@@ -498,12 +517,28 @@
                 <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
                     <div style="font-family: monospace; margin-bottom: 6px;">command_id: ${transferSubmissionCommandId || 'n/a'}</div>
                     <div style="font-family: monospace;">submission_id: ${transferSubmissionIdOnly || 'n/a'}</div>
+                    ${transferError ? html`
+                        <div style="font-family: monospace; margin-top: 8px; color: #b00020;">error: ${transferError}</div>
+                    ` : ''}
+                    ${transferErrorCode ? html`
+                        <div style="font-family: monospace; margin-top: 4px; color: #b00020;">code: ${transferErrorCode}</div>
+                    ` : ''}
                     ${transferEstimatedTrafficText ? html`
                         <details style="margin-top: 10px;">
                             <summary style="cursor: pointer;">estimated traffic</summary>
                             <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${transferEstimatedTrafficText}</pre>
                         </details>
                     ` : ''}
+                </div>
+            ` : '';
+            const broadcastSection = lastBroadcast ? html`
+                <div style="margin-top: 12px; background: #eef6ff; padding: 10px; border-radius: 5px;">
+                    <div style="font-family: monospace; margin-bottom: 6px;">last ws message type: ${lastBroadcast?.type || 'n/a'}</div>
+                    <div style="font-family: monospace; margin-bottom: 6px;">request_id: ${lastBroadcast?.request_id || 'n/a'}</div>
+                    <details>
+                        <summary style="cursor: pointer;">raw ws message</summary>
+                        <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${broadcastText}</pre>
+                    </details>
                 </div>
             ` : '';
 
@@ -775,6 +810,7 @@
 
                             ${lastTxSource === 'run' ? (executionMode === 'async' ? txSubmissionSection : '') : ''}
                             ${lastTxSource === 'run' ? (executionMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
+                            ${broadcastSection}
 
                         </div>
                     ` : html`
