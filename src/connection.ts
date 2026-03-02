@@ -124,6 +124,10 @@ export class Connection {
     }
 
     async prepareTransfer(authToken: string, params: TransferRequest): Promise<PreparedTransferPayload> {
+        if (this.isCBTCInstrument(params.instrument)) {
+            throw new Error('CBTC activities are temporarily disabled.');
+        }
+
         const payload: Record<string, any> = {
             recipient: params.recipient,
             amount: params.amount,
@@ -279,6 +283,10 @@ export class Connection {
 
     // send transaction to v2/interactive-submisison/prepare endpoint to get the prepared transaction
     prepareTransaction(session: SessionInfo, params: TransactionPayload): Promise<PreparedSubmissionResponse> {
+        if (this.payloadContainsCBTC(params)) {
+            throw new Error('CBTC activities are temporarily disabled.');
+        }
+
         return fetch(`${this.apiUrl}/api/v1/.connect/tickets/prepare-transaction`, {
             method: 'POST',
             headers: {
@@ -319,6 +327,30 @@ export class Connection {
 
     private websocketUrl(ticketId: string): string {
         return `${this.network === 'local' ? 'ws' : 'wss'}://${this.apiUrl.replace('https://', '').replace('http://', '')}/api/v1/.connect/pair/ws/${encodeURIComponent(ticketId)}`;
+    }
+
+    private isCBTCInstrument(instrument?: { instrument_admin?: string; instrument_id?: string }): boolean {
+        const instrumentId = instrument?.instrument_id?.toLowerCase();
+        const instrumentAdmin = instrument?.instrument_admin?.toLowerCase();
+
+        return instrumentId === 'cbtc' || instrumentAdmin?.includes('cbtc-network') === true;
+    }
+
+    private payloadContainsCBTC(value: unknown): boolean {
+        if (typeof value === 'string') {
+            const normalized = value.toLowerCase();
+            return normalized === 'cbtc' || normalized.includes('cbtc-network');
+        }
+
+        if (Array.isArray(value)) {
+            return value.some((item) => this.payloadContainsCBTC(item));
+        }
+
+        if (value && typeof value === 'object') {
+            return Object.values(value).some((item) => this.payloadContainsCBTC(item));
+        }
+
+        return false;
     }
 
     // attachWebSocket is a helper function to setup even handler on a websocket object and assign to our ws 
