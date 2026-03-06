@@ -7,6 +7,10 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.11.2
+- SDK: stop auto-closing request-signing popup/tab on request completion (wallet UI controls close behavior).
+- SDK: include wallet reject `message` and `code` in `RejectRequestError`.
+
 ## v0.11.1
 - SDK: fix server-side SDK to not bundling and just compile TS -> JS
 

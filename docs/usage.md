@@ -81,7 +81,7 @@ loop.connect();
 
 This opens a QR modal for the user to scan with their Loop wallet.
 
-If you set `requestSigningMode` to `'popup'` (or `'tab'`), the SDK will also open the wallet dashboard for signing/transaction requests and auto-close the popup when the wallet responds.
+If you set `requestSigningMode` to `'popup'` (or `'tab'`), the SDK will also open the wallet dashboard for signing/transaction requests. The SDK does not auto-close the popup/tab; wallet UI controls completion/close behavior.
 
 Usually you will want to run this when user initiate some action and they had not login to wallet yet. To automatically connect on pageload, follow the next section.
 

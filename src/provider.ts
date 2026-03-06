@@ -299,13 +299,15 @@ export class Provider {
                             return;
                         }
                         if (response.type === MessageType.REJECT_REQUEST) {
+                            const rejectMessage = response?.payload?.message;
+                            const rejectCode = response?.payload?.code;
                             this.hooks?.onRequestFinish?.({
                                 status: 'rejected',
                                 messageType,
                                 requestLabel: options?.requestLabel,
                                 requestContext,
                             });
-                            reject(new RejectRequestError());
+                            reject(new RejectRequestError(rejectMessage, rejectCode));
                         } else {
                             this.hooks?.onRequestFinish?.({
                                 status: 'success',
