@@ -34,10 +34,6 @@ class RpcProvider extends Provider {
         return await this.connection.executeTransaction(this.session, payload);
     }
 
-    public async getDueGas(trackingId?: string): Promise<PendingGasResponse> {
-        return await this.connection.getPendingGas(this.session.userApiKey!, trackingId);
-    }
-
     public override async transfer(recipient: string, amount: string | number, instrument?: Instrument, options?: TransferOptions): Promise<any> {
         return await this.connection.prepareTransfer(this.getAuthToken(), {
             recipient,
@@ -143,11 +139,11 @@ export class LoopSDK {
     }
 
     public async checkDueGas(trackingId?: string): Promise<PendingGasResponse> {
-        if (!this.provider) {
-            throw new Error('Provider not initialized');
+        if (!this.connection || !this.session) {
+            throw new Error('Provider and session are required');
         }
 
-        return await this.provider.getDueGas(trackingId);
+        return await this.connection.getPendingGas(this.session.userApiKey!, trackingId);
     }
 
     public async payGas(trackingId: string): Promise<any> {
