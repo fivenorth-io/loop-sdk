@@ -379,6 +379,7 @@ export class Connection {
                 command_id: params.command_id,
                 signature: params.signature,
                 transaction_data: params.transaction_data,
+                deduplication_period: params.deduplication_period,
             }),
         });
 

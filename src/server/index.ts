@@ -134,6 +134,7 @@ export class LoopSDK {
             command_id: preparedPayload.command_id,
             transaction_data: preparedPayload.transaction_data,
             signature: signedTransactionHash,
+            deduplication_period: payload.deduplicationPeriod,
         });
 
         return submissionResponse;
