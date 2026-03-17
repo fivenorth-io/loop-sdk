@@ -10,6 +10,7 @@ import type {
     PreparedSubmissionResponse,
     ExecuteSubmissionResquest,
     PendingGasResponse,
+    EstimatedGasResponse,
 } from './types';
 import { PaymentRequiredError, UnauthorizedError } from './errors';
 import { SessionInfo } from './session';
@@ -323,6 +324,41 @@ export class Connection {
         }
 
         return response.json();
+    }
+
+    async estimateGas(session: SessionInfo, params: TransactionPayload): Promise<EstimatedGasResponse> {
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/tickets/estimate-gas`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.userApiKey}`,
+            },
+            body: JSON.stringify({
+                ticket_id: session.ticketId!,
+                request_id: generateRequestId(),
+                payload: {
+                    commands: params.commands,
+                    disclosedContracts: params.disclosedContracts,
+                    packageIdSelectionPreference: params.packageIdSelectionPreference,
+                    actAs: params.actAs,
+                    readAs: params.readAs,
+                    synchronizerId: params.synchronizerId,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, `Failed to estimate gas with status ${response.status}.`));
+        }
+
+        const data = await response.json();
+        return {
+            requires_gas: data?.requiresFee,
+            can_execute: data?.canExecute,
+            estimated_gas_amount: data?.estimatedFeeAmount,
+            estimated_gas_asset: data?.estimatedFeeAsset,
+        } as EstimatedGasResponse;
     }
 
     // execute a signed transaction with v2/interactive-submisison/execute endpoint

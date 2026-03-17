@@ -1,7 +1,7 @@
 import { Provider, type ProviderHooks } from '../provider';
 import { Connection } from '../connection';
 import { SessionInfo } from '../session';
-import type { Network, TransferRequest, PreparedTransferPayload, TransferOptions, Instrument, TransactionPayload, PreparedSubmissionResponse, ExecuteSubmissionResquest, PendingGasResponse } from '../types';
+import type { Network, TransferRequest, PreparedTransferPayload, TransferOptions, Instrument, TransactionPayload, PreparedSubmissionResponse, ExecuteSubmissionResquest, PendingGasResponse, EstimatedGasResponse } from '../types';
 import { time } from 'console';
 import { getSigner, Signer } from './signer';
 
@@ -145,6 +145,14 @@ export class LoopSDK {
         }
 
         return await this.connection.getPendingGas(this.session.userApiKey!, trackingId);
+    }
+
+    public async estimateGas(payload: TransactionPayload): Promise<EstimatedGasResponse> {
+        if (!this.connection || !this.session) {
+            throw new Error('Provider and session are required');
+        }
+
+        return await this.connection.estimateGas(this.session, payload);
     }
 
     public async payGas(trackingId: string): Promise<any> {
