@@ -82,7 +82,30 @@ Server SDK transactions now use an after-execution network gas model:
 - pending network gas is recorded after execution
 - the next server-SDK transaction may return `402 Payment Required` until that network gas is paid
 
-Best practice: call `checkDueGas()` before submitting a transaction, and if gas is due, call `payGas(...)` first. That avoids hitting `PaymentRequiredError` during normal transaction submission.
+Best practice:
+
+- call `estimateGas(...)` before submitting a transaction if you want to inspect the expected network gas first
+- call `checkDueGas()` before submitting a transaction, and if gas is due, call `payGas(...)` first
+
+That avoids both surprise gas amounts and hitting `PaymentRequiredError` during normal transaction submission.
+
+```javascript
+const gasEstimate = await loop.estimateGas({
+  commands: [
+    {
+      ExerciseCommand: {
+        templateId: 'template',
+        contractId: 'contractid',
+        choice: 'choice',
+        choiceArgument: { arg1: 'val1' },
+      },
+    },
+  ],
+  disclosedContracts: [],
+});
+
+console.log('Estimated network gas:', gasEstimate.estimated_gas_amount);
+```
 
 ```javascript
 const dueGas = await loop.checkDueGas();
@@ -140,6 +163,10 @@ try {
 ```
 
 ### Network Gas Methods
+
+#### `loop.estimateGas(payload)`
+
+Returns the estimated network gas for a transaction before submission without requiring you to clear existing pending gas first.
 
 #### `loop.checkDueGas(trackingId?)`
 

@@ -305,7 +305,15 @@ console.log('Transfer result:', result);
 
 Server SDK transactions use an after-execution network gas model. If a previous transaction created unpaid network gas, the next transaction attempt may fail with `PaymentRequiredError`.
 
-Best practice: check for due gas before you submit a transaction, and pay it first if present.
+Best practice:
+
+- call `estimateGas(...)` before submitting a transaction if you want to inspect the expected network gas first
+- check for due gas before you submit a transaction, and pay it first if present
+
+```javascript
+const gasEstimate = await loop.estimateGas(preparedPayload);
+console.log('Estimated network gas:', gasEstimate.estimated_gas_amount);
+```
 
 ```javascript
 const dueGas = await loop.checkDueGas();

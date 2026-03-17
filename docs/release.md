@@ -10,6 +10,7 @@ The release notes below highlight only the major updates. Refer to the links abo
 ## v0.12.0
 - Upgrade required for Server SDK: integrators should update to `@fivenorth/loop-sdk@0.12.0` or later to support the new after-execution network gas flow.
 - Server SDK transactions now use an after-execution network gas model. If a previous transaction created unpaid network gas, the next transaction attempt may fail with `PaymentRequiredError`.
+- Add `estimateGas(payload)` so integrators can inspect the expected network gas before submitting a transaction.
 - Add `checkDueGas(trackingId?)` and `payGas(trackingId)` helpers so integrators can check for pending network gas before submitting a transaction and pay it first if present.
 - Surface `402 Payment Required` as `PaymentRequiredError` as a fallback when unpaid network gas is detected during submission.
 
