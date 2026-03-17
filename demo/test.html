@@ -90,6 +90,8 @@
             const [ damlCommand, setDamlCommand ] = useState(JSON.stringify(getDamlCommandTemplate(), null, 2));
             const [ isSubmittingTx, setIsSubmittingTx ] = useState(false);
             const [ txResult, setTxResult ] = useState(null);
+            const [ txEstimate, setTxEstimate ] = useState(null);
+            const [ isEstimatingTx, setIsEstimatingTx ] = useState(false);
             const [ txUpdate, setTxUpdate ] = useState(null);
             const [ txUpdateLog, setTxUpdateLog ] = useState('');
             const [ lastBroadcast, setLastBroadcast ] = useState(null);
@@ -104,6 +106,8 @@
             const [ transferRequestTimeout, setTransferRequestTimeout ] = useState('');
             const [ transferMemo, setTransferMemo ] = useState('');
             const [ transferResult, setTransferResult ] = useState(null);
+            const [ transferEstimate, setTransferEstimate ] = useState(null);
+            const [ isEstimatingTransfer, setIsEstimatingTransfer ] = useState(false);
             const [ isTransferring, setIsTransferring ] = useState(false);
             const [ lastTxSource, setLastTxSource ] = useState(null);
             const [ withdrawRecipient, setWithdrawRecipient ] = useState('');
@@ -276,6 +280,61 @@
                 }
             };
 
+            const handleEstimateTransfer = async () =>
+            {
+                if (!provider)
+                {
+                    alert('Please connect first.');
+                    return;
+                }
+                if (!transferRecipient || !transferAmount)
+                {
+                    alert('Enter recipient and amount');
+                    return;
+                }
+
+                setIsEstimatingTransfer(true);
+                setTransferEstimate(null);
+                try
+                {
+                    const now = new Date();
+                    const executeBefore = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+                    const memo = transferMemo.trim();
+                    const preparedPayload = await provider.connection.prepareTransfer(
+                        provider.getAuthToken(),
+                        {
+                            recipient: transferRecipient,
+                            amount: String(transferAmount),
+                            instrument: {
+                                instrument_id: transferInstrumentId || 'Amulet',
+                                instrument_admin: transferInstrumentAdmin || undefined,
+                            },
+                            requested_at: now.toISOString(),
+                            execute_before: executeBefore.toISOString(),
+                            memo: memo || undefined,
+                        },
+                    );
+
+                    const gasEstimate = await provider.estimateGas({
+                        commands: preparedPayload.commands,
+                        disclosedContracts: preparedPayload.disclosedContracts,
+                        packageIdSelectionPreference: preparedPayload.packageIdSelectionPreference,
+                        actAs: preparedPayload.actAs,
+                        readAs: preparedPayload.readAs,
+                        synchronizerId: preparedPayload.synchronizerId,
+                    });
+
+                    setTransferEstimate(gasEstimate);
+                } catch (error)
+                {
+                    console.error('Failed to estimate transfer gas', error);
+                    setTransferEstimate(normalizeError(error, 'Failed to estimate transfer gas'));
+                } finally
+                {
+                    setIsEstimatingTransfer(false);
+                }
+            };
+
             const handleFindContract = async () =>
             {
                 if (!provider || !templateId)
@@ -369,6 +428,31 @@
                 } finally
                 {
                     setIsSubmittingTx(false);
+                }
+            };
+
+            const handleEstimateTransaction = async () =>
+            {
+                if (!provider)
+                {
+                    alert('Please connect first.');
+                    return;
+                }
+                setIsEstimatingTx(true);
+                setTxEstimate(null);
+                try
+                {
+                    const command = JSON.parse(damlCommand);
+                    const result = await provider.estimateGas(command);
+                    setTxEstimate(result);
+                } catch (error)
+                {
+                    console.error('Failed to estimate transaction gas:', error);
+                    alert('Failed to estimate transaction gas. See console.');
+                    setTxEstimate(normalizeError(error, 'Failed to estimate transaction gas'));
+                } finally
+                {
+                    setIsEstimatingTx(false);
                 }
             };
 
@@ -531,6 +615,11 @@
                     ` : ''}
                 </div>
             ` : '';
+            const transferEstimateSection = transferEstimate ? html`
+                <div style="margin-top: 12px; background: #eef6ff; padding: 10px; border-radius: 5px;">
+                    <pre style="margin: 0; white-space: pre-wrap; max-height: 240px; overflow: auto;">${JSON.stringify(transferEstimate, null, 2)}</pre>
+                </div>
+            ` : '';
             const broadcastSection = lastBroadcast ? html`
                 <div style="margin-top: 12px; background: #eef6ff; padding: 10px; border-radius: 5px;">
                     <div style="font-family: monospace; margin-bottom: 6px;">last ws message type: ${lastBroadcast?.type || 'n/a'}</div>
@@ -539,6 +628,11 @@
                         <summary style="cursor: pointer;">raw ws message</summary>
                         <pre style="margin-top: 8px; white-space: pre-wrap; max-height: 240px; overflow: auto;">${broadcastText}</pre>
                     </details>
+                </div>
+            ` : '';
+            const txEstimateSection = txEstimate ? html`
+                <div style="margin-top: 12px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+                    <pre style="margin: 0; white-space: pre-wrap; max-height: 240px; overflow: auto;">${JSON.stringify(txEstimate, null, 2)}</pre>
                 </div>
             ` : '';
 
@@ -745,9 +839,13 @@
                                         style="flex: 1; min-width: 240px;"
                                     />
                                 </div>
+                                <button onClick=${handleEstimateTransfer} disabled=${isEstimatingTransfer} style="margin-top: 8px; margin-right: 8px;">
+                                    ${isEstimatingTransfer ? 'Estimating...' : 'Estimate Transfer Gas'}
+                                </button>
                                 <button onClick=${handleWalletTransfer} disabled=${isTransferring} style="margin-top: 8px;">
                                     ${isTransferring ? 'Sending...' : 'Send'}
                                 </button>
+                                ${transferEstimateSection}
                                 ${lastTxSource === 'transfer' ? (executionMode === 'async' ? transferSubmissionSection : '') : ''}
                                 ${lastTxSource === 'transfer' ? (executionMode === 'async' ? (txUpdate ? txSummarySection : '') : txSummarySection) : ''}
                             </div>
@@ -803,9 +901,13 @@
                                     value=${damlCommand}
                                     onInput=${(e) => setDamlCommand(e.target.value)}
                                 ></textarea>
+                                <button onClick=${handleEstimateTransaction} disabled=${isEstimatingTx} style="margin-top: 10px; margin-right: 8px;">
+                                    ${isEstimatingTx ? 'Estimating...' : 'Estimate Gas'}
+                                </button>
                                 <button onClick=${handleRunTransaction} disabled=${isSubmittingTx} style="margin-top: 10px;">
                                     ${isSubmittingTx ? 'Submitting...' : 'Run'}
                                 </button>
+                                ${txEstimateSection}
                             </div>
 
                             ${lastTxSource === 'run' ? (executionMode === 'async' ? txSubmissionSection : '') : ''}
