@@ -146,6 +146,5 @@ export type PendingGasResponse = {
   status?: string;
   origin?: string;
   expires_at?: string;
-  ticket_id?: string;
   request_id?: string;
 };
