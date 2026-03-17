@@ -3,6 +3,10 @@
 ## 0.12.0 (2026-03-16)
 Full Changelog: [v0.11.2...v0.12.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.11.2...v0.12.0)
 
+### Important
+
+- **Upgrade required for Server SDK gas handling:** integrators must update to `@fivenorth/loop-sdk@0.12.0` or later to use Server SDK with the new post-execution network gas flow. Older SDK versions do not support `PaymentRequiredError`, `checkDueGas(...)`, or `payGas(...)`.
+
 ### Features
 
 - **server-sdk:** add `checkDueGas(trackingId?)` and `payGas(trackingId)` helpers for post-execution network gas collection.
