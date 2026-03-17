@@ -143,6 +143,7 @@ try {
         // Optional: show a custom message in the wallet prompt
         message: 'Transfer 10 CC to RetailStore',
         estimateTraffic: true, // optional: return estimated traffic in submission response
+        deduplicationPeriod: { seconds: 60 }, // optional: override the default 30 minute dedup window
     });
     console.log('Transaction successful:', result);
 } catch (error) {
@@ -159,6 +160,7 @@ To wait for the transaction result directly (opt-in), use:
 ```javascript
 await provider.submitAndWaitForTransaction(damlCommand, {
     message: 'Transfer 10 CC to RetailStore',
+    deduplicationPeriod: { seconds: 60 },
 });
 ```
 
@@ -166,7 +168,7 @@ In wait mode, the final result is returned as a single `onTransactionUpdate` pay
 
 Note: `submitAndWaitForTransaction` errors do not always mean the transaction failed. A 4xx error (e.g., 400) indicates a definite failure. A 5xx/timeout can mean the ledger is slow or backed up; the transaction may still be committed later, so clients should continue to listen for updates rather than assume failure.
 
-Deduplication: both async execute and execute-and-wait use a 1 hour deduplication window. If you retry within that window, resubmit the same `command_id` and `submission_id` so the request is idempotent.
+Deduplication: by default the wallet execute path uses a 30 minute deduplication window. You can override it with `deduplicationPeriod` in submit options. For ambiguous outcomes (for example timeout, disconnect, or 5xx where the previous submission may already have reached Canton), retry with the same payload `commandId` within that window to avoid double execution.
 
 #### Sign a Message
 
@@ -200,6 +202,7 @@ await loop.wallet.transfer(
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
     requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes
     estimateTraffic: true,                   // optional: return estimated traffic in submission response
+    deduplicationPeriod: { seconds: 60 },    // optional: override the default 30 minute dedup window
   },
 );
 ```

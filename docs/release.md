@@ -7,6 +7,10 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.12.2
+- SDK: add optional `deduplicationPeriod` support to `submitTransaction`, `submitAndWaitForTransaction`, and `transfer`.
+- SDK: continue accepting caller-provided `commandId` on the transaction payload so integrators can safely retry the same logical command.
+
 ## v0.12.0
 - Upgrade required for Server SDK: integrators should update to `@fivenorth/loop-sdk@0.12.0` or later to support the new after-execution network gas flow.
 - Server SDK transactions now use an after-execution network gas model. If a previous transaction created unpaid network gas, the next transaction attempt may fail with `PaymentRequiredError`.
