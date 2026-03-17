@@ -82,7 +82,31 @@ Server SDK transactions now use an after-execution network gas model:
 - pending network gas is recorded after execution
 - the next server-SDK transaction may return `402 Payment Required` until that network gas is paid
 
-Use `checkDueGas()` and `payGas(trackingId)` to inspect and pay the network gas explicitly.
+Best practice: call `checkDueGas()` before submitting a transaction, and if gas is due, call `payGas(...)` first. That avoids hitting `PaymentRequiredError` during normal transaction submission.
+
+```javascript
+const dueGas = await loop.checkDueGas();
+
+if (dueGas.pending && dueGas.tracking_id) {
+  await loop.payGas(dueGas.tracking_id);
+}
+
+await loop.executeTransaction({
+  commands: [
+    {
+      ExerciseCommand: {
+        templateId: 'template',
+        contractId: 'contractid',
+        choice: 'choice',
+        choiceArgument: { arg1: 'val1' },
+      },
+    },
+  ],
+  disclosedContracts: [],
+});
+```
+
+You should still handle `PaymentRequiredError` as a fallback, for example if another transaction creates pending network gas between your pre-check and submission:
 
 ```javascript
 import { loop, PaymentRequiredError } from '@fivenorth/loop-sdk/server';
