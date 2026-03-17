@@ -148,3 +148,10 @@ export type PendingGasResponse = {
   expires_at?: string;
   request_id?: string;
 };
+
+export type EstimatedGasResponse = {
+  requires_gas: boolean;
+  can_execute: boolean;
+  estimated_gas_amount?: string;
+  estimated_gas_asset?: string;
+};
