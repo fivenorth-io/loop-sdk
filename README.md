@@ -301,6 +301,41 @@ const result = await loop.executeTransaction(preparedPayload);
 console.log('Transfer result:', result);
 ```
 
+### Handling pending network gas in the server SDK
+
+Server SDK transactions use an after-execution network gas model. If a previous transaction created unpaid network gas, the next transaction attempt may fail with `PaymentRequiredError`.
+
+Best practice: check for due gas before you submit a transaction, and pay it first if present.
+
+```javascript
+const dueGas = await loop.checkDueGas();
+
+if (dueGas.pending && dueGas.tracking_id) {
+    await loop.payGas(dueGas.tracking_id);
+}
+
+await loop.executeTransaction(preparedPayload);
+```
+
+You should still handle `PaymentRequiredError` as a fallback:
+
+```javascript
+import { loop, PaymentRequiredError } from '@fivenorth/loop-sdk/server';
+
+try {
+    await loop.executeTransaction(preparedPayload);
+} catch (error) {
+    if (error instanceof PaymentRequiredError) {
+        const dueGas = await loop.checkDueGas(error.trackingId);
+        console.log('Pending network gas amount:', dueGas.gas_amount);
+
+        await loop.payGas(error.trackingId);
+    } else {
+        throw error;
+    }
+}
+```
+
 Example ideas:
 - List pending transfers
 - Accept a pending transfer

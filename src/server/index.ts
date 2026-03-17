@@ -1,10 +1,12 @@
 import { Provider, type ProviderHooks } from '../provider';
 import { Connection } from '../connection';
 import { SessionInfo } from '../session';
-import type { Network, TransferRequest, PreparedTransferPayload, TransferOptions, Instrument, TransactionPayload, PreparedSubmissionResponse, ExecuteSubmissionResquest } from '../types';
+import type { Network, TransferRequest, PreparedTransferPayload, TransferOptions, Instrument, TransactionPayload, PreparedSubmissionResponse, ExecuteSubmissionResquest, PendingGasResponse } from '../types';
 import { time } from 'console';
 import { getSigner, Signer } from './signer';
 
+const PAY_GAS_WAIT_MS = 10_000;
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 class RpcProvider extends Provider {
     private ticket_id: string;
     private user_api_key: string;
@@ -136,6 +138,43 @@ export class LoopSDK {
 
         return submissionResponse;
     }
+
+    public async checkDueGas(trackingId?: string): Promise<PendingGasResponse> {
+        if (!this.connection || !this.session) {
+            throw new Error('Provider and session are required');
+        }
+
+        return await this.connection.getPendingGas(this.session.userApiKey!, trackingId);
+    }
+
+    public async payGas(trackingId: string): Promise<any> {
+        if (!this.provider || !this.signer || !this.connection || !this.session) {
+            throw new Error('Provider and signer are required');
+        }
+
+        const pendingGas = await this.checkDueGas(trackingId);
+        if (!pendingGas.pending) {
+            throw new Error(`Pending gas not found for tracking_id ${trackingId}.`);
+        }
+
+        const preparedGas = await this.connection.preparePendingGas(this.session.userApiKey!, trackingId);
+        if (!preparedGas?.transaction_hash) {
+            throw new Error('Failed to prepare pending gas.');
+        }
+
+        const signedTransactionHash = this.getSigner().signTransactionHash(preparedGas.transaction_hash);
+
+        const result = await this.connection.executePendingGas(this.session.userApiKey!, {
+            transaction_hash: preparedGas.transaction_hash,
+            signature: signedTransactionHash,
+        });
+
+        await wait(PAY_GAS_WAIT_MS);
+
+        return result;
+    }
 }
 
 export const loop = new LoopSDK();
+export * from '../errors';
+export * from '../types';

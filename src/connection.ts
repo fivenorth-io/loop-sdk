@@ -9,8 +9,9 @@ import type {
     TransactionPayload,
     PreparedSubmissionResponse,
     ExecuteSubmissionResquest,
+    PendingGasResponse,
 } from './types';
-import { UnauthorizedError } from './errors';
+import { PaymentRequiredError, UnauthorizedError } from './errors';
 import { SessionInfo } from './session';
 import { generateRequestId } from './provider';
 
@@ -277,9 +278,31 @@ export class Connection {
         return response.json();
     }
 
+    private async parseErrorResponse(response: Response): Promise<any> {
+        const text = await response.text();
+        if (!text) {
+            return null;
+        }
+        try {
+            return JSON.parse(text);
+        } catch {
+            return text;
+        }
+    }
+
+    private errorMessage(details: any, fallback: string): string {
+        if (typeof details === 'string' && details.length > 0) {
+            return details;
+        }
+        if (typeof details?.message === 'string' && details.message.length > 0) {
+            return details.message;
+        }
+        return fallback;
+    }
+
     // send transaction to v2/interactive-submisison/prepare endpoint to get the prepared transaction
-    prepareTransaction(session: SessionInfo, params: TransactionPayload): Promise<PreparedSubmissionResponse> {
-        return fetch(`${this.apiUrl}/api/v1/.connect/tickets/prepare-transaction`, {
+    async prepareTransaction(session: SessionInfo, params: TransactionPayload): Promise<PreparedSubmissionResponse> {
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/tickets/prepare-transaction`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -289,7 +312,17 @@ export class Connection {
                 payload: params,
                 ticket_id: session.ticketId!,
             })
-        }).then(response => response.json());
+        });
+
+        if (response.status === 402) {
+            throw new PaymentRequiredError(await this.parseErrorResponse(response));
+        }
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, `Failed to prepare transaction with status ${response.status}.`));
+        }
+
+        return response.json();
     }
 
     // execute a signed transaction with v2/interactive-submisison/execute endpoint
@@ -298,7 +331,7 @@ export class Connection {
             throw new Error('Ticket ID is required');
         }
 
-        const resp = fetch(`${this.apiUrl}/api/v1/.connect/tickets/execute-transaction`, {
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/tickets/execute-transaction`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -313,7 +346,72 @@ export class Connection {
             }),
         });
 
-        return (await resp).json();
+        if (response.status === 402) {
+            throw new PaymentRequiredError(await this.parseErrorResponse(response));
+        }
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, `Failed to execute transaction with status ${response.status}.`));
+        }
+
+        return response.json();
+    }
+
+    async getPendingGas(userApiKey: string, trackingId?: string): Promise<PendingGasResponse> {
+        const url = new URL(`${this.apiUrl}/api/v1/transfer/pending-fee`);
+        if (trackingId) {
+            url.searchParams.set('tracking_id', trackingId);
+        }
+        const response = await fetch(url.toString(), {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userApiKey}`,
+            },
+        });
+
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, 'Failed to get pending gas.'));
+        }
+
+        return await response.json() as PendingGasResponse;
+    }
+
+    async preparePendingGas(userApiKey: string, trackingId?: string): Promise<{ transaction_hash: string }> {
+        const response = await fetch(`${this.apiUrl}/api/v1/transfer/pending-fee/prepare`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userApiKey}`,
+            },
+            body: JSON.stringify(trackingId ? { tracking_id: trackingId } : {}),
+        });
+
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, 'Failed to prepare pending gas.'));
+        }
+
+        return response.json();
+    }
+
+    async executePendingGas(userApiKey: string, params: { transaction_hash: string; signature: string }): Promise<any> {
+        const response = await fetch(`${this.apiUrl}/api/v1/transfer/pending-fee/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userApiKey}`,
+            },
+            body: JSON.stringify(params),
+        });
+
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, 'Failed to execute pending gas.'));
+        }
+
+        return response.json();
     }
 
 

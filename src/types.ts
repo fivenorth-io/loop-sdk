@@ -138,3 +138,13 @@ export type ExecuteSubmissionResquest = {
   transaction_data: string;
   signature: string;
 }
+
+export type PendingGasResponse = {
+  pending: boolean;
+  tracking_id?: string;
+  gas_amount?: string;
+  status?: string;
+  origin?: string;
+  expires_at?: string;
+  request_id?: string;
+};
