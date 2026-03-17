@@ -5,7 +5,7 @@
  * transaction to be executed
  */
 
-import { loop } from '../src/server/index';
+import { PaymentRequiredError, loop } from '../src/server/index';
 
 loop.init({
     privateKey: process.env.PRIVATE_KEY || '',
@@ -25,6 +25,15 @@ console.log("#########################################");
 
 await loop.authenticate();
 const provider = loop.getProvider();
+
+const dueGas = await loop.checkDueGas();
+console.log("Current Due Gas", JSON.stringify(dueGas, null, 2));
+
+if (dueGas.pending && dueGas.tracking_id) {
+    console.log("Paying existing due gas:", dueGas.tracking_id);
+    const payResult = await loop.payGas(dueGas.tracking_id);
+    console.log("Pay Gas Result", JSON.stringify(payResult, null, 2));
+}
 
 // Now list holdings
 //console.log('api key:', loop.getApiKey());
@@ -57,7 +66,38 @@ if (process.env.TRANSFER_TO && process.env.TRANSFER_TO !== "") {
     );
     console.log(JSON.stringify(preparedPayload, null, 2));
 
-    // Submit the transaction
-    const result = await loop.executeTransaction(preparedPayload);
-    console.log("Transfer Result", JSON.stringify(result, null, 2));
+    const runTransfer = async (label: string) => {
+        console.log(`Submitting transfer (${label})`);
+        const result = await loop.executeTransaction(preparedPayload);
+        console.log("Transfer Result", JSON.stringify(result, null, 2));
+        return result;
+    };
+
+    try {
+        await runTransfer('default');
+    } catch (error) {
+        if (!(error instanceof PaymentRequiredError)) {
+            throw error;
+        }
+
+        console.log("PaymentRequiredError", JSON.stringify({
+            code: error.code,
+            trackingId: error.trackingId,
+            gasAmount: error.gasAmount,
+            status: error.status,
+            expiresAt: error.expiresAt,
+        }, null, 2));
+
+        const dueGas = await loop.checkDueGas(error.trackingId);
+        console.log("Due Gas", JSON.stringify(dueGas, null, 2));
+
+        if (!error.trackingId) {
+            throw new Error('Missing trackingId on PaymentRequiredError');
+        }
+
+        const payResult = await loop.payGas(error.trackingId);
+        console.log("Pay Gas Result", JSON.stringify(payResult, null, 2));
+
+        await runTransfer('after-gas-payment');
+    }
 }

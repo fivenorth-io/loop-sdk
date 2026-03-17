@@ -74,6 +74,57 @@ await loop.executeTransaction({
 
 And that's all
 
+## 3.1 Handle pending network gas
+
+Server SDK transactions now use an after-execution network gas model:
+
+- your main transaction executes first
+- pending network gas is recorded after execution
+- the next server-SDK transaction may return `402 Payment Required` until that network gas is paid
+
+Use `checkDueGas()` and `payGas(trackingId)` to inspect and pay the network gas explicitly.
+
+```javascript
+import { loop, PaymentRequiredError } from '@fivenorth/loop-sdk/server';
+
+try {
+  await loop.executeTransaction({
+    commands: [
+      {
+        ExerciseCommand: {
+          templateId: 'template',
+          contractId: 'contractid',
+          choice: 'choice',
+          choiceArgument: { arg1: 'val1' },
+        },
+      },
+    ],
+    disclosedContracts: [],
+  });
+} catch (error) {
+  if (error instanceof PaymentRequiredError) {
+    // Inspect the exact pending network gas before paying it
+    const dueGas = await loop.checkDueGas(error.trackingId);
+    console.log('Pending network gas:', dueGas.gas_amount, dueGas.tracking_id);
+
+    // Pay the pending network gas explicitly
+    await loop.payGas(error.trackingId!);
+  } else {
+    throw error;
+  }
+}
+```
+
+### Network Gas Methods
+
+#### `loop.checkDueGas(trackingId?)`
+
+Returns the current pending network gas for the authenticated party. When `trackingId` is provided, it targets that exact pending charge.
+
+#### `loop.payGas(trackingId)`
+
+Prepares the pending network gas transfer for the specified tracking ID, signs the returned transaction hash with the server signer, and executes the payment.
+
 ## 4. Using the Provider (advanced)
 
 For more granular control over transaction submission, you can use the `provider` object directly. This allows you to integrate your own signing mechanism instead of the SDK signer.
@@ -155,7 +206,7 @@ Common server-SDK flow for all examples:
 
 
 1. `loop.init({ privateKey, partyId, ... })`
-2. `await loop.authenticate()` (creates a server-SDK JWT via `/pair/apikey`)
+2. `await loop.authenticate()`
 3. Build a DAML command payload
 4. `await loop.executeTransaction(payload)` (prepare → sign → execute)
 

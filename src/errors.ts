@@ -20,6 +20,30 @@ export class UnauthorizedError extends Error {
     }
 }
 
+export class PaymentRequiredError extends Error {
+    public code?: string;
+    public trackingId?: string;
+    public gasAmount?: string;
+    public status?: string;
+    public expiresAt?: string;
+
+    constructor(details?: {
+        message?: string;
+        code?: string;
+        tracking_id?: string;
+        gas_amount?: string;
+        status?: string;
+        expires_at?: string;
+    }) {
+        super(details?.message || 'Payment required');
+        this.code = details?.code;
+        this.trackingId = details?.tracking_id;
+        this.gasAmount = details?.gas_amount;
+        this.status = details?.status;
+        this.expiresAt = details?.expires_at;
+    }
+}
+
 const UNAUTH_CODES = new Set(['UNAUTHENTICATED', 'UNAUTHORIZED', 'SESSION_EXPIRED', 'LOGGED_OUT']);
 
 export function extractErrorCode(message: any): string | null {
