@@ -5,6 +5,7 @@ import type { Network, TransferRequest, PreparedTransferPayload, TransferOptions
 import { time } from 'console';
 import { getSigner, Signer } from './signer';
 
+const PAY_GAS_WAIT_MS = 10_000;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 class RpcProvider extends Provider {
     private ticket_id: string;
@@ -168,7 +169,7 @@ export class LoopSDK {
             signature: signedTransactionHash,
         });
 
-        await wait(10_000);
+        await wait(PAY_GAS_WAIT_MS);
 
         return result;
     }
