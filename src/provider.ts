@@ -8,6 +8,7 @@ import type {
   InstrumentSpec,
   RunTransactionResponse,
   TransactionPayload,
+  EstimatedGasResponse,
   DeduplicationPeriodInput,
 } from './types';
 import { MessageType, type Account } from './types';
@@ -128,6 +129,10 @@ export class Provider {
 
     getActiveContracts(params?: { templateId?: string; interfaceId?: string }): Promise<ActiveContract[]> {
         return this.connection.getActiveContracts(this.auth_token, params);
+    }
+
+    async estimateGas(payload: TransactionPayload): Promise<EstimatedGasResponse> {
+        return this.connection.estimateGasForConnect(this.auth_token, payload);
     }
 
     // submit a transaction to be signed by the wallet to the websocket

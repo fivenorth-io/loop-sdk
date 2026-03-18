@@ -84,7 +84,7 @@ Server SDK transactions now use an after-execution network gas model:
 
 Best practice:
 
-- call `estimateGas(...)` before submitting a transaction if you want to inspect the expected network gas first
+- Server SDK integrations should use `loop.estimateGas(...)` before submission if they want to inspect the expected network gas first. Browser / WalletConnect dApps should use `provider.estimateGas(...)` in `docs/usage.md`.
 - call `checkDueGas()` before submitting a transaction, and if gas is due, call `payGas(...)` first
 
 That avoids both surprise gas amounts and hitting `PaymentRequiredError` during normal transaction submission.

@@ -65,6 +65,7 @@ if (process.env.TRANSFER_TO && process.env.TRANSFER_TO !== "") {
         }
     );
     console.log(JSON.stringify(preparedPayload, null, 2));
+    console.log("Estimated Gas", JSON.stringify(await loop.estimateGas(preparedPayload), null, 2));
 
     const runTransfer = async (label: string) => {
         console.log(`Submitting transfer (${label})`);

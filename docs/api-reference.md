@@ -123,6 +123,12 @@ Fetches DAML active contracts filtered by template or interface.
 
 ---
 
+#### `provider.estimateGas(payload): Promise<EstimatedGasResponse>`
+
+Returns the estimated network gas for a transaction before submission.
+
+---
+
 #### `provider.submitTransaction(command, options?): Promise<any>`
 
 Submits a DAML ExcerciseCommand or multi-command transaction. This is the default async path (no `execution_mode`). It returns the submission result first (including `command_id` and `submission_id`), then the ledger update arrives later via `onTransactionUpdate` with `update_id` and `update_data`. Use `estimateTraffic: true` in the options to return estimated traffic in the submission response. Use `deduplicationPeriod` to override the default 1800 second deduplication window.

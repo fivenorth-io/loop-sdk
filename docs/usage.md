@@ -150,6 +150,19 @@ console.log(contracts);
 
 ---
 
+### Estimate Network Gas
+
+Browser / WalletConnect dApps should use `provider.estimateGas(...)`. If you are using the Server SDK instead, use `loop.estimateGas(...)` in `docs/server.md`.
+
+```javascript
+const gasEstimate = await provider.estimateGas(damlCommand);
+console.log(gasEstimate);
+```
+
+Use this before submission if you want to inspect the expected network gas first.
+
+---
+
 ### Submit a Transaction
 
 ```javascript

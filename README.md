@@ -119,6 +119,15 @@ const contracts = await provider.getActiveContracts({
 console.log(contracts);
 ```
 
+#### Estimate Network Gas
+
+```javascript
+const gasEstimate = await provider.estimateGas(damlCommand);
+console.log(gasEstimate);
+```
+
+Use this before submission if you want to inspect the expected network gas first.
+
 #### Submit a Transaction
 
 To submit a DAML transaction, you need to construct a command object and pass it to `submitTransaction`:
