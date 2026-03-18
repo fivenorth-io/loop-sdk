@@ -184,6 +184,7 @@ try {
         // Optional: show a custom message in the wallet prompt
         message: 'Transfer 10 CC to RetailStore',
         estimateTraffic: true, // optional: return estimated traffic in submission response
+        deduplicationPeriod: { seconds: 60 }, // optional: override the default 30 minute dedup window
     });
     console.log('Transaction successful:', result);
 } catch (error) {
@@ -192,6 +193,8 @@ try {
 ```
 
 Transaction responses include `command_id` and `submission_id`. When the transaction is completed on-ledger, `update_id` arrives and `onTransactionUpdate` fires with `update_id` and `update_data` (ledger transaction tree).
+
+By default, submit flows use a 30 minute deduplication window. For ambiguous outcomes, keep the same `commandId` on the payload and optionally set `deduplicationPeriod` to match your retry horizon so retries stay idempotent.
 
 ---
 
@@ -224,6 +227,7 @@ await loop.wallet.transfer(
     message: 'Send 5 CC to Alice', // optional: show a custom message in the wallet prompt
     memo: 'optional memo for the transfer',   // optional: stored as transfer metadata
     executionMode: 'wait',                   // optional: 'async' (default) or 'wait'
+    deduplicationPeriod: { seconds: 60 },   // optional: override the default 30 minute dedup window
     requestedAt: new Date().toISOString(),   // optional
     executeBefore: new Date(Date.now() + 24*60*60*1000).toISOString(), // optional
     requestTimeout: 5 * 60 * 1000,           // optional (ms), defaults to 5 minutes

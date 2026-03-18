@@ -69,7 +69,15 @@ export type TransactionPayload = {
   actAs?: string[];
   readAs?: string[];
   synchronizerId?: string;
+  deduplicationPeriod?: DeduplicationPeriodInput;
 };
+
+export type DeduplicationPeriodInput =
+  | { empty: true }
+  | {
+      seconds: number;
+      nanos?: number;
+    };
 
 export type PreparedTransferPayload = {
   actAs: string[];
@@ -106,6 +114,7 @@ export type TransferOptions = {
   message?: string; // custom message to include in the request ticket
   executionMode?: 'async' | 'wait';
   estimateTraffic?: boolean;
+  deduplicationPeriod?: DeduplicationPeriodInput;
 };
 
 export type InstrumentSpec = Instrument;
@@ -137,6 +146,7 @@ export type ExecuteSubmissionResquest = {
   command_id: string;
   transaction_data: string;
   signature: string;
+  deduplication_period?: DeduplicationPeriodInput;
 }
 
 export type PendingGasResponse = {

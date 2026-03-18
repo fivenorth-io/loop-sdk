@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.12.2 (2026-03-17)
+Full Changelog: [v0.12.0...v0.12.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.0...v0.12.2)
+
+### Improvements
+
+- **sdk:** allow `submitTransaction`, `submitAndWaitForTransaction`, and `transfer` to pass an optional `deduplicationPeriod`.
+- **sdk:** keep `commandId` on the transaction payload for integrators that want to retry the same logical command within the Canton deduplication window.
+
+## 0.12.1 (2026-03-17)
+Full Changelog: [v0.12.0...v0.12.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.0...v0.12.1)
+
+### Features
+
+- **server-sdk:** add `estimateGas(payload)` so integrators can inspect expected network gas before submitting a transaction.
+
 ## 0.12.0 (2026-03-16)
 Full Changelog: [v0.11.2...v0.12.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.11.2...v0.12.0)
 
@@ -10,7 +25,6 @@ Full Changelog: [v0.11.2...v0.12.0](https://github.com/fivenorth-io/loop-sdk/com
 ### Features
 
 - **server-sdk:** add `checkDueGas(trackingId?)` and `payGas(trackingId)` helpers for post-execution network gas collection.
-- **server-sdk:** add `estimateGas(payload)` so integrators can inspect expected network gas before submitting a transaction.
 - **server-sdk:** surface `402 Payment Required` as `PaymentRequiredError` with `tracking_id`, `gas_amount`, `status`, and `expires_at`.
 
 ### Backend Compatibility

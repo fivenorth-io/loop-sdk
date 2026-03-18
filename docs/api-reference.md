@@ -129,19 +129,19 @@ Returns the estimated network gas for a transaction before submission.
 
 ---
 
-#### `provider.submitTransaction(command): Promise<any>`
+#### `provider.submitTransaction(command, options?): Promise<any>`
 
-Submits a DAML ExcerciseCommand or multi-command transaction. This is the default async path (no `execution_mode`). It returns the submission result first (including `command_id` and `submission_id`), then the ledger update arrives later via `onTransactionUpdate` with `update_id` and `update_data`. Use `estimateTraffic: true` in the options to return estimated traffic in the submission response.
+Submits a DAML ExcerciseCommand or multi-command transaction. This is the default async path (no `execution_mode`). It returns the submission result first (including `command_id` and `submission_id`), then the ledger update arrives later via `onTransactionUpdate` with `update_id` and `update_data`. Use `estimateTraffic: true` in the options to return estimated traffic in the submission response. Use `deduplicationPeriod` to override the default 1800 second deduplication window.
 
 ---
 
-#### `provider.submitAndWaitForTransaction(command): Promise<any>`
+#### `provider.submitAndWaitForTransaction(command, options?): Promise<any>`
 
-Submits a DAML ExcerciseCommand or multi-command transaction and waits for the result. This is opt-in and sends `execution_mode: "wait"` so the wallet uses the execute-and-wait endpoint. The final result arrives as a single `onTransactionUpdate` payload (command/submission IDs plus update data or failure status).
+Submits a DAML ExcerciseCommand or multi-command transaction and waits for the result. This is opt-in and sends `execution_mode: "wait"` so the wallet uses the execute-and-wait endpoint. The final result arrives as a single `onTransactionUpdate` payload (command/submission IDs plus update data or failure status). Use `deduplicationPeriod` to override the default 1800 second deduplication window.
 
 Note: errors from the wait endpoint do not always mean the transaction failed. A 4xx error (e.g., 400) is a definite failure. A 5xx/timeout can mean the ledger is slow; the transaction may still be committed later, so clients should keep listening for updates rather than assume failure.
 
-Deduplication: both async execute and execute-and-wait use a 1 hour deduplication window. If you retry within that window, resubmit the same `command_id` and `submission_id` so the request is idempotent.
+Deduplication: both async execute and execute-and-wait use a 30 minute deduplication window by default. For ambiguous outcomes (for example timeout, disconnect, or 5xx where the previous submission may already have reached Canton), retry within that window with the same payload `commandId` so the request is idempotent. You can override the window with `deduplicationPeriod`.
 
 ---
 
@@ -164,6 +164,7 @@ await provider.transfer(
     memo?: string;
     message?: string;
     executionMode?: 'async' | 'wait';
+    deduplicationPeriod?: { seconds: number; nanos?: number } | { empty: true };
   }
 );
 ```

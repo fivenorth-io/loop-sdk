@@ -223,6 +223,7 @@ const submissionResponse = await provider.executeSubmission({
     command_id: preparedPayload.command_id,
     transaction_data: preparedPayload.transaction_data,
     signature: signedTransactionHash,
+    deduplication_period: { seconds: 60 },
 });
 
 console.log('Transaction submitted:', submissionResponse);
@@ -238,6 +239,8 @@ Prepares a transaction for submission.
 -   Returns: A `Promise` that resolves to a `PreparedSubmissionResponse` object, which contains `transaction_hash`, `command_id`, and `transaction_data`.
 
 #### `provider.executeSubmission(payload: ExecuteSubmissionRequest)`
+
+Submits the signed transaction to the ledger. If `deduplication_period` is omitted, the backend defaults to 1800 seconds.
 
 Executes a prepared transaction.
 

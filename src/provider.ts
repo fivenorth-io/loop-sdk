@@ -9,6 +9,7 @@ import type {
   RunTransactionResponse,
   TransactionPayload,
   EstimatedGasResponse,
+  DeduplicationPeriodInput,
 } from './types';
 import { MessageType, type Account } from './types';
 import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
@@ -34,6 +35,7 @@ type SubmitOptions = {
   requestLabel?: string;
   estimateTraffic?: boolean;
   executionMode?: 'async' | 'wait';
+  deduplicationPeriod?: DeduplicationPeriodInput;
 };
 
 // Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
@@ -138,11 +140,15 @@ export class Provider {
       payload: TransactionPayload, 
       options?: SubmitOptions
     ): Promise<any> {
-        const requestPayload = options?.estimateTraffic ? { ...payload, estimate_traffic: true } : payload;
+        const requestPayload: Record<string, unknown> = {
+          ...payload,
+          ...(options?.deduplicationPeriod ? { deduplicationPeriod: toLedgerDeduplicationPeriod(options.deduplicationPeriod) } : {}),
+        };
+        const requestPayloadWithTraffic = options?.estimateTraffic ? { ...requestPayload, estimate_traffic: true } : requestPayload;
         const executionMode = options?.executionMode;
         const finalPayload = executionMode === 'wait'
-          ? { ...requestPayload, execution_mode: 'wait' }
-          : requestPayload;
+          ? { ...requestPayloadWithTraffic, execution_mode: 'wait' }
+          : requestPayloadWithTraffic;
         return this.sendRequest(MessageType.RUN_TRANSACTION, finalPayload, options);
     }
 
@@ -150,10 +156,14 @@ export class Provider {
       payload: TransactionPayload,
       options?: SubmitOptions
     ): Promise<any> {
-        const requestPayload = options?.estimateTraffic ? { ...payload, estimate_traffic: true } : payload;
+        const requestPayload: Record<string, unknown> = {
+          ...payload,
+          ...(options?.deduplicationPeriod ? { deduplicationPeriod: toLedgerDeduplicationPeriod(options.deduplicationPeriod) } : {}),
+        };
+        const requestPayloadWithTraffic = options?.estimateTraffic ? { ...requestPayload, estimate_traffic: true } : requestPayload;
         return this.sendRequest(
           MessageType.RUN_TRANSACTION,
-          { ...requestPayload, execution_mode: 'wait' },
+          { ...requestPayloadWithTraffic, execution_mode: 'wait' },
           options,
         );
     }
@@ -210,7 +220,12 @@ export class Provider {
             actAs: preparedPayload.actAs,
             readAs: preparedPayload.readAs,
             synchronizerId: preparedPayload.synchronizerId,
-        }, { requestTimeout, message, estimateTraffic });
+        }, {
+            requestTimeout,
+            message,
+            estimateTraffic,
+            deduplicationPeriod: options?.deduplicationPeriod,
+        });
     }
 
     // submit a raw message to be signed by the wallet to the websocket
@@ -342,4 +357,19 @@ export class Provider {
             void ensure();
         });
     }
+}
+
+function toLedgerDeduplicationPeriod(input: DeduplicationPeriodInput) {
+    if ('empty' in input) {
+        return { Empty: {} };
+    }
+
+    return {
+        DeduplicationDuration: {
+            value: {
+                seconds: input.seconds,
+                nanos: input.nanos ?? 0,
+            },
+        },
+    };
 }
