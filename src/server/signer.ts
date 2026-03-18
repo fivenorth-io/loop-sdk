@@ -1,4 +1,4 @@
-import * as forge from 'node-forge';
+import forge from 'node-forge';
 
 export const getSigner = (privateKeyHex: string, partyId: string): Signer => {
     return new Signer(privateKeyHex, partyId);
