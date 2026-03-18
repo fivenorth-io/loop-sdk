@@ -8,6 +8,7 @@
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
 ## v0.12.2
+- Browser SDK: add `provider.estimateGas(payload)` so browser / WalletConnect dApps can inspect expected network gas before submission.
 - SDK: add optional `deduplicationPeriod` support to `submitTransaction`, `submitAndWaitForTransaction`, and `transfer`.
 - SDK: continue accepting caller-provided `commandId` on the transaction payload so integrators can safely retry the same logical command.
 

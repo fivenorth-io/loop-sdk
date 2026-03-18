@@ -1,10 +1,11 @@
 # Changelog
 
 ## 0.12.2 (2026-03-17)
-Full Changelog: [v0.12.0...v0.12.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.0...v0.12.2)
+Full Changelog: [v0.12.1...v0.12.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.1...v0.12.2)
 
 ### Improvements
 
+- **browser-sdk:** add `provider.estimateGas(payload)` so browser / WalletConnect dApps can inspect expected network gas before submission.
 - **sdk:** allow `submitTransaction`, `submitAndWaitForTransaction`, and `transfer` to pass an optional `deduplicationPeriod`.
 - **sdk:** keep `commandId` on the transaction payload for integrators that want to retry the same logical command within the Canton deduplication window.
 

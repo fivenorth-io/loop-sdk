@@ -164,10 +164,29 @@ await provider.transfer(
     memo?: string;
     message?: string;
     executionMode?: 'async' | 'wait';
+    estimateTraffic?: boolean;
     deduplicationPeriod?: { seconds: number; nanos?: number } | { empty: true };
   }
 );
 ```
+
+---
+
+## Server SDK API
+
+These methods are available from `import { loop } from '@fivenorth/loop-sdk/server'`.
+
+#### `loop.estimateGas(payload): Promise<EstimatedGasResponse>`
+
+Returns the estimated network gas for a server-side transaction before submission.
+
+#### `loop.checkDueGas(trackingId?): Promise<PendingGasResponse>`
+
+Returns the current pending network gas for the authenticated party. Pass `trackingId` to inspect a specific pending charge.
+
+#### `loop.payGas(trackingId): Promise<any>`
+
+Prepares, signs, and executes the pending gas payment for the specified tracking ID.
 
 ---
 
