@@ -341,6 +341,7 @@ export class Provider {
                         if (isClosedWindow(requestContext)) {
                             clearInterval(intervalId);
                             this.requests.delete(requestId);
+                            this.rejectPendingRequest(requestId, 'POPUP_CLOSED', 'Wallet popup was closed before the request completed.');
                             this.hooks?.onRequestFinish?.({
                                 status: 'error',
                                 messageType,
@@ -370,6 +371,25 @@ export class Provider {
 
             void ensure();
         });
+    }
+
+    private rejectPendingRequest(requestId: string, code: string, message: string): void {
+        if (!this.connection.ws || this.connection.ws.readyState !== WebSocket.OPEN) {
+            return;
+        }
+
+        try {
+            this.connection.ws.send(JSON.stringify({
+                request_id: requestId,
+                type: MessageType.REJECT_REQUEST,
+                payload: {
+                    code,
+                    message,
+                },
+            }));
+        } catch (error) {
+            console.warn('[LoopSDK] failed to reject pending request', error);
+        }
     }
 }
 
