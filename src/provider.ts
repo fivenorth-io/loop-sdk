@@ -12,7 +12,7 @@ import type {
   DeduplicationPeriodInput,
 } from './types';
 import { MessageType, type Account } from './types';
-import { RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
+import { PopupClosedError, RejectRequestError, RequestTimeoutError, UnauthorizedError, extractErrorCode, isUnauthCode } from './errors';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 300000; // 5 minutes
 export type RequestFinishStatus = 'success' | 'rejected' | 'timeout' | 'error';
@@ -338,6 +338,20 @@ export class Provider {
                             resolve(response.payload);
                         }
                     } else {
+                        if (isClosedWindow(requestContext)) {
+                            clearInterval(intervalId);
+                            this.requests.delete(requestId);
+                            this.hooks?.onRequestFinish?.({
+                                status: 'error',
+                                messageType,
+                                requestLabel: options?.requestLabel,
+                                requestContext,
+                                errorCode: 'POPUP_CLOSED',
+                            });
+                            reject(new PopupClosedError());
+                            return;
+                        }
+
                         elapsedTime += intervalTime;
                         if (elapsedTime >= timeoutMs) {
                             clearInterval(intervalId);
@@ -357,6 +371,14 @@ export class Provider {
             void ensure();
         });
     }
+}
+
+function isClosedWindow(value: unknown): boolean {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    return 'closed' in value && value.closed === true;
 }
 
 function toLedgerDeduplicationPeriod(input: DeduplicationPeriodInput) {

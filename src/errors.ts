@@ -4,6 +4,12 @@ export class RequestTimeoutError extends Error {
     }
 }
 
+export class PopupClosedError extends Error {
+    constructor() {
+        super('Wallet popup was closed before the request completed.');
+    }
+}
+
 export class RejectRequestError extends Error {
     public code?: string;
     constructor(message?: string, code?: string) {

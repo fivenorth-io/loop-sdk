@@ -7,6 +7,9 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.12.3
+- SDK: detect when the wallet popup/tab is closed during a pending request and reject with `PopupClosedError` instead of waiting only for timeout.
+
 ## v0.12.2
 - Browser SDK: add `provider.estimateGas(payload)` so browser / WalletConnect dApps can inspect expected network gas before submission.
 - SDK: add optional `deduplicationPeriod` support to `submitTransaction`, `submitAndWaitForTransaction`, and `transfer`.
