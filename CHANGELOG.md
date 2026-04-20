@@ -1,11 +1,18 @@
 # Changelog
 
+## 0.12.4 (2026-04-20)
+Full Changelog: [v0.12.3...v0.12.4](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.3...v0.12.4)
+
+### Improvements
+
+- **sdk:** broadcast a reject message over the websocket when the wallet popup/tab is closed so the backend can invalidate the pending request.
+
 ## 0.12.3 (2026-04-20)
 Full Changelog: [v0.12.2...v0.12.3](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.2...v0.12.3)
 
 ### Improvements
 
-- **sdk:** detect when the wallet popup/tab is closed during a pending request and reject with `PopupClosedError` instead of waiting only for timeout.
+- **sdk:** detect when the wallet popup/tab is closed during a pending request and reject locally with `PopupClosedError` instead of waiting only for timeout.
 
 ## 0.12.2 (2026-03-17)
 Full Changelog: [v0.12.1...v0.12.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.1...v0.12.2)

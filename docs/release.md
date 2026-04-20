@@ -7,6 +7,9 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.12.4
+- SDK: broadcast a reject message over the websocket when the wallet popup/tab is closed so the backend can invalidate the pending request.
+
 ## v0.12.3
 - SDK: detect when the wallet popup/tab is closed during a pending request and reject with `PopupClosedError` instead of waiting only for timeout.
 
