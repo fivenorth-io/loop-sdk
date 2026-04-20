@@ -170,6 +170,8 @@ await provider.transfer(
 );
 ```
 
+If the wallet popup or tab opened for the request is closed before the wallet responds, the promise rejects with `PopupClosedError`. Otherwise the existing `requestTimeout` behavior still applies.
+
 ---
 
 ## Server SDK API

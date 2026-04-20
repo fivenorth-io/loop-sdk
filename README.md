@@ -219,6 +219,7 @@ await loop.wallet.transfer(
 Notes:
 - You must have spendable holdings for the specified instrument (admin + id). If left blank, the SDK defaults to the native token.
 - The helper handles fetching holdings, building the transfer factory payload, and submitting via Wallet Connect.
+- If the wallet popup/tab is closed before the request completes, the SDK rejects with `PopupClosedError`. If no response arrives and no closable window handle is available, the request still falls back to `requestTimeout`.
 
 Common instrument overrides (pass into the `instrument` argument above):
 
