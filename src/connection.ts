@@ -198,6 +198,7 @@ export class Connection {
             public_key: data?.public_key,
             email,
             has_preapproval: data?.has_preapproval,
+            utility_preapproval_admins: Array.isArray(data?.utility_preapproval_admins) ? data.utility_preapproval_admins : [],
             has_merge_delegation: data?.has_merge_delegation,
             usdc_bridge_access: data?.usdc_bridge_access,
         };
