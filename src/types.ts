@@ -3,6 +3,7 @@ import type { UsdcBridgeExtension } from './extensions/usdc/types';
 export type Network = 'devnet' | 'testnet' | 'mainnet' | 'local' | 'dev' | 'test' | 'main';
 
 export type UsdcBridgeAccessType = 'not_requested' | 'pending' | 'granted';
+
 export type Account = {
   party_id: string;
   auth_token: string;
@@ -10,6 +11,7 @@ export type Account = {
   email?: string;
 
   has_preapproval?: boolean;
+  utility_preapproval_admins?: string[];
   has_merge_delegation?: boolean;
   usdc_bridge_access?: UsdcBridgeAccessType;
 };
