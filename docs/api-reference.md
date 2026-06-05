@@ -98,9 +98,9 @@ Returns the auth token used for authenticated backend calls.
 
 ---
 
-#### `provider.getAccount(): Promise<Account[]>`
+#### `provider.getAccount(): Promise<Account>`
 
-Fetches the extra account info of current account. This is userful to access information about a user such as pre approval, merge contract, bridge access
+Fetches the latest account status for the connected wallet, including utility preapproval admin IDs, merge delegation, and USDC bridge access.
 
 ---
 
@@ -236,6 +236,11 @@ type Account = {
     party_id: string;
     auth_token: string;
     public_key: string;
+    email?: string;
+    has_preapproval?: boolean;
+    utility_preapproval_admins?: string[];
+    has_merge_delegation?: boolean;
+    usdc_bridge_access?: 'not_requested' | 'pending' | 'granted';
 };
 ```
 

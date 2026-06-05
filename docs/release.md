@@ -7,6 +7,9 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.12.5
+- SDK: expose `utility_preapproval_admins` on `Account` so dApps can inspect which utility admins have preapproval for the connected wallet.
+
 ## v0.12.4
 - SDK: broadcast a reject message over the websocket when the wallet popup/tab is closed so the backend can invalidate the pending request.
 

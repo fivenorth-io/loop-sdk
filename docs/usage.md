@@ -13,7 +13,7 @@ bun add @fivenorth/loop-sdk
 Or via CDN (no build process required):
 
 ```javascript
-import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.8.0/dist";
+import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.12.5/dist";
 ```
 
 Then import into your dApp:
@@ -110,11 +110,14 @@ The provider object includes:
 
 ### Get Account
 
-Retrieve extra information about the account connected to the provider
+Retrieve the latest account status for the connected wallet:
 
 ```javascript
 const account = await provider.getAccount();
-console.log(account);
+console.log(account.has_preapproval);
+console.log(account.utility_preapproval_admins);
+console.log(account.has_merge_delegation);
+console.log(account.usdc_bridge_access);
 ```
 
 ---
