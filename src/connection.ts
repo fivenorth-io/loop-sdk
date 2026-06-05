@@ -22,6 +22,7 @@ export class Connection {
     public ws: WebSocket | null = null;
     private network: Network = 'main';
     private ticketId: string | null = null;
+    private ticketAuthToken: string | null = null;
     private onMessageHandler: ((event: MessageEvent) => void) | null = null;
     private reconnectPromise: Promise<void> | null = null;
     private status: 'connected' | 'disconnected' | 'connecting' = 'disconnected';
@@ -65,7 +66,7 @@ export class Connection {
         return this.status === 'connecting' || this.status === 'connected';
     }
 
-    async getTicket(appName: string, sessionId: string, version: string): Promise<{ ticket_id: string }> {
+    async getTicket(appName: string, sessionId: string, version: string): Promise<{ ticket_id: string, auth_token: string }> {
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/tickets`, {
             method: 'POST',
             headers: {
@@ -83,6 +84,19 @@ export class Connection {
         }
 
         return response.json();
+    }
+
+    async revokeTicket(ticketId: string, authToken: string): Promise<void> {
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/tickets/${encodeURIComponent(ticketId)}/revoke`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+            },
+        });
+
+        if (!response.ok && response.status !== 404) {
+            throw new Error(`Failed to revoke ticket with status ${response.status}.`);
+        }
     }
 
     async getHolding(authToken: string): Promise<Holding[]> {
@@ -205,7 +219,7 @@ export class Connection {
         return account;
     }
 
-    connectWebSocket(ticketId: string, onMessage: (event: MessageEvent) => void) {
+    connectWebSocket(ticketId: string, ticketAuthToken: string, onMessage: (event: MessageEvent) => void) {
         if (
             this.ws &&
             (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) &&
@@ -214,6 +228,7 @@ export class Connection {
             // When connecting to a new ticket, we need to close the existing socket first
             this.ws.close();
             this.ws = null;
+            this.status = 'disconnected';
         }
 
         // prevent opening multiple sockets for same ticket
@@ -224,13 +239,14 @@ export class Connection {
         // set the message handler and ticket id to re-use for reconnecting
         this.onMessageHandler = onMessage;
         this.ticketId = ticketId;
+        this.ticketAuthToken = ticketAuthToken;
 
         this.status = 'connecting';
-        this.attachWebSocket(ticketId, onMessage);
+        this.attachWebSocket(ticketId, ticketAuthToken, onMessage);
     }
    
     reconnect(): Promise<void> {
-        if (!this.ticketId || !this.onMessageHandler) {
+        if (!this.ticketId || !this.ticketAuthToken || !this.onMessageHandler) {
             return Promise.reject(new Error('Cannot reconnect without a known ticket.'));
         }
 
@@ -238,6 +254,7 @@ export class Connection {
             let opened = false;
             this.attachWebSocket(
                 this.ticketId!,
+                this.ticketAuthToken!,
                 this.onMessageHandler!,
                 () => {
                     opened = true;
@@ -491,16 +508,21 @@ export class Connection {
         return `${this.network === 'local' ? 'ws' : 'wss'}://${this.apiUrl.replace('https://', '').replace('http://', '')}/api/v1/.connect/pair/ws/${encodeURIComponent(ticketId)}`;
     }
 
+    private websocketProtocols(ticketAuthToken: string): string[] {
+        return ['loop-connect', `loop-ticket-auth.${ticketAuthToken}`];
+    }
+
     // attachWebSocket is a helper function to setup even handler on a websocket object and assign to our ws 
     private attachWebSocket(
         ticketId: string,
+        ticketAuthToken: string,
         onMessage: (event: MessageEvent) => void,
         onOpen?: () => void,
         onError?: (event: Event) => void,
         onClose?: (event: CloseEvent) => void,
     ) {
         const wsUrl = this.websocketUrl(ticketId);
-        const ws = new WebSocket(wsUrl);
+        const ws = new WebSocket(wsUrl, this.websocketProtocols(ticketAuthToken));
 
         ws.onmessage = onMessage;
         ws.onopen = () => {
@@ -509,8 +531,8 @@ export class Connection {
             onOpen?.();
         };
         ws.onclose = (event: CloseEvent) => {
-            this.status = 'disconnected';
             if (this.ws === ws) {
+                this.status = 'disconnected';
                 this.ws = null;
             }
             console.log('[LoopSDK] Disconnected from ticket server.');
@@ -518,10 +540,10 @@ export class Connection {
         };
         ws.onerror = (event) => {
             // if it's already close, another close is a no-op
-            this.status = 'disconnected';
             ws.close();
 
             if (this.ws === ws) {
+                this.status = 'disconnected';
                 this.ws = null;
             }
             onError?.(event);

@@ -19,6 +19,7 @@ export type Account = {
 export enum MessageType {
   HANDSHAKE_ACCEPT = 'handshake_accept',
   HANDSHAKE_REJECT = 'handshake_reject',
+  TICKET_REVOKED = 'ticket_revoked',
 
   RUN_TRANSACTION = 'run_transaction',
   TRANSACTION_COMPLETED = 'transaction_completed',
