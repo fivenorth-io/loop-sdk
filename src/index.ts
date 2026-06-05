@@ -607,8 +607,8 @@ class LoopSDK {
 		const ticketId = this.session?.ticketId;
 		const authToken = this.session?.authToken;
 		if (ticketId && authToken) {
-			this.connection?.revokeTicket(ticketId, authToken).catch((error) => {
-				console.warn("[LoopSDK] Failed to revoke connect ticket.", error);
+			this.connection?.disconnect(ticketId, authToken).catch((error) => {
+				console.warn("[LoopSDK] Failed to disconnect connect ticket.", error);
 			});
 		}
 

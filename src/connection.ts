@@ -86,8 +86,8 @@ export class Connection {
         return response.json();
     }
 
-    async revokeTicket(ticketId: string, authToken: string): Promise<void> {
-        const response = await fetch(`${this.apiUrl}/api/v1/.connect/tickets/${encodeURIComponent(ticketId)}/revoke`, {
+    async disconnect(ticketId: string, authToken: string): Promise<void> {
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/tickets/${encodeURIComponent(ticketId)}/disconnect`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authToken}`,
@@ -95,7 +95,7 @@ export class Connection {
         });
 
         if (!response.ok && response.status !== 404) {
-            throw new Error(`Failed to revoke ticket with status ${response.status}.`);
+            throw new Error(`Failed to disconnect ticket with status ${response.status}.`);
         }
     }
 
