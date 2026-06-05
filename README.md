@@ -29,7 +29,7 @@ import { loop } from '@fivenorth/loop-sdk';
 Note that, If you don't want to implement a build process, you can include the file directly with `unpkg` such as 
 
 ```javascript
-import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.8.0/dist';
+import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.12.5/dist';
 ```
 
 An example of how we use it in that manner is on our [loopsdk demo](https://codepen.io/kureikain/pen/KwVGgLX)
@@ -87,6 +87,18 @@ If you set `requestSigningMode` to `'popup'` (or `'tab'`), each signing/transact
 Once the connection is established, the `onAccept` callback will receive a `provider` object. This object provides methods to interact with the user's wallet and the DAML ledger.
 
 The provider object has the `party_id` of the connected user.
+
+#### Get Account
+
+Retrieve the latest account status for the connected wallet:
+
+```javascript
+const account = await provider.getAccount();
+console.log(account.has_preapproval);
+console.log(account.utility_preapproval_admins);
+console.log(account.has_merge_delegation);
+console.log(account.usdc_bridge_access);
+```
 
 #### Get Holdings
 

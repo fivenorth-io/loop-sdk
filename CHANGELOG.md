@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.5 (2026-06-05)
+Full Changelog: [v0.12.4...v0.12.5](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.4...v0.12.5)
+
+### Improvements
+
+- **sdk:** expose `utility_preapproval_admins` on `Account` so dApps can inspect which utility admins have preapproval for the connected wallet.
+
 ## 0.12.4 (2026-04-20)
 Full Changelog: [v0.12.3...v0.12.4](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.3...v0.12.4)
 
