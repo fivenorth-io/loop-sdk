@@ -23,7 +23,6 @@ class RpcProvider extends Provider {
             partyId: party_id,
             publicKey: public_key,
             email: email,
-            sessionId: "",
         });
     }
 
@@ -85,7 +84,6 @@ export class LoopSDK {
             authToken: apiKey?.auth_token,
             email: apiKey?.email,
             ticketId: apiKey?.ticket_id,
-            sessionId: apiKey?.session_id,
             partyId: this.signer.getPartyId(),
             publicKey: publicKey,
         });

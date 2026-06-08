@@ -136,7 +136,6 @@ export type ExchangeApiKeyResponse = {
   auth_token: string;
   email?: string;
   ticket_id: string;
-  session_id: string;
 };
 
 export type PreparedSubmissionResponse = {

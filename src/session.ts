@@ -14,7 +14,7 @@ const STORAGE_KEY_LOOP_CONNECT = 'loop_connect';
  * 8. Save the session to localStorage
  */
 export class SessionInfo  {
-  public sessionId: string;
+  public sessionId?: string;
   public ticketId?: string;
   public ticketAuthToken?: string;
   public authToken?: string;
@@ -24,7 +24,7 @@ export class SessionInfo  {
   public userApiKey?: string;
   private _isAuthorized: boolean = false;
 
-  constructor({ sessionId, ticketId, ticketAuthToken, authToken, partyId, publicKey, email, userApiKey }: {  sessionId: string, ticketId?: string, ticketAuthToken?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string, userApiKey?: string }) {
+  constructor({ sessionId, ticketId, ticketAuthToken, authToken, partyId, publicKey, email, userApiKey }: {  sessionId?: string, ticketId?: string, ticketAuthToken?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string, userApiKey?: string }) {
     this.sessionId = sessionId;
     this.ticketId = ticketId;
     this.ticketAuthToken = ticketAuthToken;

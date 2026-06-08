@@ -193,13 +193,15 @@ class LoopSDK {
 			return;
 		}
 
-
 		try {
 			this.session.clearTicket();
 			if (!this.session.ticketId) {
+				if (!this.session.sessionId) {
+					throw new Error("Session ID is required to create a connect ticket.");
+				}
 				const { ticket_id: ticketId, auth_token: ticketAuthToken } = await this.connection.getTicket(
 					this.appName,
-					this.session!.sessionId,
+					this.session.sessionId,
 					this.version,
 				);
 				this.session!.setTicketId(ticketId, ticketAuthToken);
