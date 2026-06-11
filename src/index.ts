@@ -150,6 +150,14 @@ class LoopSDK {
 		}
 
 		if (this.session.isAuthorized()) {
+			if (!this.session.ticketAuthToken) {
+				console.warn(
+					"[LoopSDK] Stored session is missing ticket auth. Reconnect required.",
+				);
+				this.logout();
+				return Promise.resolve();
+			}
+
 			this.provider = new Provider({
 				connection: this.connection,
 				party_id: this.session!.partyId!,
@@ -161,6 +169,7 @@ class LoopSDK {
 			this.onAccept?.(this.provider);
 			this.connection.connectWebSocket(
 				this.session!.ticketId!,
+				this.session!.ticketAuthToken,
 				this.handleWebSocketMessage.bind(this),
 			);
 			return Promise.resolve();
@@ -184,21 +193,24 @@ class LoopSDK {
 			return;
 		}
 
-
 		try {
-			// acquire a ticket id from the backend if necessary
+			this.session.clearTicket();
 			if (!this.session.ticketId) {
-				const { ticket_id: ticketId } = await this.connection.getTicket(
+				if (!this.session.sessionId) {
+					throw new Error("Session ID is required to create a connect ticket.");
+				}
+				const { ticket_id: ticketId, auth_token: ticketAuthToken } = await this.connection.getTicket(
 					this.appName,
-					this.session!.sessionId,
+					this.session.sessionId,
 					this.version,
 				);
-				this.session!.setTicketId(ticketId);
+				this.session!.setTicketId(ticketId, ticketAuthToken);
 			}
 
 			if (!this.connection.connectInProgress()) {
 				this.connection.connectWebSocket(
 					this.session!.ticketId!,
+					this.session!.ticketAuthToken!,
 					this.handleWebSocketMessage.bind(this),
 				);
 			}
@@ -226,7 +238,8 @@ class LoopSDK {
 		console.log("[LoopSDK] WS message received:", message);
 		if (message.type === MessageType.HANDSHAKE_ACCEPT) {
 			console.log("[LoopSDK] Entering HANDSHAKE_ACCEPT flow");
-			const { authToken, partyId, publicKey, email } = message.payload || {};
+			const { partyId, publicKey, email } = message.payload || {};
+			const authToken = this.session?.ticketAuthToken;
 			if (authToken && partyId && publicKey) {
 				this.provider = new Provider({
 					connection: this.connection!,
@@ -260,13 +273,15 @@ class LoopSDK {
 			}
 		} else if (message.type === MessageType.HANDSHAKE_REJECT) {
 			console.log("[LoopSDK] Entering HANDSHAKE_REJECT flow");
-			this.connection?.ws?.close();
+			this.clearLocalSession();
 			this.onReject?.();
-			this.hideQrCode();
-			this.session?.reset();
 
 			console.log("[LoopSDK] HANDSHAKE_REJECT: closing popup (if exists)");
 			this.popupWindow = null;
+		} else if (message.type === MessageType.TICKET_REVOKED) {
+			console.log("[LoopSDK] Entering TICKET_REVOKED flow");
+			this.clearLocalSession();
+			this.onReject?.();
 		} else if (this.provider) {
 			this.provider.handleResponse(message);
 		}
@@ -583,12 +598,23 @@ class LoopSDK {
 		}
 	}
 
-	logout() {
+	private clearLocalSession() {
 		this.session?.reset();
-
 		this.provider = null;
 		this.connection?.ws?.close();
 		this.hideQrCode();
+	}
+
+	logout() {
+		const ticketId = this.session?.ticketId;
+		const authToken = this.session?.authToken;
+		if (ticketId && authToken) {
+			this.connection?.disconnect(ticketId, authToken).catch((error) => {
+				console.warn("[LoopSDK] Failed to disconnect connect ticket.", error);
+			});
+		}
+
+		this.clearLocalSession();
 	}
 
 	private requireProvider(): Provider {

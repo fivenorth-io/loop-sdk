@@ -14,8 +14,9 @@ const STORAGE_KEY_LOOP_CONNECT = 'loop_connect';
  * 8. Save the session to localStorage
  */
 export class SessionInfo  {
-  public sessionId: string;
+  public sessionId?: string;
   public ticketId?: string;
+  public ticketAuthToken?: string;
   public authToken?: string;
   public partyId?: string;
   public publicKey?: string;
@@ -23,9 +24,10 @@ export class SessionInfo  {
   public userApiKey?: string;
   private _isAuthorized: boolean = false;
 
-  constructor({ sessionId, ticketId, authToken, partyId, publicKey, email, userApiKey }: {  sessionId: string, ticketId?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string, userApiKey?: string }) {
+  constructor({ sessionId, ticketId, ticketAuthToken, authToken, partyId, publicKey, email, userApiKey }: {  sessionId?: string, ticketId?: string, ticketAuthToken?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string, userApiKey?: string }) {
     this.sessionId = sessionId;
     this.ticketId = ticketId;
+    this.ticketAuthToken = ticketAuthToken;
     this.authToken = authToken;
     this.partyId = partyId;
     this.publicKey = publicKey;
@@ -34,9 +36,16 @@ export class SessionInfo  {
   }
 
   // set the ticket id when we exchange session id/appname, and user approve it and now we have a ticket id
-  setTicketId(ticketId: string): void {
+  setTicketId(ticketId: string, ticketAuthToken?: string): void {
     this.ticketId = ticketId;
+    this.ticketAuthToken = ticketAuthToken;
     this.save()
+  }
+
+  clearTicket(): void {
+    this.ticketId = undefined;
+    this.ticketAuthToken = undefined;
+    this.save();
   }
 
   // set the session as authorized when we succesfully validate the session with the backend
@@ -70,6 +79,7 @@ export class SessionInfo  {
 
     this._isAuthorized = false;
     this.ticketId = undefined;
+    this.ticketAuthToken = undefined;
     this.authToken = undefined;
     this.partyId = undefined;
     this.publicKey = undefined;
@@ -101,6 +111,7 @@ export class SessionInfo  {
     return JSON.stringify({
       sessionId: this.sessionId,
       ticketId: this.ticketId,
+      ticketAuthToken: this.ticketAuthToken,
       authToken: this.authToken,
       partyId: this.partyId,
       publicKey: this.publicKey,
