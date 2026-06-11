@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.0 (2026-06-11)
+Full Changelog: [v0.12.3...v0.13.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.3...v0.13.0)
+
+### What Changed
+
+- **connect:** store the ticket auth token separately from the Connect API auth token and use it when opening/reconnecting the ticket websocket.
+- **connect:** replace ticket revoke behavior with ticket disconnect on `loop.logout()`.
+- **server SDK:** remove client-side `session_id` from Server SDK authentication/session state.
+
 ## 0.12.5 (2026-06-05)
 Full Changelog: [v0.12.4...v0.12.5](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.4...v0.12.5)
 

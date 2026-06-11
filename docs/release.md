@@ -7,6 +7,11 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.13.0
+- Connect: store the ticket auth token separately from the Connect API auth token and use it when opening/reconnecting the ticket websocket.
+- Connect: replace ticket revoke behavior with ticket disconnect on `loop.logout()`.
+- Server SDK: remove client-side `session_id` from Server SDK authentication/session state.
+
 ## v0.12.5
 - SDK: expose `utility_preapproval_admins` on `Account` so dApps can inspect which utility admins have preapproval for the connected wallet.
 

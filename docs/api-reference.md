@@ -61,7 +61,7 @@ Automatically connect to the wallet and sign user in if an previous sessionis st
 
 ### `loop.logout()`
 
-Clears cached session (localStorage) and resets internal state.
+Disconnects the active Connect ticket when possible, clears cached session (localStorage), and resets internal state.
 
 ---
 
