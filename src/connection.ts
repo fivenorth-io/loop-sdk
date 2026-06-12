@@ -193,8 +193,8 @@ export class Connection {
         });
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                throw new UnauthorizedError();
+            if ([400, 401, 403, 404].includes(response.status)) {
+                throw new UnauthorizedError(`Session verification failed with status ${response.status}.`);
             }
             throw new Error(`Session verification failed with status ${response.status}.`);
         }

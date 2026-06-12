@@ -7,6 +7,9 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.13.1
+- SDK: clear stale cached Connect sessions when the server reports the ticket as invalid, expired, revoked, or missing.
+
 ## v0.13.0
 - Connect: store the ticket auth token separately from the Connect API auth token and use it when opening/reconnecting the ticket websocket.
 - Connect: replace ticket revoke behavior with ticket disconnect on `loop.logout()`.

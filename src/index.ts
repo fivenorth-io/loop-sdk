@@ -16,7 +16,7 @@ import { MessageType } from "./types";
 import { LoopWallet } from "./wallet";
 
 class LoopSDK {
-	private version: string = "0.12.5";
+	private version: string = "0.13.1";
 
 	private appName: string = "Unknown";
 	private connection: Connection | null = null;

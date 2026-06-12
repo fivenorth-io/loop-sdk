@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.1 (2026-06-12)
+Full Changelog: [v0.13.0...v0.13.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.0...v0.13.1)
+
+### Bug Fixes
+
+- **sdk:** clear stale cached Connect sessions when the server reports the ticket as invalid, expired, revoked, or missing.
+
 ## 0.13.0 (2026-06-11)
 Full Changelog: [v0.12.3...v0.13.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.12.3...v0.13.0)
 
