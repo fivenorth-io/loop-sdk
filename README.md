@@ -29,7 +29,7 @@ import { loop } from '@fivenorth/loop-sdk';
 Note that, If you don't want to implement a build process, you can include the file directly with `unpkg` such as 
 
 ```javascript
-import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.12.5/dist';
+import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.13.1/dist';
 ```
 
 An example of how we use it in that manner is on our [loopsdk demo](https://codepen.io/kureikain/pen/KwVGgLX)
