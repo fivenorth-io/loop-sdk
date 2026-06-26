@@ -290,15 +290,9 @@ type ActiveContract = {
 ### 2. Connect Flow
 
 1. Validates or clears cached session
-2. Requests a ticket (`POST /api/v1/.connect/ticket`)
-3. Opens wallet using:
-    ```
-    /api/v1/.connect/?ticketId=xxxx
-    ```
-4. Opens websocket:
-    ```
-    ws://.../.connect/pair/ws/:ticketId
-    ```
+2. Requests a ticket (`POST /api/v1/.connect/pair/tickets`)
+3. Opens websocket (`wss://<host>/api/v1/.connect/pair/ws/:ticketId`)
+4. Opens wallet UI (`/.connect/?ticketId=xxxx`)
 
 ### 3. Approval / Rejection
 
@@ -307,11 +301,7 @@ type ActiveContract = {
 
 ### 4. Session Validation
 
-Before reconnecting, SDK verifies session via:
-
-```
-GET /api/v1/profile
-```
+Before reconnecting, SDK verifies session via `GET /api/v1/.connect/pair/account`.
 
 If invalid, -> session cache is cleared automatically.
 
