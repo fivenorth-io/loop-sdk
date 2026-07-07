@@ -27,6 +27,7 @@ export type ProviderHooks = {
   onRequestStart?: (messageType: MessageType, requestLabel?: string) => unknown | Promise<unknown>;
   onRequestFinish?: (args: RequestFinishArgs) => void;
   onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void;
+  onSessionInvalid?: () => void;
 };
 
 type SubmitOptions = {
@@ -114,6 +115,19 @@ export class Provider {
 
         if (message.request_id) {
             this.requests.set(message.request_id, message);
+        }
+    }
+
+    public rejectPendingRequests(code: string, message: string): void {
+        for (const requestId of this.requests.keys()) {
+            this.requests.set(requestId, {
+                request_id: requestId,
+                type: MessageType.REJECT_REQUEST,
+                payload: {
+                    code,
+                    message,
+                },
+            });
         }
     }
 
@@ -238,7 +252,12 @@ export class Provider {
             return Promise.resolve();
         }
 
-        await this.connection.reconnect();
+        try {
+            await this.connection.reconnect();
+        } catch (error) {
+            this.hooks?.onSessionInvalid?.();
+            throw error;
+        }
         if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
             return;
         }
@@ -296,6 +315,8 @@ export class Provider {
                   reject(error);
                   return;
                 }
+
+                this.requests.set(requestId, null);
 
                 const intervalTime = 300; // 300ms
                 let elapsedTime = 0;

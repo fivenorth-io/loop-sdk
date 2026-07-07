@@ -280,6 +280,11 @@ class LoopSDK {
 			this.popupWindow = null;
 		} else if (message.type === MessageType.TICKET_REVOKED) {
 			console.log("[LoopSDK] Entering TICKET_REVOKED flow");
+			const status = message?.payload?.status || "invalid";
+			this.provider?.rejectPendingRequests(
+				"SESSION_EXPIRED",
+				`Connect ticket is ${status}. Please reconnect.`,
+			);
 			this.clearLocalSession();
 			this.onReject?.();
 		} else if (this.provider) {
@@ -605,6 +610,11 @@ class LoopSDK {
 		this.hideQrCode();
 	}
 
+	private invalidateLocalSession() {
+		this.clearLocalSession();
+		this.onReject?.();
+	}
+
 	logout() {
 		const ticketId = this.session?.ticketId;
 		const authToken = this.session?.authToken;
@@ -630,7 +640,8 @@ class LoopSDK {
 		return {
 			onRequestStart: () => this.openRequestUi(),
 			onRequestFinish: () => undefined,
-      onTransactionUpdate: this.onTransactionUpdate ?? undefined,
+			onTransactionUpdate: this.onTransactionUpdate ?? undefined,
+			onSessionInvalid: () => this.invalidateLocalSession(),
 		};
 	}
 }
