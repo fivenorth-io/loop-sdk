@@ -213,8 +213,12 @@ type ProviderHooks = {
     requestLabel?: string;
     requestContext?: unknown;
   }) => void;
+  onTransactionUpdate?: (payload: RunTransactionResponse, message: any) => void;
+  onSessionInvalid?: () => void;
 };
 ```
+
+`onSessionInvalid` is used internally to clear cached Connect state when a WebSocket session can no longer be reconnected or the backend invalidates the ticket. It is not passed through `loop.init()`.
 
 ---
 
