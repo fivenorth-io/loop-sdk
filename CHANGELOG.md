@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.13.2 (2026-07-10)
+Full Changelog: [v0.13.1...v0.13.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.1...v0.13.2)
+
+### Important
+
+- **connect:** backend compatibility for SDK versions that open the ticket WebSocket with only `ticket_id` is being removed. Integrators should use `@fivenorth/loop-sdk@0.13.1` or later before backend enforcement is enabled.
+
+### What Changed
+
+- **connect:** handle backend ticket status messages for expired, rejected, revoked, or invalid Connect tickets.
+- **connect:** clear stale local sessions and reject pending requests when the WebSocket session is no longer valid.
+
 ## 0.13.1 (2026-06-12)
 Full Changelog: [v0.13.0...v0.13.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.0...v0.13.1)
 
