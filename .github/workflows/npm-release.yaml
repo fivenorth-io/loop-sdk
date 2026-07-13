@@ -28,7 +28,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@10
 
       - name: Publish alpha package
         if: startsWith(github.ref, 'refs/tags/alpha')
@@ -51,7 +51,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@10
 
       - name: Publish to npm
         if: startsWith(github.ref, 'refs/tags/v')
