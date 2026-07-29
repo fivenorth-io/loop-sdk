@@ -392,11 +392,3 @@ bun start
 ```
 
 Upon doing so you can visit http://localhost:3030/ to see the local demo app, serve in `demo/test.html` and SDK is auto compile so you can actively working and trying out the SDK.
-
-# Publish the package to NPM
-
-
-```
-bun run build
-bun publish
-```
