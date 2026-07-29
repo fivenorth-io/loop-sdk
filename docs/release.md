@@ -8,6 +8,9 @@
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
 ## v0.13.3
+- Add security policy.
+
+## v0.13.2
 - Connect: backend compatibility for SDK versions that open the ticket WebSocket with only `ticket_id` is being removed. Integrators should use `@fivenorth/loop-sdk@0.13.1` or later before backend enforcement is enabled.
 - Connect: handle backend ticket status messages for expired, rejected, revoked, or invalid Connect tickets.
 - Connect: clear stale local sessions and reject pending requests when the WebSocket session is no longer valid.
