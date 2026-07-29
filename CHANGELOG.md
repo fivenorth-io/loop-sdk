@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.3 (2026-07-29)
+Full Changelog: [v0.13.2...v0.13.3](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.2...v0.13.3)
+
+### What Changed
+- Security policy added
+
 ## 0.13.2 (2026-07-10)
 Full Changelog: [v0.13.1...v0.13.2](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.1...v0.13.2)
 
