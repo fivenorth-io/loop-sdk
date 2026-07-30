@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.4 (2026-07-29)
+Full Changelog: [v0.13.3...v0.13.4](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.3...v0.13.4)
+
+### What Changed
+- Security policy included in NPM package
+
 ## 0.13.3 (2026-07-29)
 Full Changelog: [v0.13.2...v0.13.3](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.2...v0.13.3)
 

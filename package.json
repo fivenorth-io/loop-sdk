@@ -1,6 +1,6 @@
 {
 	"name": "@fivenorth/loop-sdk",
-	"version": "0.13.3",
+	"version": "0.13.4",
 	"author": "support@fivenorth.io",
 	"main": "dist/index.js",
 	"module": "dist/index.js",
@@ -18,7 +18,8 @@
 		}
 	},
 	"files": [
-		"dist"
+		"dist",
+		"SECURITY.md"
 	],
 	"publishConfig": {
 		"access": "public"
