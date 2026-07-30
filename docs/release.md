@@ -7,6 +7,9 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.13.4
+- Security policy included in npm package.
+
 ## v0.13.3
 - Add security policy.
 
