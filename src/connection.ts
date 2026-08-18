@@ -14,6 +14,7 @@ import type {
 } from './types';
 import { PaymentRequiredError, UnauthorizedError } from './errors';
 import { SessionInfo } from './session';
+import { parseErrorResponse, errorMessage } from './http';
 import { generateRequestId } from './provider';
 
 export class Connection {
@@ -29,7 +30,7 @@ export class Connection {
 
     constructor({ network, walletUrl, apiUrl }: { network?: Network, walletUrl?: string, apiUrl?: string }) {
         this.network = network || 'main';
-        
+
         // Set default common value based on network
         switch (this.network) {
             case 'local':
@@ -80,7 +81,9 @@ export class Connection {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to get ticket from server.');
+            const details = await parseErrorResponse(response);
+            const errMsg = errorMessage(details, "")
+            throw new Error("Failed to get ticket from server." + errMsg);
         }
 
         return response.json();
@@ -109,7 +112,9 @@ export class Connection {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to get holdings. ' + await response.text());
+            const details = await parseErrorResponse(response);
+            const errMsg = errorMessage(details, "")
+            throw new Error('Failed to get holdings. ' + errMsg);
         }
 
         return response.json();
@@ -133,7 +138,9 @@ export class Connection {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to get active contracts.');
+            const details = await parseErrorResponse(response);
+            const errMsg = errorMessage(details, "")
+            throw new Error("Failed to get active contracts." + errMsg);
         }
 
         return response.json();
@@ -175,8 +182,9 @@ export class Connection {
         });
 
         if (!response.ok) {
-            console.error('Failed to prepare transfer.', await response.text());
-            throw new Error('Failed to prepare transfer.');
+            const details = await parseErrorResponse(response);
+            const errMsg = errorMessage(details, "")
+            throw new Error('Failed to prepare transfer.' + errMsg);
         }
 
         const data: ConnectTransferResponse = await response.json();
@@ -244,7 +252,7 @@ export class Connection {
         this.status = 'connecting';
         this.attachWebSocket(ticketId, ticketAuthToken, onMessage);
     }
-   
+
     reconnect(): Promise<void> {
         if (!this.ticketId || !this.ticketAuthToken || !this.onMessageHandler) {
             return Promise.reject(new Error('Cannot reconnect without a known ticket.'));
@@ -277,7 +285,7 @@ export class Connection {
     }
 
     // exchangeApiKey is used to exchange the API key for the public key and signature to use in a server session
-    async exchangeApiKey({publicKey, signature, epoch}: {publicKey: string, signature: string, epoch: number}): Promise<ExchangeApiKeyResponse> {
+    async exchangeApiKey({ publicKey, signature, epoch }: { publicKey: string, signature: string, epoch: number }): Promise<ExchangeApiKeyResponse> {
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/apikey`, {
             method: 'POST',
             headers: {
@@ -291,33 +299,14 @@ export class Connection {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to get API key from server.');
+            const details = await parseErrorResponse(response);
+            const errMsg = errorMessage(details, "")
+            throw new Error('Failed to get API key from server.' + errMsg);
         }
 
         return response.json();
     }
 
-    private async parseErrorResponse(response: Response): Promise<any> {
-        const text = await response.text();
-        if (!text) {
-            return null;
-        }
-        try {
-            return JSON.parse(text);
-        } catch {
-            return text;
-        }
-    }
-
-    private errorMessage(details: any, fallback: string): string {
-        if (typeof details === 'string' && details.length > 0) {
-            return details;
-        }
-        if (typeof details?.message === 'string' && details.message.length > 0) {
-            return details.message;
-        }
-        return fallback;
-    }
 
     // send transaction to v2/interactive-submisison/prepare endpoint to get the prepared transaction
     async prepareTransaction(session: SessionInfo, params: TransactionPayload): Promise<PreparedSubmissionResponse> {
@@ -334,11 +323,11 @@ export class Connection {
         });
 
         if (response.status === 402) {
-            throw new PaymentRequiredError(await this.parseErrorResponse(response));
+            throw new PaymentRequiredError(await parseErrorResponse(response));
         }
         if (!response.ok) {
-            const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, `Failed to prepare transaction with status ${response.status}.`));
+            const details = await parseErrorResponse(response);
+            throw new Error(errorMessage(details, `Failed to prepare transaction with status ${response.status}.`));
         }
 
         return response.json();
@@ -366,8 +355,8 @@ export class Connection {
         });
 
         if (!response.ok) {
-            const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, `Failed to estimate gas with status ${response.status}.`));
+            const details = await parseErrorResponse(response);
+            throw new Error(errorMessage(details, `Failed to estimate gas with status ${response.status}.`));
         }
 
         const data = await response.json();
@@ -400,8 +389,8 @@ export class Connection {
         });
 
         if (!response.ok) {
-            const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, `Failed to estimate gas with status ${response.status}.`));
+            const details = await parseErrorResponse(response);
+            throw new Error(errorMessage(details, `Failed to estimate gas with status ${response.status}.`));
         }
 
         const data = await response.json();
@@ -436,11 +425,11 @@ export class Connection {
         });
 
         if (response.status === 402) {
-            throw new PaymentRequiredError(await this.parseErrorResponse(response));
+            throw new PaymentRequiredError(await parseErrorResponse(response));
         }
         if (!response.ok) {
-            const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, `Failed to execute transaction with status ${response.status}.`));
+            const details = await parseErrorResponse(response);
+            throw new Error(errorMessage(details, `Failed to execute transaction with status ${response.status}.`));
         }
 
         return response.json();
@@ -460,8 +449,8 @@ export class Connection {
         });
 
         if (!response.ok) {
-            const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to get pending gas.'));
+            const details = await parseErrorResponse(response);
+            throw new Error(errorMessage(details, 'Failed to get pending gas.'));
         }
 
         return await response.json() as PendingGasResponse;
@@ -478,8 +467,8 @@ export class Connection {
         });
 
         if (!response.ok) {
-            const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to prepare pending gas.'));
+            const details = await parseErrorResponse(response);
+            throw new Error(errorMessage(details, 'Failed to prepare pending gas.'));
         }
 
         return response.json();
@@ -496,8 +485,8 @@ export class Connection {
         });
 
         if (!response.ok) {
-            const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to execute pending gas.'));
+            const details = await parseErrorResponse(response);
+            throw new Error(errorMessage(details, 'Failed to execute pending gas.'));
         }
 
         return response.json();

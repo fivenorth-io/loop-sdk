@@ -1,6 +1,7 @@
 import type { WithdrawOptions, UsdcBridgeExtension, WithdrawUsdcRequest, PreparedWithdrawPayload, ConnectWithdrawResponse } from './types';
 import type { Provider } from '../../provider';
 import type { Connection } from '../../connection';
+import { parseErrorResponse, errorMessage } from '../../http';
 
 export class UsdcBridge implements UsdcBridgeExtension {
   private getProvider: () => Provider | null;
@@ -63,7 +64,8 @@ export async function prepareUsdcWithdraw(connection: Connection, authToken: str
   });
 
   if (!response.ok) {
-    throw new Error('Failed to prepare USDC withdrawal.');
+    const details = await parseErrorResponse(response);
+    throw new Error(errorMessage(details, 'Failed to prepare USDC withdrawal.'));
   }
 
   const data: ConnectWithdrawResponse = await response.json();
