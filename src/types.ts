@@ -138,18 +138,40 @@ export type ExchangeApiKeyResponse = {
   ticket_id: string;
 };
 
+export type TrafficCostEstimation = {
+    estimationTimestamp?: string;
+    confirmationRequestTrafficCostEstimation?: number;
+    confirmationResponseTrafficCostEstimation?: number;
+    totalTrafficCostEstimation?: number;
+};
+
 export type PreparedSubmissionResponse = {
   command_id: string;
   transaction_hash: string;
   transaction_data: string;
+  estimated_traffic_units?: number;
+  estimated_traffic?: TrafficCostEstimation;
+  estimated_network_fee_amount?: string;
+  estimated_network_fee_asset?: string;
+  estimated_gas_amount?: string;
+  estimated_gas_asset?: string;
 };
 
-export type ExecuteSubmissionResquest = {
+export type ExecuteSubmissionRequest = {
   command_id: string;
   transaction_data: string;
   signature: string;
   deduplication_period?: DeduplicationPeriodInput;
 }
+
+export type ExecuteSubmissionResquest = ExecuteSubmissionRequest;
+
+export type ExecuteSubmissionResponse = {
+  status?: string;
+  command_id?: string;
+  submission_id: string;
+  estimated_traffic?: TrafficCostEstimation;
+};
 
 export type PendingGasResponse = {
   pending: boolean;
@@ -167,3 +189,52 @@ export type EstimatedGasResponse = {
   estimated_gas_amount?: string;
   estimated_gas_asset?: string;
 };
+
+export type TrafficAccountStatus = 'healthy' | 'warning' | 'critical' | 'negative';
+
+export type TrafficAccountResponse = {
+  account_id: string;
+  balance: number;
+  balance_cc?: string;
+  balance_usd?: string;
+  status?: TrafficAccountStatus;
+};
+
+export type FeeBalanceResponse = TrafficAccountResponse;
+
+export type EnsureFeeBalanceOptions = {
+  requiredCC: string | number;
+  reserveCC?: string | number;
+  topUpAmountCC?: string | number;
+};
+
+export type EnsureFeeBalanceResponse = {
+  topped_up: boolean;
+  required_cc: string;
+  reserve_cc: string;
+  top_up_amount_cc: string;
+  balance_before: FeeBalanceResponse;
+  balance_after?: FeeBalanceResponse;
+  top_up_result?: FeeBalanceTopUpExecuteResponse;
+};
+
+export type TrafficTopUpPrepareResponse = {
+  hash: string;
+  amount_cc: string;
+  payment_amount_cc?: string;
+  balance_delta: number;
+};
+
+export type TrafficTopUpExecuteResponse = {
+  status: string;
+  account_id: string;
+  balance: number;
+  balance_cc?: string;
+  balance_usd?: string;
+  balance_delta: number;
+  amount_cc: string;
+  payment_amount_cc?: string;
+  deduplication_id: string;
+};
+
+export type FeeBalanceTopUpExecuteResponse = TrafficTopUpExecuteResponse;

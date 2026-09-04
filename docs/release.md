@@ -7,6 +7,11 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.14.0
+- Server SDK: add Fee Balance helpers for server integrations: `prepareSubmission(...)`, `executeSubmission(...)`, `getFeeBalance(...)`, `topUpFeeBalance(...)`, and `ensureFeeBalance(...)`.
+- Server SDK: return Fee Balance estimate fields from `prepareSubmission(...)` so server integrations can check/top up Fee Balance before signing and executing.
+- Docs: document Fee Balance and pending network fee server SDK flows.
+
 ## v0.13.4
 - Security policy included in npm package.
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0 (2026-08-18)
+Full Changelog: [v0.13.4...v0.14.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.4...v0.14.0)
+
+### What Changed
+
+- **server-sdk:** add Fee Balance helpers for server integrations: `prepareSubmission(...)`, `executeSubmission(...)`, `getFeeBalance(...)`, `topUpFeeBalance(...)`, and `ensureFeeBalance(...)`.
+- **server-sdk:** return Fee Balance estimate fields from `prepareSubmission(...)` so server integrations can check/top up Fee Balance before signing and executing.
+- **docs:** document Fee Balance and pending network fee server SDK flows.
+
 ## 0.13.4 (2026-07-29)
 Full Changelog: [v0.13.3...v0.13.4](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.3...v0.13.4)
 

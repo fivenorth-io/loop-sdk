@@ -125,7 +125,7 @@ Fetches DAML active contracts filtered by template or interface.
 
 #### `provider.estimateGas(payload): Promise<EstimatedGasResponse>`
 
-Returns the estimated network gas for a transaction before submission.
+Returns the existing browser / WalletConnect network fee estimate before submission. Server SDK Fee Balance estimates are returned from `loop.prepareSubmission(...)`.
 
 ---
 
@@ -178,17 +178,64 @@ If the wallet popup or tab opened for the request is closed before the wallet re
 
 These methods are available from `import { loop } from '@fivenorth/loop-sdk/server'`.
 
+### Fee Balance Methods
+
+Loop supports two server SDK fee flows: Fee Balance, where users maintain a prepaid balance and Canton deducts transaction costs from that balance, and pending network fees, where a transaction can create a separate fee payment that must be paid before the next transaction.
+
+Existing server SDK integrations can keep using `loop.executeTransaction(...)` for the simple `prepare -> sign -> execute` path. Use `prepareSubmission -> ensureFeeBalance -> sign -> executeSubmission` when you want to check and top up Fee Balance before execution.
+
+Browser / WalletConnect dApps do not manage Fee Balance directly. Users maintain their Fee Balance in the Loop wallet, and the wallet handles Fee Balance prompts during browser signing/submission flows.
+
+#### `loop.prepareSubmission(payload): Promise<PreparedSubmissionResponse>`
+
+Prepares a server-side transaction for signing and returns Fee Balance estimate fields in the same response when Canton returns traffic estimation.
+
+Fee Balance fields:
+- `estimated_traffic_units`
+- `estimated_traffic`
+- `estimated_network_fee_amount`
+- `estimated_network_fee_asset`
+
+The `estimated_network_fee_*` fields are the Fee Balance cost converted to CC for display and balance checks.
+
+#### `loop.getFeeBalance(): Promise<FeeBalanceResponse>`
+
+Returns the current Fee Balance for the authenticated party.
+
+#### `loop.topUpFeeBalance(amountCC): Promise<FeeBalanceTopUpExecuteResponse>`
+
+Tops up the authenticated party's Fee Balance by preparing a CC payment, signing it with the server signer, and executing the top-up. This only credits the authenticated party; it does not top up arbitrary accounts.
+
+The response includes `amount_cc` for the CC-equivalent Fee Balance credited and `payment_amount_cc` for the CC paid after any Loop service charge.
+
+#### `loop.ensureFeeBalance(options): Promise<EnsureFeeBalanceResponse>`
+
+Checks the authenticated party's Fee Balance and tops up only when the current balance is below `requiredCC + reserveCC`.
+
+Required option:
+- `requiredCC`: expected Fee Balance cost in CC, usually from `prepared.estimated_network_fee_amount`
+
+Optional options:
+- `reserveCC`: extra Fee Balance to keep available after the transaction; defaults to `10`
+- `topUpAmountCC`: minimum amount to top up when the balance is too low; defaults to `25`. Larger shortfalls are topped up with an extra reserve cushion for the network fee for the top-up transaction.
+
+### Pending Network Fee Methods
+
+These methods support the pending network fee flow.
+
 #### `loop.estimateGas(payload): Promise<EstimatedGasResponse>`
 
-Returns the estimated network gas for a server-side transaction before submission.
+Returns the server-side network fee estimate before submission. For Server SDK Fee Balance handling, use `loop.prepareSubmission(...)`.
 
 #### `loop.checkDueGas(trackingId?): Promise<PendingGasResponse>`
 
-Returns the current pending network gas for the authenticated party. Pass `trackingId` to inspect a specific pending charge.
+Returns the current pending network fee for the authenticated party. Pass `trackingId` to inspect a specific pending charge.
 
 #### `loop.payGas(trackingId): Promise<any>`
 
-Prepares, signs, and executes the pending gas payment for the specified tracking ID.
+Prepares, signs, and executes the pending network fee payment for the specified tracking ID.
+
+`PaymentRequiredError` can represent either a pending network fee or a Fee Balance failure. Only call `checkDueGas(...)` / `payGas(...)` when the error includes `trackingId`; otherwise inspect `message` / `code`, top up Fee Balance if needed, and retry the original transaction.
 
 ---
 
