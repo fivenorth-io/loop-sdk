@@ -8,9 +8,13 @@ import type {
     ExchangeApiKeyResponse,
     TransactionPayload,
     PreparedSubmissionResponse,
-    ExecuteSubmissionResquest,
+    ExecuteSubmissionRequest,
     PendingGasResponse,
     EstimatedGasResponse,
+    TrafficAccountResponse,
+    TrafficTopUpExecuteResponse,
+    TrafficTopUpPrepareResponse,
+    ExecuteSubmissionResponse,
 } from './types';
 import { PaymentRequiredError, UnauthorizedError } from './errors';
 import { SessionInfo } from './session';
@@ -175,8 +179,9 @@ export class Connection {
         });
 
         if (!response.ok) {
-            console.error('Failed to prepare transfer.', await response.text());
-            throw new Error('Failed to prepare transfer.');
+            const details = await this.parseErrorResponse(response);
+            console.error('Failed to prepare transfer.', details);
+            throw new Error(this.errorMessage(details, `Failed to prepare transfer with status ${response.status}.`));
         }
 
         const data: ConnectTransferResponse = await response.json();
@@ -291,7 +296,8 @@ export class Connection {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to get API key from server.');
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, `Failed to get API key from server with status ${response.status}.`));
         }
 
         return response.json();
@@ -414,7 +420,7 @@ export class Connection {
     }
 
     // execute a signed transaction with v2/interactive-submisison/execute endpoint
-    async executeTransaction(session: SessionInfo, params: ExecuteSubmissionResquest): Promise<PreparedSubmissionResponse> {
+    async executeTransaction(session: SessionInfo, params: ExecuteSubmissionRequest): Promise<ExecuteSubmissionResponse> {
         if (!session.ticketId) {
             throw new Error('Ticket ID is required');
         }
@@ -461,7 +467,7 @@ export class Connection {
 
         if (!response.ok) {
             const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to get pending gas.'));
+            throw new Error(this.errorMessage(details, 'Failed to get legacy pending gas.'));
         }
 
         return await response.json() as PendingGasResponse;
@@ -479,7 +485,7 @@ export class Connection {
 
         if (!response.ok) {
             const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to prepare pending gas.'));
+            throw new Error(this.errorMessage(details, 'Failed to prepare legacy pending gas.'));
         }
 
         return response.json();
@@ -497,12 +503,70 @@ export class Connection {
 
         if (!response.ok) {
             const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to execute pending gas.'));
+            throw new Error(this.errorMessage(details, 'Failed to execute legacy pending gas.'));
         }
 
         return response.json();
     }
 
+    async getTrafficAccount(userApiKey: string): Promise<TrafficAccountResponse> {
+        const response = await fetch(`${this.apiUrl}/api/v1/traffic/account`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userApiKey}`,
+            },
+        });
+
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, 'Failed to get Fee Balance.'));
+        }
+
+        return response.json();
+    }
+
+    async prepareTrafficTopUp(userApiKey: string, amountCC: string | number): Promise<TrafficTopUpPrepareResponse> {
+        const response = await fetch(`${this.apiUrl}/api/v1/traffic/top-up/prepare`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userApiKey}`,
+            },
+            body: JSON.stringify({ amount_cc: amountCC.toString() }),
+        });
+
+        if (response.status === 402) {
+            throw new PaymentRequiredError(await this.parseErrorResponse(response));
+        }
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, 'Failed to prepare Fee Balance top-up.'));
+        }
+
+        return response.json();
+    }
+
+    async executeTrafficTopUp(userApiKey: string, params: { transaction_hash: string; signature: string }): Promise<TrafficTopUpExecuteResponse> {
+        const response = await fetch(`${this.apiUrl}/api/v1/traffic/top-up/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userApiKey}`,
+            },
+            body: JSON.stringify(params),
+        });
+
+        if (response.status === 402) {
+            throw new PaymentRequiredError(await this.parseErrorResponse(response));
+        }
+        if (!response.ok) {
+            const details = await this.parseErrorResponse(response);
+            throw new Error(this.errorMessage(details, 'Failed to execute Fee Balance top-up.'));
+        }
+
+        return response.json();
+    }
 
     private websocketUrl(ticketId: string): string {
         return `${this.network === 'local' ? 'ws' : 'wss'}://${this.apiUrl.replace('https://', '').replace('http://', '')}/api/v1/.connect/pair/ws/${encodeURIComponent(ticketId)}`;

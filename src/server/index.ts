@@ -1,8 +1,7 @@
 import { Provider, type ProviderHooks } from '../provider';
 import { Connection } from '../connection';
 import { SessionInfo } from '../session';
-import type { Network, TransferRequest, PreparedTransferPayload, TransferOptions, Instrument, TransactionPayload, PreparedSubmissionResponse, ExecuteSubmissionResquest, PendingGasResponse, EstimatedGasResponse } from '../types';
-import { time } from 'console';
+import type { Network, TransferRequest, PreparedTransferPayload, TransferOptions, Instrument, TransactionPayload, PreparedSubmissionResponse, ExecuteSubmissionRequest, ExecuteSubmissionResponse, PendingGasResponse, EstimatedGasResponse, FeeBalanceResponse, FeeBalanceTopUpExecuteResponse, EnsureFeeBalanceOptions, EnsureFeeBalanceResponse } from '../types';
 import { getSigner, Signer } from './signer';
 
 const PAY_GAS_WAIT_MS = 10_000;
@@ -30,7 +29,7 @@ class RpcProvider extends Provider {
         return await this.connection.prepareTransaction(this.session, payload);
     }
 
-    public async executeSubmission(payload: ExecuteSubmissionResquest): Promise<PreparedSubmissionResponse> {
+    public async executeSubmission(payload: ExecuteSubmissionRequest): Promise<ExecuteSubmissionResponse> {
         return await this.connection.executeTransaction(this.session, payload);
     }
 
@@ -113,7 +112,23 @@ export class LoopSDK {
         return this.provider;
     }
 
-    public async executeTransaction(payload: TransactionPayload): Promise<any> {
+    public async prepareSubmission(payload: TransactionPayload): Promise<PreparedSubmissionResponse> {
+        if (!this.provider) {
+            throw new Error('Provider is required');
+        }
+
+        return await this.provider.prepareSubmission(payload);
+    }
+
+    public async executeSubmission(payload: ExecuteSubmissionRequest): Promise<ExecuteSubmissionResponse> {
+        if (!this.provider) {
+            throw new Error('Provider is required');
+        }
+
+        return await this.provider.executeSubmission(payload);
+    }
+
+    public async executeTransaction(payload: TransactionPayload): Promise<ExecuteSubmissionResponse> {
         if (!this.provider || !this.signer) {
             throw new Error('Provider and signer are required');
         }
@@ -154,6 +169,92 @@ export class LoopSDK {
         return await this.connection.estimateGas(this.session, payload);
     }
 
+    public async getFeeBalance(): Promise<FeeBalanceResponse> {
+        if (!this.connection || !this.session) {
+            throw new Error('Provider and session are required');
+        }
+
+        return await this.connection.getTrafficAccount(this.session.userApiKey!);
+    }
+
+    public async getGasBalance(): Promise<FeeBalanceResponse> {
+        return await this.getFeeBalance();
+    }
+
+    public async topUpFeeBalance(amountCC: string | number): Promise<FeeBalanceTopUpExecuteResponse> {
+        if (!this.connection || !this.session || !this.signer) {
+            throw new Error('Provider and signer are required');
+        }
+
+        const preparedTopUp = await this.connection.prepareTrafficTopUp(this.session.userApiKey!, amountCC);
+        if (!preparedTopUp?.hash) {
+            throw new Error('Failed to prepare Fee Balance top-up.');
+        }
+
+        const signedTransactionHash = this.getSigner().signTransactionHash(preparedTopUp.hash);
+
+        return await this.connection.executeTrafficTopUp(this.session.userApiKey!, {
+            transaction_hash: preparedTopUp.hash,
+            signature: signedTransactionHash,
+        });
+    }
+
+    public async ensureFeeBalance(options: EnsureFeeBalanceOptions): Promise<EnsureFeeBalanceResponse> {
+        const requiredCC = Number(options.requiredCC);
+        const reserveCC = options.reserveCC === undefined ? 10 : Number(options.reserveCC);
+        const topUpAmountCC = options.topUpAmountCC === undefined ? 25 : Number(options.topUpAmountCC);
+
+        if (!Number.isFinite(requiredCC) || requiredCC < 0) {
+            throw new Error('requiredCC must be a non-negative number.');
+        }
+        if (!Number.isFinite(reserveCC) || reserveCC < 0) {
+            throw new Error('reserveCC must be a non-negative number.');
+        }
+        if (!Number.isFinite(topUpAmountCC) || topUpAmountCC <= 0) {
+            throw new Error('topUpAmountCC must be greater than 0.');
+        }
+
+        const balanceBefore = await this.getFeeBalance();
+        const currentBalanceCC = Number(balanceBefore.balance_cc);
+        if (!Number.isFinite(currentBalanceCC)) {
+            throw new Error('Could not determine current Fee Balance.');
+        }
+
+        const requiredWithReserveCC = requiredCC + reserveCC;
+        if (currentBalanceCC >= requiredWithReserveCC) {
+            return {
+                topped_up: false,
+                required_cc: requiredCC.toString(),
+                reserve_cc: reserveCC.toString(),
+                top_up_amount_cc: topUpAmountCC.toString(),
+                balance_before: balanceBefore,
+            };
+        }
+
+        const shortfallCC = requiredWithReserveCC - currentBalanceCC;
+        const amountToTopUpCC = Math.max(topUpAmountCC, shortfallCC + reserveCC);
+        const topUpResult = await this.topUpFeeBalance(amountToTopUpCC);
+        const balanceAfter = await this.getFeeBalance();
+        const balanceAfterCC = Number(balanceAfter.balance_cc);
+        if (!Number.isFinite(balanceAfterCC) || balanceAfterCC < requiredWithReserveCC) {
+            throw new Error('Fee Balance is still below the required amount after top-up.');
+        }
+
+        return {
+            topped_up: true,
+            required_cc: requiredCC.toString(),
+            reserve_cc: reserveCC.toString(),
+            top_up_amount_cc: amountToTopUpCC.toString(),
+            balance_before: balanceBefore,
+            balance_after: balanceAfter,
+            top_up_result: topUpResult,
+        };
+    }
+
+    public async topUpGas(amountCC: string | number): Promise<FeeBalanceTopUpExecuteResponse> {
+        return await this.topUpFeeBalance(amountCC);
+    }
+
     public async payGas(trackingId: string): Promise<any> {
         if (!this.provider || !this.signer || !this.connection || !this.session) {
             throw new Error('Provider and signer are required');
@@ -166,7 +267,7 @@ export class LoopSDK {
 
         const preparedGas = await this.connection.preparePendingGas(this.session.userApiKey!, trackingId);
         if (!preparedGas?.transaction_hash) {
-            throw new Error('Failed to prepare pending gas.');
+            throw new Error('Failed to prepare legacy pending gas.');
         }
 
         const signedTransactionHash = this.getSigner().signTransactionHash(preparedGas.transaction_hash);

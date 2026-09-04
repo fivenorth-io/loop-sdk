@@ -13,7 +13,7 @@ bun add @fivenorth/loop-sdk
 Or via CDN (no build process required):
 
 ```javascript
-import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.13.4/dist";
+import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.14.0/dist";
 ```
 
 Then import into your dApp:
@@ -153,16 +153,18 @@ console.log(contracts);
 
 ---
 
-### Estimate Network Gas
+### Estimate Network Fee
 
-Browser / WalletConnect dApps should use `provider.estimateGas(...)`. If you are using the Server SDK instead, use `loop.estimateGas(...)` in `docs/server.md`.
+Browser / WalletConnect dApps can use `provider.estimateGas(...)` for the existing network fee estimate UX. Browser dApps do not manage Fee Balance directly; users maintain their Fee Balance in the Loop wallet, and the wallet handles Fee Balance prompts during signing/submission flows.
+
+If you are using the Server SDK on devnet/testnet, `loop.prepareSubmission(...)` returns Fee Balance estimates; see `docs/server.md`.
 
 ```javascript
 const gasEstimate = await provider.estimateGas(damlCommand);
 console.log(gasEstimate);
 ```
 
-Use this before submission if you want to inspect the expected network gas first.
+`provider.estimateGas(...)` is the existing browser / WalletConnect estimate helper. It keeps the legacy method name, but returns the expected network fee before submission.
 
 ---
 

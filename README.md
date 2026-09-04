@@ -29,7 +29,7 @@ import { loop } from '@fivenorth/loop-sdk';
 Note that, If you don't want to implement a build process, you can include the file directly with `unpkg` such as 
 
 ```javascript
-import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.13.4/dist';
+import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.14.0/dist';
 ```
 
 An example of how we use it in that manner is on our [loopsdk demo](https://codepen.io/kureikain/pen/KwVGgLX)
@@ -131,14 +131,14 @@ const contracts = await provider.getActiveContracts({
 console.log(contracts);
 ```
 
-#### Estimate Network Gas
+#### Estimate Network Fee
 
 ```javascript
 const gasEstimate = await provider.estimateGas(damlCommand);
 console.log(gasEstimate);
 ```
 
-Use this before submission if you want to inspect the expected network gas first.
+`provider.estimateGas(...)` is the existing browser / WalletConnect estimate helper. It keeps the legacy method name, but returns the expected network fee before submission.
 
 #### Submit a Transaction
 
@@ -326,31 +326,77 @@ const result = await loop.executeTransaction(preparedPayload);
 console.log('Transfer result:', result);
 ```
 
-### Handling pending network gas in the server SDK
+### Handling Fee Balance in the server SDK
 
-Server SDK transactions use an after-execution network gas model. If a previous transaction created unpaid network gas, the next transaction attempt may fail with `PaymentRequiredError`.
+Mainnet currently uses Loop's legacy Network Gas flow, where transactions can create a separate pending network fee transaction. Devnet/testnet are testing Fee Balance, where users maintain a prepaid Fee Balance and Canton deducts transaction costs from that balance.
 
-Best practice:
+Existing server SDK integrations can keep using `loop.executeTransaction(...)`. That helper still performs the simple one-call flow:
 
-- call `estimateGas(...)` before submitting a transaction if you want to inspect the expected network gas first
-- check for due gas before you submit a transaction, and pay it first if present
-
-```javascript
-const gasEstimate = await loop.estimateGas(preparedPayload);
-console.log('Estimated network gas:', gasEstimate.estimated_gas_amount);
+```text
+prepare -> sign -> execute
 ```
 
-```javascript
-const dueGas = await loop.checkDueGas();
+For server SDK integrations on devnet/testnet, use the explicit Fee Balance flow when you want the SDK to check and top up the authenticated party's Fee Balance before execution:
 
-if (dueGas.pending && dueGas.tracking_id) {
-    await loop.payGas(dueGas.tracking_id);
+```text
+prepareSubmission -> ensureFeeBalance -> sign -> executeSubmission
+```
+
+`loop.prepareSubmission(...)` prepares the transaction and returns Fee Balance estimate fields in the same response. `loop.ensureFeeBalance(...)` checks the current Fee Balance and tops up only if needed.
+
+In Fee Balance environments, network fees are paid from Fee Balance. Learn more at [testnet.cantonloop.com/fee-balance](https://testnet.cantonloop.com/fee-balance).
+
+Browser / WalletConnect dApps do not manage Fee Balance directly. Users maintain their Fee Balance in the Loop wallet, and the wallet handles Fee Balance prompts during browser signing/submission flows.
+
+Top-ups are scoped to the authenticated party from `loop.init({ partyId, privateKey })`. They do not credit arbitrary accounts. Keep a Fee Balance reserve before submitting transactions. If the balance is too low to pay for a top-up transaction, `topUpFeeBalance()` may fail and the account may require operator support.
+
+Recommended flow:
+
+- call `loop.prepareSubmission(...)` to prepare the transaction and inspect the expected Fee Balance cost before execution
+- call `loop.ensureFeeBalance({ requiredCC })` to check the current Fee Balance and top up if needed
+- still handle transaction failures from Canton as the final source of truth
+
+By default, `ensureFeeBalance(...)` keeps a `10 CC` reserve and tops up at least `25 CC` when the balance is too low. If the shortfall is larger, it tops up enough to cover `requiredCC + reserveCC`, plus the reserve as a cushion for the network fee for the top-up transaction. Override `reserveCC` or `topUpAmountCC` only if your integration needs different behavior.
+
+```javascript
+import { loop, PaymentRequiredError } from '@fivenorth/loop-sdk/server';
+
+let preparedSubmission;
+
+try {
+    preparedSubmission = await loop.prepareSubmission(preparedPayload);
+    if (!preparedSubmission.estimated_network_fee_amount) {
+        throw new Error('Prepare did not return a Fee Balance estimate.');
+    }
+
+    const feeBalance = await loop.ensureFeeBalance({
+        requiredCC: preparedSubmission.estimated_network_fee_amount,
+    });
+
+    if (feeBalance.topped_up) {
+        preparedSubmission = await loop.prepareSubmission(preparedPayload);
+    }
+} catch (error) {
+    if (!(error instanceof PaymentRequiredError) || error.trackingId || !error.requiredBalanceCC) {
+        throw error;
+    }
+
+    await loop.ensureFeeBalance({
+        requiredCC: error.requiredBalanceCC,
+    });
+
+    preparedSubmission = await loop.prepareSubmission(preparedPayload);
 }
 
-await loop.executeTransaction(preparedPayload);
+const signature = loop.getSigner().signTransactionHash(preparedSubmission.transaction_hash);
+await loop.executeSubmission({
+    command_id: preparedSubmission.command_id,
+    transaction_data: preparedSubmission.transaction_data,
+    signature,
+});
 ```
 
-You should still handle `PaymentRequiredError` as a fallback:
+You should still handle `PaymentRequiredError` as a fallback. A `PaymentRequiredError` with a `trackingId` is a legacy pending network fee and can be paid with `payGas(...)`. A `PaymentRequiredError` without a `trackingId` can be a Fee Balance failure; check `error.message` / `error.code`, top up Fee Balance if needed, and retry the original transaction.
 
 ```javascript
 import { loop, PaymentRequiredError } from '@fivenorth/loop-sdk/server';
@@ -359,8 +405,14 @@ try {
     await loop.executeTransaction(preparedPayload);
 } catch (error) {
     if (error instanceof PaymentRequiredError) {
+        if (!error.trackingId) {
+            console.log('Transaction needs more Fee Balance:', error.message);
+            await loop.topUpFeeBalance('25');
+            return;
+        }
+
         const dueGas = await loop.checkDueGas(error.trackingId);
-        console.log('Pending network gas amount:', dueGas.gas_amount);
+        console.log('Pending legacy network fee amount:', dueGas.gas_amount);
 
         await loop.payGas(error.trackingId);
     } else {
