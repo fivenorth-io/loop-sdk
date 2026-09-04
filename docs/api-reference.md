@@ -125,7 +125,7 @@ Fetches DAML active contracts filtered by template or interface.
 
 #### `provider.estimateGas(payload): Promise<EstimatedGasResponse>`
 
-Returns the existing browser / WalletConnect network fee estimate before submission. This method keeps the legacy `estimateGas` name. Server SDK Fee Balance estimates are returned from `loop.prepareSubmission(...)`.
+Returns the existing browser / WalletConnect network fee estimate before submission. Server SDK Fee Balance estimates are returned from `loop.prepareSubmission(...)`.
 
 ---
 
@@ -180,11 +180,9 @@ These methods are available from `import { loop } from '@fivenorth/loop-sdk/serv
 
 ### Fee Balance Methods
 
-Mainnet currently uses Loop's legacy Network Gas flow, where transactions can create a separate pending network fee transaction. Devnet/testnet are testing Fee Balance, where users maintain a prepaid Fee Balance and Canton deducts transaction costs from that balance.
+Loop supports two server SDK fee flows: Fee Balance, where users maintain a prepaid balance and Canton deducts transaction costs from that balance, and pending network fees, where a transaction can create a separate fee payment that must be paid before the next transaction.
 
-Existing server SDK integrations can keep using `loop.executeTransaction(...)` for the simple `prepare -> sign -> execute` path. For server SDK integrations on devnet/testnet, use `prepareSubmission -> ensureFeeBalance -> sign -> executeSubmission` when you want to check and top up Fee Balance before execution.
-
-In Fee Balance environments, network fees are paid from Fee Balance. Learn more at [testnet.cantonloop.com/fee-balance](https://testnet.cantonloop.com/fee-balance).
+Existing server SDK integrations can keep using `loop.executeTransaction(...)` for the simple `prepare -> sign -> execute` path. Use `prepareSubmission -> ensureFeeBalance -> sign -> executeSubmission` when you want to check and top up Fee Balance before execution.
 
 Browser / WalletConnect dApps do not manage Fee Balance directly. Users maintain their Fee Balance in the Loop wallet, and the wallet handles Fee Balance prompts during browser signing/submission flows.
 
@@ -221,23 +219,23 @@ Optional options:
 - `reserveCC`: extra Fee Balance to keep available after the transaction; defaults to `10`
 - `topUpAmountCC`: minimum amount to top up when the balance is too low; defaults to `25`. Larger shortfalls are topped up with an extra reserve cushion for the network fee for the top-up transaction.
 
-### Legacy Pending Network Fee Methods
+### Pending Network Fee Methods
 
-These methods support the existing pending network fee flow used before Fee Balance.
+These methods support the pending network fee flow.
 
 #### `loop.estimateGas(payload): Promise<EstimatedGasResponse>`
 
-Returns the legacy server-side network fee estimate before submission. For Server SDK Fee Balance handling, use `loop.prepareSubmission(...)`.
+Returns the server-side network fee estimate before submission. For Server SDK Fee Balance handling, use `loop.prepareSubmission(...)`.
 
 #### `loop.checkDueGas(trackingId?): Promise<PendingGasResponse>`
 
-Returns the current legacy pending network fee for the authenticated party. Pass `trackingId` to inspect a specific pending charge.
+Returns the current pending network fee for the authenticated party. Pass `trackingId` to inspect a specific pending charge.
 
 #### `loop.payGas(trackingId): Promise<any>`
 
-Prepares, signs, and executes the legacy pending network fee payment for the specified tracking ID.
+Prepares, signs, and executes the pending network fee payment for the specified tracking ID.
 
-`PaymentRequiredError` can represent either a legacy pending network fee or a Fee Balance failure. Only call `checkDueGas(...)` / `payGas(...)` when the error includes `trackingId`; otherwise inspect `message` / `code`, top up Fee Balance if needed, and retry the original transaction.
+`PaymentRequiredError` can represent either a pending network fee or a Fee Balance failure. Only call `checkDueGas(...)` / `payGas(...)` when the error includes `trackingId`; otherwise inspect `message` / `code`, top up Fee Balance if needed, and retry the original transaction.
 
 ---
 

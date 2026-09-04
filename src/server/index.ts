@@ -267,7 +267,7 @@ export class LoopSDK {
 
         const preparedGas = await this.connection.preparePendingGas(this.session.userApiKey!, trackingId);
         if (!preparedGas?.transaction_hash) {
-            throw new Error('Failed to prepare legacy pending gas.');
+            throw new Error('Failed to prepare pending gas.');
         }
 
         const signedTransactionHash = this.getSigner().signTransactionHash(preparedGas.transaction_hash);

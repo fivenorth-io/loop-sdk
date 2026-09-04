@@ -14,8 +14,8 @@ Now, you're ready to use the Loop SDK to sign from your server instead of from a
 
 If you just want a quick example:
 
-- `demo/server.ts`: mainnet-compatible simple server flow with legacy Network Gas fallback
-- `demo/server-fee-balance.ts`: devnet/testnet Fee Balance server flow
+- `demo/server.ts`: simple server flow with pending network fee fallback
+- `demo/server-fee-balance.ts`: Fee Balance server flow
 - `demo/fee-balance-top-up.ts`: standalone Fee Balance top-up helper demo
 
 ## 1. Initialize the SDK
@@ -80,7 +80,7 @@ And that's all
 
 ## 3.1 Handle Fee Balance
 
-Mainnet currently uses Loop's legacy Network Gas flow, where transactions can create a separate pending network fee transaction. Devnet/testnet are testing Fee Balance, where users maintain a prepaid Fee Balance and Canton deducts transaction costs from that balance.
+Loop supports two server SDK fee flows: Fee Balance, where users maintain a prepaid balance and Canton deducts transaction costs from that balance, and pending network fees, where a transaction can create a separate fee payment that must be paid before the next transaction.
 
 Existing server SDK integrations can keep using `loop.executeTransaction(...)`. That helper still performs the simple one-call flow:
 
@@ -88,15 +88,13 @@ Existing server SDK integrations can keep using `loop.executeTransaction(...)`. 
 prepare -> sign -> execute
 ```
 
-For server SDK integrations on devnet/testnet, use the explicit Fee Balance flow when you want the SDK to check and top up the authenticated party's Fee Balance before execution:
+Use the explicit Fee Balance flow when you want the SDK to check and top up the authenticated party's Fee Balance before execution:
 
 ```text
 prepareSubmission -> ensureFeeBalance -> sign -> executeSubmission
 ```
 
 `loop.prepareSubmission(...)` prepares the transaction and returns Fee Balance estimate fields in the same response. `loop.ensureFeeBalance(...)` checks the current Fee Balance and tops up only if needed.
-
-In Fee Balance environments, network fees are paid from Fee Balance. Learn more at [testnet.cantonloop.com/fee-balance](https://testnet.cantonloop.com/fee-balance).
 
 Browser / WalletConnect dApps do not manage Fee Balance directly. Users maintain their Fee Balance in the Loop wallet, and the wallet handles Fee Balance prompts during browser signing/submission flows.
 
@@ -112,7 +110,7 @@ Recommended flow:
 
 By default, `ensureFeeBalance(...)` keeps a `10 CC` reserve and tops up at least `25 CC` when the balance is too low. If the shortfall is larger, it tops up enough to cover `requiredCC + reserveCC`, plus the reserve as a cushion for the network fee for the top-up transaction. Override `reserveCC` or `topUpAmountCC` only if your integration needs different behavior.
 
-The Server SDK `loop.estimateGas(...)` method is the legacy network fee estimate path, not the Fee Balance estimate.
+The Server SDK `loop.estimateGas(...)` method is the pending network fee estimate path, not the Fee Balance estimate.
 
 ```javascript
 import { loop, PaymentRequiredError } from '@fivenorth/loop-sdk/server';
@@ -166,15 +164,15 @@ await loop.executeSubmission({
 });
 ```
 
-### Legacy Pending Network Fees
+### Pending Network Fees
 
-Some integrations may still use the legacy after-execution pending network fee helpers:
+Some integrations may use the pending network fee helpers:
 
 - `checkDueGas()`
 - `payGas(trackingId)`
 - `PaymentRequiredError`
 
-You should still handle `PaymentRequiredError` as a fallback. A `PaymentRequiredError` with a `trackingId` is a legacy pending network fee and can be paid with `payGas(...)`. A `PaymentRequiredError` without a `trackingId` can be a Fee Balance failure; check `error.message` / `error.code`, top up Fee Balance if needed, then retry the original transaction.
+You should still handle `PaymentRequiredError` as a fallback. A `PaymentRequiredError` with a `trackingId` is a pending network fee and can be paid with `payGas(...)`. A `PaymentRequiredError` without a `trackingId` can be a Fee Balance failure; check `error.message` / `error.code`, top up Fee Balance if needed, then retry the original transaction.
 
 ```javascript
 import { loop, PaymentRequiredError } from '@fivenorth/loop-sdk/server';
@@ -201,11 +199,11 @@ try {
       return;
     }
 
-    // Inspect the exact legacy pending network fee before paying it
+    // Inspect the exact pending network fee before paying it
     const dueGas = await loop.checkDueGas(error.trackingId);
-    console.log('Pending legacy network fee:', dueGas.gas_amount, dueGas.tracking_id);
+    console.log('Pending network fee:', dueGas.gas_amount, dueGas.tracking_id);
 
-    // Pay the legacy pending network fee explicitly
+    // Pay the pending network fee explicitly
     await loop.payGas(error.trackingId!);
   } else {
     throw error;
@@ -215,7 +213,7 @@ try {
 
 ### Fee Balance Methods
 
-These methods support the new Fee Balance flow and are currently intended for server SDK integrations on devnet/testnet.
+These methods support the Fee Balance flow.
 
 #### `loop.getFeeBalance()`
 
@@ -244,21 +242,21 @@ Prepares a server-side transaction for signing. When Fee Balance is enabled, the
 
 Executes a previously prepared and signed submission.
 
-### Legacy Pending Network Fee Methods
+### Pending Network Fee Methods
 
-These methods support the existing pending network fee flow used before Fee Balance.
+These methods support the pending network fee flow.
 
 #### `loop.estimateGas(payload)`
 
-Returns the legacy server-side network fee estimate before submission. For Server SDK Fee Balance handling, use `loop.prepareSubmission(...)`.
+Returns the server-side network fee estimate before submission. For Server SDK Fee Balance handling, use `loop.prepareSubmission(...)`.
 
 #### `loop.checkDueGas(trackingId?)`
 
-Returns the current legacy pending network fee for the authenticated party. When `trackingId` is provided, it targets that exact pending charge.
+Returns the current pending network fee for the authenticated party. When `trackingId` is provided, it targets that exact pending charge.
 
 #### `loop.payGas(trackingId)`
 
-Prepares the legacy pending network fee transfer for the specified tracking ID, signs the returned transaction hash with the server signer, and executes the payment.
+Prepares the pending network fee transfer for the specified tracking ID, signs the returned transaction hash with the server signer, and executes the payment.
 
 ## 4. Using the Provider (advanced)
 

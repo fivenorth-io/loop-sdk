@@ -467,7 +467,7 @@ export class Connection {
 
         if (!response.ok) {
             const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to get legacy pending gas.'));
+            throw new Error(this.errorMessage(details, 'Failed to get pending gas.'));
         }
 
         return await response.json() as PendingGasResponse;
@@ -485,7 +485,7 @@ export class Connection {
 
         if (!response.ok) {
             const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to prepare legacy pending gas.'));
+            throw new Error(this.errorMessage(details, 'Failed to prepare pending gas.'));
         }
 
         return response.json();
@@ -503,7 +503,7 @@ export class Connection {
 
         if (!response.ok) {
             const details = await this.parseErrorResponse(response);
-            throw new Error(this.errorMessage(details, 'Failed to execute legacy pending gas.'));
+            throw new Error(this.errorMessage(details, 'Failed to execute pending gas.'));
         }
 
         return response.json();

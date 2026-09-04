@@ -8,9 +8,9 @@
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
 ## v0.14.0
-- Server SDK: add devnet/testnet Fee Balance helpers for server integrations: `prepareSubmission(...)`, `executeSubmission(...)`, `getFeeBalance(...)`, `topUpFeeBalance(...)`, and `ensureFeeBalance(...)`.
+- Server SDK: add Fee Balance helpers for server integrations: `prepareSubmission(...)`, `executeSubmission(...)`, `getFeeBalance(...)`, `topUpFeeBalance(...)`, and `ensureFeeBalance(...)`.
 - Server SDK: return Fee Balance estimate fields from `prepareSubmission(...)` so server integrations can check/top up Fee Balance before signing and executing.
-- Docs: clarify the split between mainnet's legacy Network Gas flow and the devnet/testnet Fee Balance flow.
+- Docs: document Fee Balance and pending network fee server SDK flows.
 
 ## v0.13.4
 - Security policy included in npm package.
@@ -41,19 +41,19 @@ The release notes below highlight only the major updates. Refer to the links abo
 - SDK: detect when the wallet popup/tab is closed during a pending request and reject with `PopupClosedError` instead of waiting only for timeout.
 
 ## v0.12.2
-- Browser SDK: add `provider.estimateGas(payload)` so browser / WalletConnect dApps can inspect expected network fees before submission.
+- Browser SDK: add `provider.estimateGas(payload)` so browser / WalletConnect dApps can inspect expected network gas before submission.
 - SDK: add optional `deduplicationPeriod` support to `submitTransaction`, `submitAndWaitForTransaction`, and `transfer`.
 - SDK: continue accepting caller-provided `commandId` on the transaction payload so integrators can safely retry the same logical command.
 - Server SDK: fix the `node-forge` import path used by the server signer.
 
 ## v0.12.1
-- Server SDK: add `estimateGas(payload)` so integrators can inspect expected network fees before submitting a transaction.
+- Server SDK: add `estimateGas(payload)` so integrators can inspect expected network gas before submitting a transaction.
 
 ## v0.12.0
-- Upgrade required for Server SDK: integrators should update to `@fivenorth/loop-sdk@0.12.0` or later to support the new after-execution network fee flow.
-- Server SDK transactions now use an after-execution network fee model. If a previous transaction created an unpaid network fee, the next transaction attempt may fail with `PaymentRequiredError`.
-- Add `checkDueGas(trackingId?)` and `payGas(trackingId)` helpers so integrators can check for pending network fees before submitting a transaction and pay them first if present.
-- Surface `402 Payment Required` as `PaymentRequiredError` as a fallback when unpaid network fees are detected during submission.
+- Upgrade required for Server SDK: integrators should update to `@fivenorth/loop-sdk@0.12.0` or later to support the new after-execution network gas flow.
+- Server SDK transactions now use an after-execution network gas model. If a previous transaction created unpaid network gas, the next transaction attempt may fail with `PaymentRequiredError`.
+- Add `checkDueGas(trackingId?)` and `payGas(trackingId)` helpers so integrators can check for pending network gas before submitting a transaction and pay it first if present.
+- Surface `402 Payment Required` as `PaymentRequiredError` as a fallback when unpaid network gas is detected during submission.
 
 ## v0.11.2
 - SDK: stop auto-closing request-signing popup/tab on request completion (wallet UI controls close behavior).

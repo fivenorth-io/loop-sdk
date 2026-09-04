@@ -157,14 +157,14 @@ console.log(contracts);
 
 Browser / WalletConnect dApps can use `provider.estimateGas(...)` for the existing network fee estimate UX. Browser dApps do not manage Fee Balance directly; users maintain their Fee Balance in the Loop wallet, and the wallet handles Fee Balance prompts during signing/submission flows.
 
-If you are using the Server SDK on devnet/testnet, `loop.prepareSubmission(...)` returns Fee Balance estimates; see `docs/server.md`.
+If you are using the Server SDK, `loop.prepareSubmission(...)` returns Fee Balance estimates when the server provides them; see `docs/server.md`.
 
 ```javascript
 const gasEstimate = await provider.estimateGas(damlCommand);
 console.log(gasEstimate);
 ```
 
-`provider.estimateGas(...)` is the existing browser / WalletConnect estimate helper. It keeps the legacy method name, but returns the expected network fee before submission.
+`provider.estimateGas(...)` is the existing browser / WalletConnect estimate helper. It keeps the existing method name, but returns the expected network fee before submission.
 
 ---
 

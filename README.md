@@ -138,7 +138,7 @@ const gasEstimate = await provider.estimateGas(damlCommand);
 console.log(gasEstimate);
 ```
 
-`provider.estimateGas(...)` is the existing browser / WalletConnect estimate helper. It keeps the legacy method name, but returns the expected network fee before submission.
+`provider.estimateGas(...)` is the existing browser / WalletConnect estimate helper. It keeps the existing method name, but returns the expected network fee before submission.
 
 #### Submit a Transaction
 
@@ -328,7 +328,7 @@ console.log('Transfer result:', result);
 
 ### Handling Fee Balance in the server SDK
 
-Mainnet currently uses Loop's legacy Network Gas flow, where transactions can create a separate pending network fee transaction. Devnet/testnet are testing Fee Balance, where users maintain a prepaid Fee Balance and Canton deducts transaction costs from that balance.
+Loop supports two server SDK fee flows: Fee Balance, where users maintain a prepaid balance and Canton deducts transaction costs from that balance, and pending network fees, where a transaction can create a separate fee payment that must be paid before the next transaction.
 
 Existing server SDK integrations can keep using `loop.executeTransaction(...)`. That helper still performs the simple one-call flow:
 
@@ -336,15 +336,13 @@ Existing server SDK integrations can keep using `loop.executeTransaction(...)`. 
 prepare -> sign -> execute
 ```
 
-For server SDK integrations on devnet/testnet, use the explicit Fee Balance flow when you want the SDK to check and top up the authenticated party's Fee Balance before execution:
+Use the explicit Fee Balance flow when you want the SDK to check and top up the authenticated party's Fee Balance before execution:
 
 ```text
 prepareSubmission -> ensureFeeBalance -> sign -> executeSubmission
 ```
 
 `loop.prepareSubmission(...)` prepares the transaction and returns Fee Balance estimate fields in the same response. `loop.ensureFeeBalance(...)` checks the current Fee Balance and tops up only if needed.
-
-In Fee Balance environments, network fees are paid from Fee Balance. Learn more at [testnet.cantonloop.com/fee-balance](https://testnet.cantonloop.com/fee-balance).
 
 Browser / WalletConnect dApps do not manage Fee Balance directly. Users maintain their Fee Balance in the Loop wallet, and the wallet handles Fee Balance prompts during browser signing/submission flows.
 
@@ -396,7 +394,7 @@ await loop.executeSubmission({
 });
 ```
 
-You should still handle `PaymentRequiredError` as a fallback. A `PaymentRequiredError` with a `trackingId` is a legacy pending network fee and can be paid with `payGas(...)`. A `PaymentRequiredError` without a `trackingId` can be a Fee Balance failure; check `error.message` / `error.code`, top up Fee Balance if needed, and retry the original transaction.
+You should still handle `PaymentRequiredError` as a fallback. A `PaymentRequiredError` with a `trackingId` is a pending network fee and can be paid with `payGas(...)`. A `PaymentRequiredError` without a `trackingId` can be a Fee Balance failure; check `error.message` / `error.code`, top up Fee Balance if needed, and retry the original transaction.
 
 ```javascript
 import { loop, PaymentRequiredError } from '@fivenorth/loop-sdk/server';
@@ -412,7 +410,7 @@ try {
         }
 
         const dueGas = await loop.checkDueGas(error.trackingId);
-        console.log('Pending legacy network fee amount:', dueGas.gas_amount);
+        console.log('Pending network fee amount:', dueGas.gas_amount);
 
         await loop.payGas(error.trackingId);
     } else {

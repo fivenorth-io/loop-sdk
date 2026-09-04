@@ -1,5 +1,5 @@
 /**
- * Devnet/testnet Fee Balance server SDK demo.
+ * Fee Balance server SDK demo.
  *
  * This uses the explicit Fee Balance flow:
  * prepareSubmission -> ensureFeeBalance -> sign -> executeSubmission

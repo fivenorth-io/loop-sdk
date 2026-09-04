@@ -1,10 +1,8 @@
 /**
- * Mainnet-compatible server SDK demo.
- *
  * This uses the simple server flow:
  * executeTransaction(...) = prepare -> sign -> execute
  *
- * In the legacy Network Gas flow, a transaction may return PaymentRequiredError
+ * In the pending network fee flow, a transaction may return PaymentRequiredError
  * with a trackingId. Pay that pending network fee with checkDueGas/payGas.
  */
 
@@ -26,12 +24,12 @@ await loop.authenticate();
 const provider = loop.getProvider();
 
 const dueGas = await loop.checkDueGas();
-console.log('Current legacy pending network fee:', JSON.stringify(dueGas, null, 2));
+console.log('Current pending network fee:', JSON.stringify(dueGas, null, 2));
 
 if (dueGas.pending && dueGas.tracking_id) {
-    console.log('Paying existing legacy pending network fee:', dueGas.tracking_id);
+    console.log('Paying existing pending network fee:', dueGas.tracking_id);
     const payResult = await loop.payGas(dueGas.tracking_id);
-    console.log('Legacy pending network fee payment result:', JSON.stringify(payResult, null, 2));
+    console.log('Pending network fee payment result:', JSON.stringify(payResult, null, 2));
 }
 
 const holdings = await provider.getHolding();
@@ -75,9 +73,9 @@ if (process.env.TRANSFER_TO) {
         }, null, 2));
 
         const pendingFee = await loop.checkDueGas(error.trackingId);
-        console.log('Legacy pending network fee:', JSON.stringify(pendingFee, null, 2));
+        console.log('Pending network fee:', JSON.stringify(pendingFee, null, 2));
 
         const payResult = await loop.payGas(error.trackingId);
-        console.log('Legacy pending network fee payment result:', JSON.stringify(payResult, null, 2));
+        console.log('Pending network fee payment result:', JSON.stringify(payResult, null, 2));
     }
 }
