@@ -32,6 +32,13 @@ export class PaymentRequiredError extends Error {
     public gasAmount?: string;
     public status?: string;
     public expiresAt?: string;
+    public accountId?: string;
+    public currentBalance?: number;
+    public requiredBalance?: number;
+    public topUpRequired?: number;
+    public currentBalanceCC?: string;
+    public requiredBalanceCC?: string;
+    public topUpRequiredCC?: string;
 
     constructor(details?: {
         message?: string;
@@ -40,6 +47,13 @@ export class PaymentRequiredError extends Error {
         gas_amount?: string;
         status?: string;
         expires_at?: string;
+        account_id?: string;
+        current_balance?: number;
+        required_balance?: number;
+        top_up_required?: number;
+        current_balance_cc?: string;
+        required_balance_cc?: string;
+        top_up_required_cc?: string;
     }) {
         super(details?.message || 'Payment required');
         this.code = details?.code;
@@ -47,6 +61,13 @@ export class PaymentRequiredError extends Error {
         this.gasAmount = details?.gas_amount;
         this.status = details?.status;
         this.expiresAt = details?.expires_at;
+        this.accountId = details?.account_id;
+        this.currentBalance = details?.current_balance;
+        this.requiredBalance = details?.required_balance;
+        this.topUpRequired = details?.top_up_required;
+        this.currentBalanceCC = details?.current_balance_cc;
+        this.requiredBalanceCC = details?.required_balance_cc;
+        this.topUpRequiredCC = details?.top_up_required_cc;
     }
 }
 
