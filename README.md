@@ -1,12 +1,6 @@
 # Loop SDK
 
-Loop SDK allows dApps connect to a [Loop](https://cantonloop.com) account. The Loop wallet can be on mobile or on a desktop browser. All the interaction will happen inside the dApp. For signing, user will be prompted to sign either on their Loop wallet on mobile devices or on browser.
-
-## Limitation
-
-Currently, we only support DAML transaction from the Splice build-in DAR files and Utility app DAR files.
-
-There is no plan to upload and support third party DAR at this moment
+Loop SDK allows dApps connect to a [Loop](https://cantonloop.com) account. The Loop wallet can be on mobile or on a desktop browser. All the interaction will happen inside the dApp. For signing, user will be prompted to sign either on their Loop wallet on mobile devices or on browser. If you need a custom DAR, [read this guide](https://cantonloop.notion.site/loop-sdk-integration-guide) for integration steps. 
 
 ## Quick overview
 
