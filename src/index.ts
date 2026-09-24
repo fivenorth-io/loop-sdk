@@ -41,6 +41,7 @@ class LoopSDK {
 		appName,
 		network,
 		walletUrl,
+		secondaryWalletUrl,
 		apiUrl,
 		onAccept,
 		onReject,
@@ -50,6 +51,7 @@ class LoopSDK {
 		appName: string;
 		network?: Network;
 		walletUrl?: string;
+		secondaryWalletUrl?: string;
 		apiUrl?: string;
 		onAccept?: (provider: Provider) => void;
 		onReject?: () => void;
@@ -86,7 +88,7 @@ class LoopSDK {
 		this.requestSigningMode = resolvedOptions.requestSigningMode;
 		this.redirectUrl = resolvedOptions.redirectUrl;
 
-		this.connection = new Connection({ network, walletUrl, apiUrl });
+		this.connection = new Connection({ network, walletUrl, secondaryWalletUrl, apiUrl });
 	}
 
 	// attempt to load a session from storage if it exists, parse it and validate it
@@ -215,7 +217,7 @@ class LoopSDK {
 				);
 			}
 
-			this.showQrCode(this.buildConnectUrl(this.session!.ticketId!));
+			this.showQrCode(this.buildConnectUrls(this.session!.ticketId!));
 		} catch (error) {
 			console.error(error);
 			throw error;
@@ -292,15 +294,15 @@ class LoopSDK {
 		}
 	}
 
-	public getConnectUrl(): string {
+	public getConnectUrl(): string[] {
 		if (!this.session?.ticketId) {
 			throw new Error("No ticket ID found. Please call connect() first.");
 		}
-		return this.buildConnectUrl(this.session!.ticketId!);
+		return this.buildConnectUrls(this.session!.ticketId!);
 	}
 
-	private buildConnectUrl(ticketId: string): string {
-		const url = new URL("/.connect/", this.connection!.walletUrl);
+	private buildConnectUrl(ticketId: string, baseUrl: string): string {
+		const url = new URL("/.connect/", baseUrl);
 		url.searchParams.set("ticketId", ticketId);
 		if (this.redirectUrl) {
 			url.searchParams.set("redirectUrl", this.redirectUrl);
@@ -308,11 +310,23 @@ class LoopSDK {
 		return url.toString();
 	}
 
-	private buildDashboardUrl() {
+	private buildConnectUrls(ticketId: string): string[] {
+		const urls = [this.buildConnectUrl(ticketId, this.connection!.walletUrl)];
+		if (this.connection?.secondaryWalletUrl) {
+			urls.push(this.buildConnectUrl(ticketId, this.connection.secondaryWalletUrl));
+		}
+		return urls;
+	}
+
+	private buildDashboardUrls(): string[] {
 		if (!this.connection) {
 			throw new Error("Connection not initialized");
 		}
-		return this.connection.walletUrl;
+		const urls = [this.connection.walletUrl];
+		if (this.connection.secondaryWalletUrl) {
+			urls.push(this.connection.secondaryWalletUrl);
+		}
+		return urls;
 	}
 
 	private openRequestUi(): Window | null {
@@ -326,17 +340,19 @@ class LoopSDK {
 			return null;
 		}
 
-		const dashboardUrl = this.buildDashboardUrl();
 		const targetMode = this.requestSigningMode === "tab" ? "tab" : "popup";
-		const opened = this.openWallet(dashboardUrl, targetMode);
-		if (opened) {
-			this.popupWindow = opened;
-			return opened;
+		let first: Window | null = null;
+		for (const [i, url] of this.buildDashboardUrls().entries()) {
+			const opened = this.openWallet(url, targetMode, `loop_wallet_${i}`);
+			if (opened && !first) {
+				first = opened;
+				this.popupWindow = opened;
+			}
 		}
-		return null;
+		return first;
 	}
 
-	private openWallet(url: string, mode?: "popup" | "tab"): Window | null {
+	private openWallet(url: string, mode?: "popup" | "tab", windowName?: string): Window | null {
 		if (typeof window === "undefined") {
 			return null;
 		}
@@ -348,7 +364,7 @@ class LoopSDK {
 			const height = 720;
 
 			const left = (window.innerWidth - width) / 2 + window.screenX;
-			const top = (window.innerWidth - height) / 2 + window.screenY;
+			const top = (window.innerHeight - height) / 2 + window.screenY;
 
 			const features =
 				`width=${width},height=${height},` +
@@ -356,7 +372,7 @@ class LoopSDK {
 				"menubar=no,toolbar=no,location=no," +
 				"resizable=yes,scrollbars=yes,status=no";
 
-			const popup = window.open(url, "loop-wallet", features);
+			const popup = window.open(url, windowName ?? "loop-wallet", features);
 
 			if (!popup) {
 				return window.open(url, "_blank", "noopener,noreferrer");
@@ -512,88 +528,108 @@ class LoopSDK {
 		document.head.appendChild(style);
 	}
 
-	private showQrCode(url: string) {
+	private showQrCode(urls: string[]) {
 		this.injectModalStyles();
 
-		QRCode.toDataURL(url, { margin: 0 }, (err, dataUrl) => {
-			if (err) {
-				console.error("Failed to generate QR code", err);
-				return;
-			}
-
-			const overlay = document.createElement("div");
-			overlay.id = "loop-sdk-connect-overlay";
-			overlay.className = "loop-sdk-connect-overlay loop-connect";
-
-			const dialog = document.createElement("dialog");
-			dialog.open = true;
-
-			const bgLogo = document.createElementNS(
-				"http://www.w3.org/2000/svg",
-				"svg",
-			);
-			bgLogo.setAttribute("class", "bg-logo");
-			bgLogo.setAttribute("viewBox", "0 0 124.05 305.64");
-			const path = document.createElementNS(
-				"http://www.w3.org/2000/svg",
-				"path",
-			);
-			path.setAttribute(
-				"d",
-				"M24.58,99.47L124.05,0v224.42L24.58,124.95c-7.04-7.04-7.04-18.45,0-25.49Z",
-			);
-			path.setAttribute("fill", "currentColor");
-			const rect = document.createElementNS(
-				"http://www.w3.org/2000/svg",
-				"rect",
-			);
-			rect.setAttribute("x", "12.89");
-			rect.setAttribute("y", "194.48");
-			rect.setAttribute("width", "98.27");
-			rect.setAttribute("height", "98.27");
-			rect.setAttribute("rx", "18.02");
-			rect.setAttribute("ry", "18.02");
-			rect.setAttribute("transform", "translate(-154.1 115.21) rotate(-45)");
-			rect.setAttribute("fill", "currentColor");
-			bgLogo.appendChild(path);
-			bgLogo.appendChild(rect);
-
-			const title = document.createElement("h3");
-			title.textContent = "Scan with Phone";
-
-			const figure = document.createElement("figure");
-			const img = document.createElement("img");
-			img.src = dataUrl;
-			img.alt = "QR Code";
-			figure.appendChild(img);
-
-			const divider = document.createElement("div");
-			divider.className = "divider";
-			divider.textContent = "OR";
-
-			const button = document.createElement("button");
-			button.type = "button";
-			button.textContent = "Continue in Browser";
-			button.addEventListener("click", () => {
-				this.openWallet(url);
+		const toDataUrl = (url: string) =>
+			new Promise<string>((resolve, reject) => {
+				QRCode.toDataURL(url, { margin: 0 }, (err, dataUrl) => {
+					if (err) reject(err);
+					else resolve(dataUrl);
+				});
 			});
 
-			dialog.appendChild(bgLogo);
-			dialog.appendChild(title);
-			dialog.appendChild(figure);
-			dialog.appendChild(divider);
-			dialog.appendChild(button);
-			overlay.appendChild(dialog);
+		Promise.all(urls.map(toDataUrl))
+			.then((dataUrls) => {
+				const overlay = document.createElement("div");
+				overlay.id = "loop-sdk-connect-overlay";
+				overlay.className = "loop-sdk-connect-overlay loop-connect";
 
-			overlay.addEventListener("click", (e) => {
-				if (e.target === overlay) {
-					this.hideQrCode();
+				const dialog = document.createElement("dialog");
+				dialog.open = true;
+
+				const bgLogo = document.createElementNS(
+					"http://www.w3.org/2000/svg",
+					"svg",
+				);
+				bgLogo.setAttribute("class", "bg-logo");
+				bgLogo.setAttribute("viewBox", "0 0 124.05 305.64");
+				const path = document.createElementNS(
+					"http://www.w3.org/2000/svg",
+					"path",
+				);
+				path.setAttribute(
+					"d",
+					"M24.58,99.47L124.05,0v224.42L24.58,124.95c-7.04-7.04-7.04-18.45,0-25.49Z",
+				);
+				path.setAttribute("fill", "currentColor");
+				const rect = document.createElementNS(
+					"http://www.w3.org/2000/svg",
+					"rect",
+				);
+				rect.setAttribute("x", "12.89");
+				rect.setAttribute("y", "194.48");
+				rect.setAttribute("width", "98.27");
+				rect.setAttribute("height", "98.27");
+				rect.setAttribute("rx", "18.02");
+				rect.setAttribute("ry", "18.02");
+				rect.setAttribute("transform", "translate(-154.1 115.21) rotate(-45)");
+				rect.setAttribute("fill", "currentColor");
+				bgLogo.appendChild(path);
+				bgLogo.appendChild(rect);
+
+				const title = document.createElement("h3");
+				title.textContent = "Scan with Phone";
+
+				const figure = document.createElement("figure");
+				const img = document.createElement("img");
+				img.src = dataUrls[0]!;
+				img.alt = "QR Code";
+				figure.appendChild(img);
+
+				const divider = document.createElement("div");
+				divider.className = "divider";
+				divider.textContent = "OR";
+
+				dialog.appendChild(bgLogo);
+				dialog.appendChild(title);
+				dialog.appendChild(figure);
+				dialog.appendChild(divider);
+
+				const buttonHeight = 54.5;
+				const buttonGap = 8;
+				const firstButtonTop = 447.5;
+
+				if (urls.length > 1) {
+					const extraHeight = (buttonHeight + buttonGap) * (urls.length - 1);
+					dialog.style.height = `${534 + extraHeight}px`;
 				}
-			});
 
-			document.body.appendChild(overlay);
-			this.overlay = overlay;
-		});
+				urls.forEach((url, i) => {
+					const button = document.createElement("button");
+					button.type = "button";
+					button.textContent = urls.length > 1
+						? `Continue in Browser — ${new URL(url).hostname}`
+						: "Continue in Browser";
+					button.style.top = `${firstButtonTop + i * (buttonHeight + buttonGap)}px`;
+					button.addEventListener("click", () => this.openWallet(url));
+					dialog.appendChild(button);
+				});
+
+				overlay.appendChild(dialog);
+
+				overlay.addEventListener("click", (e) => {
+					if (e.target === overlay) {
+						this.hideQrCode();
+					}
+				});
+
+				document.body.appendChild(overlay);
+				this.overlay = overlay;
+			})
+			.catch((err) => {
+				console.error("Failed to generate QR code", err);
+			});
 	}
 
 	private hideQrCode() {
