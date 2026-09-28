@@ -300,7 +300,17 @@ class LoopSDK {
 		}
 	}
 
-	public getConnectUrl(): string[] {
+	public getConnectUrl(isOldDomain?: boolean): string {
+		if (!this.session?.ticketId) {
+			throw new Error("No ticket ID found. Please call connect() first.");
+		}
+		const baseUrl = isOldDomain && this.connection?.secondaryWalletUrl
+			? this.connection.secondaryWalletUrl
+			: this.connection!.walletUrl;
+		return this.buildConnectUrl(this.session!.ticketId!, baseUrl);
+	}
+
+	public getConnectUrls(): string[] {
 		if (!this.session?.ticketId) {
 			throw new Error("No ticket ID found. Please call connect() first.");
 		}
