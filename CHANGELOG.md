@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.0 (2026-09-28)
+Full Changelog: [v0.14.0...v0.15.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.14.0...v0.15.0)
+
+### What Changed
+
+- **connect:** default wallet URLs updated to `wallet.looptech.io` (mainnet), `wallet.testnet.looptech.io` (testnet), and `wallet.devnet.looptech.io` (devnet). The previous `cantonloop.com` domains are kept as an automatic fallback via the new `secondaryWalletUrl`.
+- **connect:** `init(...)` accepts an optional `secondaryWalletUrl` to override the fallback wallet URL.
+- **connect:** `getConnectUrl(isOldDomain?: boolean)` still returns a single URL; pass `true` to get the fallback wallet URL. New `getConnectUrls()` returns both primary and (if configured) fallback URLs.
+- **connect:** the QR modal now shows the target hostname beneath the QR code, and — when a fallback is configured — a "Using the old wallet?" link that toggles between the primary and fallback QR/popup.
+- **connect:** the SDK remembers which wallet host completed the handshake and reuses it for subsequent signing popups, so users who connected via the fallback host aren't sent to the primary host on later requests.
+
 ## 0.14.0 (2026-08-18)
 Full Changelog: [v0.13.4...v0.14.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.13.4...v0.14.0)
 

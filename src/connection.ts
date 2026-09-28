@@ -22,6 +22,7 @@ import { generateRequestId } from './provider';
 
 export class Connection {
     public walletUrl: string = 'https://cantonloop.com';
+    public secondaryWalletUrl: string | null = null;
     public apiUrl: string = 'https://cantonloop.com';
     public ws: WebSocket | null = null;
     private network: Network = 'main';
@@ -31,28 +32,32 @@ export class Connection {
     private reconnectPromise: Promise<void> | null = null;
     private status: 'connected' | 'disconnected' | 'connecting' = 'disconnected';
 
-    constructor({ network, walletUrl, apiUrl }: { network?: Network, walletUrl?: string, apiUrl?: string }) {
+    constructor({ network, walletUrl, secondaryWalletUrl, apiUrl }: { network?: Network, walletUrl?: string, secondaryWalletUrl?: string, apiUrl?: string }) {
         this.network = network || 'main';
-        
+
         // Set default common value based on network
         switch (this.network) {
             case 'local':
-                this.walletUrl = 'http://localhost:3000';
+                this.walletUrl = 'http://localhost:3001';
+                this.secondaryWalletUrl = 'http://localhost:3000';
                 this.apiUrl = 'http://localhost:8080';
                 break;
             case 'devnet':
             case 'dev':
-                this.walletUrl = 'https://devnet.cantonloop.com';
+                this.walletUrl = 'https://wallet.devnet.looptech.io';
+                this.secondaryWalletUrl = 'https://devnet.cantonloop.com';
                 this.apiUrl = 'https://devnet.cantonloop.com';
                 break;
             case 'testnet':
             case 'test':
-                this.walletUrl = 'https://testnet.cantonloop.com';
+                this.walletUrl = 'https://wallet.testnet.looptech.io';
+                this.secondaryWalletUrl = 'https://testnet.cantonloop.com';
                 this.apiUrl = 'https://testnet.cantonloop.com';
                 break;
             case 'mainnet':
             case 'main':
-                this.walletUrl = 'https://cantonloop.com';
+                this.walletUrl = 'https://wallet.looptech.io';
+                this.secondaryWalletUrl = 'https://cantonloop.com';
                 this.apiUrl = 'https://cantonloop.com';
                 break;
         }
@@ -60,6 +65,9 @@ export class Connection {
         // More useful when developing locally
         if (walletUrl) {
             this.walletUrl = walletUrl;
+        }
+        if (secondaryWalletUrl) {
+            this.secondaryWalletUrl = secondaryWalletUrl;
         }
         if (apiUrl) {
             this.apiUrl = apiUrl;
@@ -249,7 +257,7 @@ export class Connection {
         this.status = 'connecting';
         this.attachWebSocket(ticketId, ticketAuthToken, onMessage);
     }
-   
+
     reconnect(): Promise<void> {
         if (!this.ticketId || !this.ticketAuthToken || !this.onMessageHandler) {
             return Promise.reject(new Error('Cannot reconnect without a known ticket.'));
@@ -282,7 +290,7 @@ export class Connection {
     }
 
     // exchangeApiKey is used to exchange the API key for the public key and signature to use in a server session
-    async exchangeApiKey({publicKey, signature, epoch}: {publicKey: string, signature: string, epoch: number}): Promise<ExchangeApiKeyResponse> {
+    async exchangeApiKey({ publicKey, signature, epoch }: { publicKey: string, signature: string, epoch: number }): Promise<ExchangeApiKeyResponse> {
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/apikey`, {
             method: 'POST',
             headers: {
@@ -343,6 +351,7 @@ export class Connection {
             throw new PaymentRequiredError(await this.parseErrorResponse(response));
         }
         if (!response.ok) {
+
             const details = await this.parseErrorResponse(response);
             throw new Error(this.errorMessage(details, `Failed to prepare transaction with status ${response.status}.`));
         }

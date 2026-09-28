@@ -16,7 +16,7 @@ import { MessageType } from "./types";
 import { LoopWallet } from "./wallet";
 
 class LoopSDK {
-	private version: string = "0.14.0";
+	private version: string = "0.15.0";
 
 	private appName: string = "Unknown";
 	private connection: Connection | null = null;
@@ -29,7 +29,7 @@ class LoopSDK {
 
 	private onAccept: ((provider: Provider) => void) | null = null;
 	private onReject: (() => void) | null = null;
-  	private onTransactionUpdate: ((payload: RunTransactionResponse, message: any) => void) | null = null;
+	private onTransactionUpdate: ((payload: RunTransactionResponse, message: any) => void) | null = null;
 	private overlay: HTMLDivElement | null = null;
 	public wallet: Wallet;
 
@@ -41,6 +41,7 @@ class LoopSDK {
 		appName,
 		network,
 		walletUrl,
+		secondaryWalletUrl,
 		apiUrl,
 		onAccept,
 		onReject,
@@ -50,6 +51,7 @@ class LoopSDK {
 		appName: string;
 		network?: Network;
 		walletUrl?: string;
+		secondaryWalletUrl?: string;
 		apiUrl?: string;
 		onAccept?: (provider: Provider) => void;
 		onReject?: () => void;
@@ -86,7 +88,7 @@ class LoopSDK {
 		this.requestSigningMode = resolvedOptions.requestSigningMode;
 		this.redirectUrl = resolvedOptions.redirectUrl;
 
-		this.connection = new Connection({ network, walletUrl, apiUrl });
+		this.connection = new Connection({ network, walletUrl, secondaryWalletUrl, apiUrl });
 	}
 
 	// attempt to load a session from storage if it exists, parse it and validate it
@@ -215,7 +217,7 @@ class LoopSDK {
 				);
 			}
 
-			this.showQrCode(this.buildConnectUrl(this.session!.ticketId!));
+			this.showQrCode(this.buildConnectUrls(this.session!.ticketId!));
 		} catch (error) {
 			console.error(error);
 			throw error;
@@ -238,7 +240,8 @@ class LoopSDK {
 		console.log("[LoopSDK] WS message received:", message);
 		if (message.type === MessageType.HANDSHAKE_ACCEPT) {
 			console.log("[LoopSDK] Entering HANDSHAKE_ACCEPT flow");
-			const { partyId, publicKey, email } = message.payload || {};
+			const { partyId, publicKey, email, isFromOldDomain } = message.payload || {};
+
 			const authToken = this.session?.ticketAuthToken;
 			if (authToken && partyId && publicKey) {
 				this.provider = new Provider({
@@ -256,6 +259,11 @@ class LoopSDK {
 					this.session!.partyId = partyId;
 					this.session!.publicKey = publicKey;
 					this.session!.email = email;
+					if (isFromOldDomain && this.connection?.secondaryWalletUrl) {
+						this.session!.walletUrl = this.connection.secondaryWalletUrl;
+					} else {
+						this.session!.walletUrl = this.connection!.walletUrl;
+					}
 					this.session!.authorized();
 					this.session!.save();
 
@@ -292,15 +300,25 @@ class LoopSDK {
 		}
 	}
 
-	public getConnectUrl(): string {
+	public getConnectUrl(isOldDomain?: boolean): string {
 		if (!this.session?.ticketId) {
 			throw new Error("No ticket ID found. Please call connect() first.");
 		}
-		return this.buildConnectUrl(this.session!.ticketId!);
+		const baseUrl = isOldDomain && this.connection?.secondaryWalletUrl
+			? this.connection.secondaryWalletUrl
+			: this.connection!.walletUrl;
+		return this.buildConnectUrl(this.session!.ticketId!, baseUrl);
 	}
 
-	private buildConnectUrl(ticketId: string): string {
-		const url = new URL("/.connect/", this.connection!.walletUrl);
+	public getConnectUrls(): string[] {
+		if (!this.session?.ticketId) {
+			throw new Error("No ticket ID found. Please call connect() first.");
+		}
+		return this.buildConnectUrls(this.session!.ticketId!);
+	}
+
+	private buildConnectUrl(ticketId: string, baseUrl: string): string {
+		const url = new URL("/.connect/", baseUrl);
 		url.searchParams.set("ticketId", ticketId);
 		if (this.redirectUrl) {
 			url.searchParams.set("redirectUrl", this.redirectUrl);
@@ -308,11 +326,24 @@ class LoopSDK {
 		return url.toString();
 	}
 
-	private buildDashboardUrl() {
-		if (!this.connection) {
-			throw new Error("Connection not initialized");
+	private buildConnectUrls(ticketId: string): string[] {
+		const urls = [this.buildConnectUrl(ticketId, this.connection!.walletUrl)];
+		if (this.connection?.secondaryWalletUrl) {
+			urls.push(this.buildConnectUrl(ticketId, this.connection.secondaryWalletUrl));
 		}
-		return this.connection.walletUrl;
+		return urls;
+	}
+
+	private resolveWalletUrl(): string {
+		const stored = this.session?.walletUrl;
+		const configured = [
+			this.connection!.walletUrl,
+			this.connection!.secondaryWalletUrl,
+		].filter((u): u is string => !!u);
+		if (stored && configured.includes(stored)) {
+			return stored;
+		}
+		return this.connection!.walletUrl;
 	}
 
 	private openRequestUi(): Window | null {
@@ -326,9 +357,8 @@ class LoopSDK {
 			return null;
 		}
 
-		const dashboardUrl = this.buildDashboardUrl();
 		const targetMode = this.requestSigningMode === "tab" ? "tab" : "popup";
-		const opened = this.openWallet(dashboardUrl, targetMode);
+		const opened = this.openWallet(this.resolveWalletUrl(), targetMode);
 		if (opened) {
 			this.popupWindow = opened;
 			return opened;
@@ -348,7 +378,7 @@ class LoopSDK {
 			const height = 720;
 
 			const left = (window.innerWidth - width) / 2 + window.screenX;
-			const top = (window.innerWidth - height) / 2 + window.screenY;
+			const top = (window.innerHeight - height) / 2 + window.screenY;
 
 			const features =
 				`width=${width},height=${height},` +
@@ -401,7 +431,7 @@ class LoopSDK {
 				border-radius: 40px;
 				border: none;
 				width: 340px;
-				height: 534px;
+				height: 580px;
 				box-sizing: border-box;
 				padding: 32px;
 				display: flex;
@@ -454,6 +484,17 @@ class LoopSDK {
 				object-fit: contain;
 				border-radius: 12px;
 			}
+			.loop-connect .host-label {
+				position: absolute;
+				top: 375px;
+				left: 32px;
+				right: 32px;
+				text-align: center;
+				font-size: 12px;
+				font-weight: 500;
+				color: #94a3b8;
+				letter-spacing: 0.02em;
+			}
 			.loop-connect .divider {
 				position: absolute;
 				top: 399px;
@@ -504,6 +545,28 @@ class LoopSDK {
 			.loop-connect button:hover {
 				background: #f6ffb4;
 			}
+			.loop-connect .switch-link {
+				position: absolute;
+				top: 508px;
+				left: 32px;
+				right: 32px;
+				height: 20px;
+				width: auto;
+				background: transparent;
+				border: none;
+				color: #94a3b8;
+				font-size: 12px;
+				font-weight: 500;
+				text-decoration: underline;
+				text-underline-offset: 2px;
+				cursor: pointer;
+				padding: 0;
+				box-shadow: none;
+			}
+			.loop-connect .switch-link:hover {
+				background: transparent;
+				color: #cbd5e1;
+			}
 			@keyframes fadeIn {
 				from { opacity: 0; }
 				to { opacity: 1; }
@@ -512,88 +575,149 @@ class LoopSDK {
 		document.head.appendChild(style);
 	}
 
-	private showQrCode(url: string) {
+	private showQrCode(urls: string[]) {
 		this.injectModalStyles();
 
-		QRCode.toDataURL(url, { margin: 0 }, (err, dataUrl) => {
-			if (err) {
-				console.error("Failed to generate QR code", err);
-				return;
-			}
-
-			const overlay = document.createElement("div");
-			overlay.id = "loop-sdk-connect-overlay";
-			overlay.className = "loop-sdk-connect-overlay loop-connect";
-
-			const dialog = document.createElement("dialog");
-			dialog.open = true;
-
-			const bgLogo = document.createElementNS(
-				"http://www.w3.org/2000/svg",
-				"svg",
-			);
-			bgLogo.setAttribute("class", "bg-logo");
-			bgLogo.setAttribute("viewBox", "0 0 124.05 305.64");
-			const path = document.createElementNS(
-				"http://www.w3.org/2000/svg",
-				"path",
-			);
-			path.setAttribute(
-				"d",
-				"M24.58,99.47L124.05,0v224.42L24.58,124.95c-7.04-7.04-7.04-18.45,0-25.49Z",
-			);
-			path.setAttribute("fill", "currentColor");
-			const rect = document.createElementNS(
-				"http://www.w3.org/2000/svg",
-				"rect",
-			);
-			rect.setAttribute("x", "12.89");
-			rect.setAttribute("y", "194.48");
-			rect.setAttribute("width", "98.27");
-			rect.setAttribute("height", "98.27");
-			rect.setAttribute("rx", "18.02");
-			rect.setAttribute("ry", "18.02");
-			rect.setAttribute("transform", "translate(-154.1 115.21) rotate(-45)");
-			rect.setAttribute("fill", "currentColor");
-			bgLogo.appendChild(path);
-			bgLogo.appendChild(rect);
-
-			const title = document.createElement("h3");
-			title.textContent = "Scan with Phone";
-
-			const figure = document.createElement("figure");
-			const img = document.createElement("img");
-			img.src = dataUrl;
-			img.alt = "QR Code";
-			figure.appendChild(img);
-
-			const divider = document.createElement("div");
-			divider.className = "divider";
-			divider.textContent = "OR";
-
-			const button = document.createElement("button");
-			button.type = "button";
-			button.textContent = "Continue in Browser";
-			button.addEventListener("click", () => {
-				this.openWallet(url);
+		const toDataUrl = (url: string) =>
+			new Promise<string>((resolve, reject) => {
+				QRCode.toDataURL(url, { margin: 0 }, (err, dataUrl) => {
+					if (err) reject(err);
+					else resolve(dataUrl);
+				});
 			});
 
-			dialog.appendChild(bgLogo);
-			dialog.appendChild(title);
-			dialog.appendChild(figure);
-			dialog.appendChild(divider);
-			dialog.appendChild(button);
-			overlay.appendChild(dialog);
+		const [primaryUrl, fallbackUrl] = urls;
+		if (!primaryUrl) {
+			console.error("showQrCode called with no URLs");
+			return;
+		}
 
-			overlay.addEventListener("click", (e) => {
-				if (e.target === overlay) {
-					this.hideQrCode();
+		Promise.allSettled(urls.map(toDataUrl))
+			.then((results) => {
+				const primaryQr =
+					results[0]?.status === "fulfilled" ? results[0].value : null;
+				const fallbackQr =
+					results[1]?.status === "fulfilled" ? results[1].value : null;
+				results.forEach((r, i) => {
+					if (r.status === "rejected") {
+						console.error(`Failed to generate QR code for ${urls[i]}`, r.reason);
+					}
+				});
+
+				const overlay = document.createElement("div");
+				overlay.id = "loop-sdk-connect-overlay";
+				overlay.className = "loop-sdk-connect-overlay loop-connect";
+
+				const dialog = document.createElement("dialog");
+				dialog.open = true;
+
+				const bgLogo = document.createElementNS(
+					"http://www.w3.org/2000/svg",
+					"svg",
+				);
+				bgLogo.setAttribute("class", "bg-logo");
+				bgLogo.setAttribute("viewBox", "0 0 124.05 305.64");
+				const path = document.createElementNS(
+					"http://www.w3.org/2000/svg",
+					"path",
+				);
+				path.setAttribute(
+					"d",
+					"M24.58,99.47L124.05,0v224.42L24.58,124.95c-7.04-7.04-7.04-18.45,0-25.49Z",
+				);
+				path.setAttribute("fill", "currentColor");
+				const rect = document.createElementNS(
+					"http://www.w3.org/2000/svg",
+					"rect",
+				);
+				rect.setAttribute("x", "12.89");
+				rect.setAttribute("y", "194.48");
+				rect.setAttribute("width", "98.27");
+				rect.setAttribute("height", "98.27");
+				rect.setAttribute("rx", "18.02");
+				rect.setAttribute("ry", "18.02");
+				rect.setAttribute("transform", "translate(-154.1 115.21) rotate(-45)");
+				rect.setAttribute("fill", "currentColor");
+				bgLogo.appendChild(path);
+				bgLogo.appendChild(rect);
+
+				const title = document.createElement("h3");
+				title.textContent = "Scan with Phone";
+
+				const figure = document.createElement("figure");
+				const img = document.createElement("img");
+				img.alt = "QR Code";
+				figure.appendChild(img);
+
+				const hostLabel = document.createElement("div");
+				hostLabel.className = "host-label";
+
+				const divider = document.createElement("div");
+				divider.className = "divider";
+				divider.textContent = "OR";
+
+				const button = document.createElement("button");
+				button.type = "button";
+				button.textContent = "Continue in Browser";
+
+				dialog.appendChild(bgLogo);
+				dialog.appendChild(title);
+				dialog.appendChild(figure);
+				dialog.appendChild(hostLabel);
+				dialog.appendChild(divider);
+				dialog.appendChild(button);
+
+				let showingFallback = false;
+				const setQr = (qr: string | null) => {
+					if (qr) {
+						img.src = qr;
+						figure.style.display = "";
+					} else {
+						img.removeAttribute("src");
+						figure.style.display = "none";
+					}
+				};
+				const showPrimary = () => {
+					setQr(primaryQr);
+					hostLabel.textContent = new URL(primaryUrl).hostname;
+					button.onclick = () => this.openWallet(primaryUrl);
+				};
+				const showFallback = () => {
+					setQr(fallbackQr);
+					hostLabel.textContent = new URL(fallbackUrl!).hostname;
+					button.onclick = () => this.openWallet(fallbackUrl!);
+				};
+				showPrimary();
+
+				if (fallbackUrl) {
+					const switchLink = document.createElement("button");
+					switchLink.type = "button";
+					switchLink.className = "switch-link";
+					switchLink.textContent = "Using the old wallet?";
+					switchLink.addEventListener("click", () => {
+						showingFallback = !showingFallback;
+						if (showingFallback) {
+							showFallback();
+							switchLink.textContent = "Back to new wallet";
+						} else {
+							showPrimary();
+							switchLink.textContent = "Using the old wallet?";
+						}
+					});
+					dialog.appendChild(switchLink);
 				}
-			});
 
-			document.body.appendChild(overlay);
-			this.overlay = overlay;
-		});
+				overlay.appendChild(dialog);
+
+				overlay.addEventListener("click", (e) => {
+					if (e.target === overlay) {
+						this.hideQrCode();
+					}
+				});
+
+				document.body.appendChild(overlay);
+				this.overlay = overlay;
+			});
 	}
 
 	private hideQrCode() {

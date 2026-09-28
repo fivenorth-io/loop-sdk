@@ -22,9 +22,10 @@ export class SessionInfo  {
   public publicKey?: string;
   public email?: string;
   public userApiKey?: string;
+  public walletUrl?: string;
   private _isAuthorized: boolean = false;
 
-  constructor({ sessionId, ticketId, ticketAuthToken, authToken, partyId, publicKey, email, userApiKey }: {  sessionId?: string, ticketId?: string, ticketAuthToken?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string, userApiKey?: string }) {
+  constructor({ sessionId, ticketId, ticketAuthToken, authToken, partyId, publicKey, email, userApiKey, walletUrl }: {  sessionId?: string, ticketId?: string, ticketAuthToken?: string, authToken?: string, partyId?: string, publicKey?: string, email?: string, userApiKey?: string, walletUrl?: string }) {
     this.sessionId = sessionId;
     this.ticketId = ticketId;
     this.ticketAuthToken = ticketAuthToken;
@@ -33,6 +34,7 @@ export class SessionInfo  {
     this.publicKey = publicKey;
     this.email = email;
     this.userApiKey = userApiKey;
+    this.walletUrl = walletUrl;
   }
 
   // set the ticket id when we exchange session id/appname, and user approve it and now we have a ticket id
@@ -84,6 +86,7 @@ export class SessionInfo  {
     this.partyId = undefined;
     this.publicKey = undefined;
     this.email = undefined;
+    this.walletUrl = undefined;
   }
 
   static fromStorage(): SessionInfo {
@@ -116,6 +119,7 @@ export class SessionInfo  {
       partyId: this.partyId,
       publicKey: this.publicKey,
       email: this.email,
+      walletUrl: this.walletUrl,
     });
   }
 }
