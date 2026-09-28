@@ -34,7 +34,7 @@ export class Connection {
 
     constructor({ network, walletUrl, secondaryWalletUrl, apiUrl }: { network?: Network, walletUrl?: string, secondaryWalletUrl?: string, apiUrl?: string }) {
         this.network = network || 'main';
-        
+
         // Set default common value based on network
         switch (this.network) {
             case 'local':
@@ -160,7 +160,6 @@ export class Connection {
         if (params.instrument) {
             if (params.instrument.instrument_admin) {
                 payload.instrument_admin = params.instrument.instrument_admin;
-                
             }
             if (params.instrument.instrument_id) {
                 payload.instrument_id = params.instrument.instrument_id;
@@ -258,7 +257,7 @@ export class Connection {
         this.status = 'connecting';
         this.attachWebSocket(ticketId, ticketAuthToken, onMessage);
     }
-   
+
     reconnect(): Promise<void> {
         if (!this.ticketId || !this.ticketAuthToken || !this.onMessageHandler) {
             return Promise.reject(new Error('Cannot reconnect without a known ticket.'));
@@ -291,7 +290,7 @@ export class Connection {
     }
 
     // exchangeApiKey is used to exchange the API key for the public key and signature to use in a server session
-    async exchangeApiKey({publicKey, signature, epoch}: {publicKey: string, signature: string, epoch: number}): Promise<ExchangeApiKeyResponse> {
+    async exchangeApiKey({ publicKey, signature, epoch }: { publicKey: string, signature: string, epoch: number }): Promise<ExchangeApiKeyResponse> {
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/apikey`, {
             method: 'POST',
             headers: {
