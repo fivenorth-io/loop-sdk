@@ -240,7 +240,8 @@ class LoopSDK {
 		console.log("[LoopSDK] WS message received:", message);
 		if (message.type === MessageType.HANDSHAKE_ACCEPT) {
 			console.log("[LoopSDK] Entering HANDSHAKE_ACCEPT flow");
-			const { partyId, publicKey, email } = message.payload || {};
+			const { partyId, publicKey, email, isFromOldDomain } = message.payload || {};
+
 			const authToken = this.session?.ticketAuthToken;
 			if (authToken && partyId && publicKey) {
 				this.provider = new Provider({
@@ -258,6 +259,11 @@ class LoopSDK {
 					this.session!.partyId = partyId;
 					this.session!.publicKey = publicKey;
 					this.session!.email = email;
+					if (isFromOldDomain && this.connection?.secondaryWalletUrl) {
+						this.session!.walletUrl = this.connection.secondaryWalletUrl;
+					} else {
+						this.session!.walletUrl = this.connection!.walletUrl;
+					}
 					this.session!.authorized();
 					this.session!.save();
 
@@ -318,6 +324,18 @@ class LoopSDK {
 		return urls;
 	}
 
+	private resolveWalletUrl(): string {
+		const stored = this.session?.walletUrl;
+		const configured = [
+			this.connection!.walletUrl,
+			this.connection!.secondaryWalletUrl,
+		].filter((u): u is string => !!u);
+		if (stored && configured.includes(stored)) {
+			return stored;
+		}
+		return this.connection!.walletUrl;
+	}
+
 	private openRequestUi(): Window | null {
 		if (typeof window === "undefined") {
 			return null;
@@ -330,7 +348,7 @@ class LoopSDK {
 		}
 
 		const targetMode = this.requestSigningMode === "tab" ? "tab" : "popup";
-		const opened = this.openWallet(this.connection!.walletUrl, targetMode);
+		const opened = this.openWallet(this.resolveWalletUrl(), targetMode);
 		if (opened) {
 			this.popupWindow = opened;
 			return opened;
