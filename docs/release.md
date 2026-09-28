@@ -7,6 +7,13 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.15.0
+- Connect: default wallet URLs updated to `wallet.looptech.io` (mainnet), `wallet.testnet.looptech.io` (testnet), and `wallet.devnet.looptech.io` (devnet). The previous `cantonloop.com` domains are kept as an automatic fallback via the new `secondaryWalletUrl`.
+- Connect: `init(...)` accepts an optional `secondaryWalletUrl` to override the fallback wallet URL.
+- Connect: `getConnectUrl(isOldDomain?: boolean)` returns a single URL (pass `true` for the fallback). New `getConnectUrls()` returns both primary and fallback URLs.
+- Connect: the QR modal now shows the target hostname beneath the QR code, and — when a fallback is configured — a "Using the old wallet?" link that toggles between the primary and fallback QR/popup.
+- Connect: the SDK remembers which wallet host completed the handshake and reuses it for subsequent signing popups, so users who connected via the fallback host aren't sent to the primary host on later requests.
+
 ## v0.14.0
 - Server SDK: add Fee Balance helpers for server integrations: `prepareSubmission(...)`, `executeSubmission(...)`, `getFeeBalance(...)`, `topUpFeeBalance(...)`, and `ensureFeeBalance(...)`.
 - Server SDK: return Fee Balance estimate fields from `prepareSubmission(...)` so server integrations can check/top up Fee Balance before signing and executing.
