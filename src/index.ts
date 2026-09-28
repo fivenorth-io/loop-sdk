@@ -581,40 +581,74 @@ class LoopSDK {
 				const title = document.createElement("h3");
 				title.textContent = "Scan with Phone";
 
-				const figure = document.createElement("figure");
-				const img = document.createElement("img");
-				img.src = dataUrls[0]!;
-				img.alt = "QR Code";
-				figure.appendChild(img);
-
-				const divider = document.createElement("div");
-				divider.className = "divider";
-				divider.textContent = "OR";
-
 				dialog.appendChild(bgLogo);
 				dialog.appendChild(title);
-				dialog.appendChild(figure);
-				dialog.appendChild(divider);
 
-				const buttonHeight = 54.5;
-				const buttonGap = 8;
-				const firstButtonTop = 447.5;
+				if (urls.length === 1) {
+					const figure = document.createElement("figure");
+					const img = document.createElement("img");
+					img.src = dataUrls[0]!;
+					img.alt = "QR Code";
+					figure.appendChild(img);
 
-				if (urls.length > 1) {
-					const extraHeight = (buttonHeight + buttonGap) * (urls.length - 1);
-					dialog.style.height = `${534 + extraHeight}px`;
-				}
+					const divider = document.createElement("div");
+					divider.className = "divider";
+					divider.textContent = "OR";
 
-				urls.forEach((url, i) => {
 					const button = document.createElement("button");
 					button.type = "button";
-					button.textContent = urls.length > 1
-						? `Continue in Browser — ${new URL(url).hostname}`
-						: "Continue in Browser";
-					button.style.top = `${firstButtonTop + i * (buttonHeight + buttonGap)}px`;
-					button.addEventListener("click", () => this.openWallet(url));
+					button.textContent = "Continue in Browser";
+					button.addEventListener("click", () => this.openWallet(urls[0]!));
+
+					dialog.appendChild(figure);
+					dialog.appendChild(divider);
 					dialog.appendChild(button);
-				});
+				} else {
+					dialog.style.cssText +=
+						"height:auto;padding-top:72px;padding-bottom:24px;gap:16px;";
+					title.style.cssText = "position:static;margin-bottom:8px;";
+
+					urls.forEach((url, i) => {
+						const group = document.createElement("div");
+						group.style.cssText =
+							"display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;";
+
+						const hostLabel = document.createElement("div");
+						hostLabel.textContent = new URL(url).hostname;
+						hostLabel.style.cssText =
+							"font-size:12px;font-weight:600;color:#94a3b8;letter-spacing:0.05em;text-transform:uppercase;";
+
+						const figure = document.createElement("figure");
+						figure.style.cssText =
+							"position:static;width:180px;height:180px;padding:12px;margin:0;background:#ffffff;border-radius:8px;display:flex;justify-content:center;align-items:center;box-sizing:border-box;";
+						const img = document.createElement("img");
+						img.src = dataUrls[i]!;
+						img.alt = "QR Code";
+						img.style.cssText = "width:100%;height:100%;object-fit:contain;";
+						figure.appendChild(img);
+
+						const button = document.createElement("button");
+						button.type = "button";
+						button.textContent = "Continue in Browser";
+						button.style.cssText =
+							"position:static;width:100%;height:44px;padding:0 24px;background:#f2ff96;border:none;border-radius:8px;color:#0f172a;font-size:14px;font-weight:600;cursor:pointer;";
+						button.addEventListener("click", () => this.openWallet(url));
+
+						group.appendChild(hostLabel);
+						group.appendChild(figure);
+						group.appendChild(button);
+						dialog.appendChild(group);
+
+						if (i < urls.length - 1) {
+							const divider = document.createElement("div");
+							divider.className = "divider";
+							divider.style.cssText =
+								"position:static;width:100%;left:auto;right:auto;top:auto;margin:16px 0;";
+							divider.textContent = "OR";
+							dialog.appendChild(divider);
+						}
+					});
+				}
 
 				overlay.appendChild(dialog);
 
