@@ -318,17 +318,6 @@ class LoopSDK {
 		return urls;
 	}
 
-	private buildDashboardUrls(): string[] {
-		if (!this.connection) {
-			throw new Error("Connection not initialized");
-		}
-		const urls = [this.connection.walletUrl];
-		if (this.connection.secondaryWalletUrl) {
-			urls.push(this.connection.secondaryWalletUrl);
-		}
-		return urls;
-	}
-
 	private openRequestUi(): Window | null {
 		if (typeof window === "undefined") {
 			return null;
@@ -341,18 +330,15 @@ class LoopSDK {
 		}
 
 		const targetMode = this.requestSigningMode === "tab" ? "tab" : "popup";
-		let first: Window | null = null;
-		for (const [i, url] of this.buildDashboardUrls().entries()) {
-			const opened = this.openWallet(url, targetMode, `loop_wallet_${i}`);
-			if (opened && !first) {
-				first = opened;
-				this.popupWindow = opened;
-			}
+		const opened = this.openWallet(this.connection!.walletUrl, targetMode);
+		if (opened) {
+			this.popupWindow = opened;
+			return opened;
 		}
-		return first;
+		return null;
 	}
 
-	private openWallet(url: string, mode?: "popup" | "tab", windowName?: string): Window | null {
+	private openWallet(url: string, mode?: "popup" | "tab"): Window | null {
 		if (typeof window === "undefined") {
 			return null;
 		}
@@ -372,7 +358,7 @@ class LoopSDK {
 				"menubar=no,toolbar=no,location=no," +
 				"resizable=yes,scrollbars=yes,status=no";
 
-			const popup = window.open(url, windowName ?? "loop-wallet", features);
+			const popup = window.open(url, "loop-wallet", features);
 
 			if (!popup) {
 				return window.open(url, "_blank", "noopener,noreferrer");
@@ -417,7 +403,7 @@ class LoopSDK {
 				border-radius: 40px;
 				border: none;
 				width: 340px;
-				height: 534px;
+				height: 580px;
 				box-sizing: border-box;
 				padding: 32px;
 				display: flex;
@@ -470,6 +456,17 @@ class LoopSDK {
 				object-fit: contain;
 				border-radius: 12px;
 			}
+			.loop-connect .host-label {
+				position: absolute;
+				top: 375px;
+				left: 32px;
+				right: 32px;
+				text-align: center;
+				font-size: 12px;
+				font-weight: 500;
+				color: #94a3b8;
+				letter-spacing: 0.02em;
+			}
 			.loop-connect .divider {
 				position: absolute;
 				top: 399px;
@@ -520,6 +517,28 @@ class LoopSDK {
 			.loop-connect button:hover {
 				background: #f6ffb4;
 			}
+			.loop-connect .switch-link {
+				position: absolute;
+				top: 508px;
+				left: 32px;
+				right: 32px;
+				height: 20px;
+				width: auto;
+				background: transparent;
+				border: none;
+				color: #94a3b8;
+				font-size: 12px;
+				font-weight: 500;
+				text-decoration: underline;
+				text-underline-offset: 2px;
+				cursor: pointer;
+				padding: 0;
+				box-shadow: none;
+			}
+			.loop-connect .switch-link:hover {
+				background: transparent;
+				color: #cbd5e1;
+			}
 			@keyframes fadeIn {
 				from { opacity: 0; }
 				to { opacity: 1; }
@@ -539,8 +558,14 @@ class LoopSDK {
 				});
 			});
 
+		const [primaryUrl, fallbackUrl] = urls;
+		if (!primaryUrl) {
+			console.error("showQrCode called with no URLs");
+			return;
+		}
+
 		Promise.all(urls.map(toDataUrl))
-			.then((dataUrls) => {
+			.then(([primaryQr, fallbackQr]) => {
 				const overlay = document.createElement("div");
 				overlay.id = "loop-sdk-connect-overlay";
 				overlay.className = "loop-sdk-connect-overlay loop-connect";
@@ -581,73 +606,58 @@ class LoopSDK {
 				const title = document.createElement("h3");
 				title.textContent = "Scan with Phone";
 
+				const figure = document.createElement("figure");
+				const img = document.createElement("img");
+				img.alt = "QR Code";
+				figure.appendChild(img);
+
+				const hostLabel = document.createElement("div");
+				hostLabel.className = "host-label";
+
+				const divider = document.createElement("div");
+				divider.className = "divider";
+				divider.textContent = "OR";
+
+				const button = document.createElement("button");
+				button.type = "button";
+				button.textContent = "Continue in Browser";
+
 				dialog.appendChild(bgLogo);
 				dialog.appendChild(title);
+				dialog.appendChild(figure);
+				dialog.appendChild(hostLabel);
+				dialog.appendChild(divider);
+				dialog.appendChild(button);
 
-				if (urls.length === 1) {
-					const figure = document.createElement("figure");
-					const img = document.createElement("img");
-					img.src = dataUrls[0]!;
-					img.alt = "QR Code";
-					figure.appendChild(img);
+				let showingFallback = false;
+				const showPrimary = () => {
+					img.src = primaryQr!;
+					hostLabel.textContent = new URL(primaryUrl).hostname;
+					button.onclick = () => this.openWallet(primaryUrl);
+				};
+				const showFallback = () => {
+					img.src = fallbackQr!;
+					hostLabel.textContent = new URL(fallbackUrl!).hostname;
+					button.onclick = () => this.openWallet(fallbackUrl!);
+				};
+				showPrimary();
 
-					const divider = document.createElement("div");
-					divider.className = "divider";
-					divider.textContent = "OR";
-
-					const button = document.createElement("button");
-					button.type = "button";
-					button.textContent = "Continue in Browser";
-					button.addEventListener("click", () => this.openWallet(urls[0]!));
-
-					dialog.appendChild(figure);
-					dialog.appendChild(divider);
-					dialog.appendChild(button);
-				} else {
-					dialog.style.cssText +=
-						"height:auto;padding-top:72px;padding-bottom:24px;gap:16px;";
-					title.style.cssText = "position:static;margin-bottom:8px;";
-
-					urls.forEach((url, i) => {
-						const group = document.createElement("div");
-						group.style.cssText =
-							"display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;";
-
-						const hostLabel = document.createElement("div");
-						hostLabel.textContent = new URL(url).hostname;
-						hostLabel.style.cssText =
-							"font-size:12px;font-weight:600;color:#94a3b8;letter-spacing:0.05em;text-transform:uppercase;";
-
-						const figure = document.createElement("figure");
-						figure.style.cssText =
-							"position:static;width:180px;height:180px;padding:12px;margin:0;background:#ffffff;border-radius:8px;display:flex;justify-content:center;align-items:center;box-sizing:border-box;";
-						const img = document.createElement("img");
-						img.src = dataUrls[i]!;
-						img.alt = "QR Code";
-						img.style.cssText = "width:100%;height:100%;object-fit:contain;";
-						figure.appendChild(img);
-
-						const button = document.createElement("button");
-						button.type = "button";
-						button.textContent = "Continue in Browser";
-						button.style.cssText =
-							"position:static;width:100%;height:44px;padding:0 24px;background:#f2ff96;border:none;border-radius:8px;color:#0f172a;font-size:14px;font-weight:600;cursor:pointer;";
-						button.addEventListener("click", () => this.openWallet(url));
-
-						group.appendChild(hostLabel);
-						group.appendChild(figure);
-						group.appendChild(button);
-						dialog.appendChild(group);
-
-						if (i < urls.length - 1) {
-							const divider = document.createElement("div");
-							divider.className = "divider";
-							divider.style.cssText =
-								"position:static;width:100%;left:auto;right:auto;top:auto;margin:16px 0;";
-							divider.textContent = "OR";
-							dialog.appendChild(divider);
+				if (fallbackUrl) {
+					const switchLink = document.createElement("button");
+					switchLink.type = "button";
+					switchLink.className = "switch-link";
+					switchLink.textContent = "Using the old wallet?";
+					switchLink.addEventListener("click", () => {
+						showingFallback = !showingFallback;
+						if (showingFallback) {
+							showFallback();
+							switchLink.textContent = "Back to new wallet";
+						} else {
+							showPrimary();
+							switchLink.textContent = "Using the old wallet?";
 						}
 					});
+					dialog.appendChild(switchLink);
 				}
 
 				overlay.appendChild(dialog);

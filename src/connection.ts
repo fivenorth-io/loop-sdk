@@ -38,8 +38,8 @@ export class Connection {
         // Set default common value based on network
         switch (this.network) {
             case 'local':
-                this.walletUrl = 'http://localhost:3000';
-                this.secondaryWalletUrl = 'http://localhost:3001';
+                this.walletUrl = 'http://localhost:3001';
+                this.secondaryWalletUrl = 'http://localhost:3000';
                 this.apiUrl = 'http://localhost:8080';
                 break;
             case 'devnet':
