@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.1 (2026-10-08)
+Full Changelog: [v0.15.0...v0.15.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.15.0...v0.15.1)
+
+### What Changed
+
+- **connect:** the connect modal is redesigned. a dotted QR code with the Loop mark, the wallet hostname beneath it, and a "Continue in this browser" button. The "Using the old wallet?" toggle still appears when a secondary wallet URL is configured.
+- **connect:** the modal now renders inside a shadow root on `#loop-sdk-connect-overlay`, so dApp styles no longer leak into it and its styles no longer leak out. The host keeps its `loop-sdk-connect-overlay loop-connect` classes, so existing JS hooks still find it, and a dApp rule that hides it (e.g. `.loop-connect { display: none }`) still stops the modal from opening while the connect flow continues. Rules that restyled the old modal's internals (e.g. `.loop-connect dialog`) no longer reach it, and the injected `#loop-connect-styles` stylesheet is gone; set the `--loop-*` CSS variables on `#loop-sdk-connect-overlay` to theme the modal instead.
+- **connect:** the SDK's internal `overlay` field and `injectModalStyles()` method are gone. Code that reached into them should find the modal through `#loop-sdk-connect-overlay` / `.loop-connect`, or hide it with a CSS rule on either.
+- **connect:** the modal now opens with `showModal()`, so the rest of the page is inert while it is shown.
+- **connect:** Esc now closes the modal, as do the close button and a click on the backdrop.
+
 ## 0.15.0 (2026-09-28)
 Full Changelog: [v0.14.0...v0.15.0](https://github.com/fivenorth-io/loop-sdk/compare/v0.14.0...v0.15.0)
 

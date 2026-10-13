@@ -7,6 +7,11 @@
 
 The release notes below highlight only the major updates. Refer to the links above for the complete changelog.
 
+## v0.15.1
+- Connect: redesigned connect modal ("Sign in with Loop Wallet") with a dotted QR code, the wallet hostname beneath it, and a "Continue in this browser" button. The "Using the old wallet?" toggle is unchanged.
+- Connect: the modal now renders inside a shadow root on `#loop-sdk-connect-overlay`, so dApp styles no longer leak in or out. The host keeps its `loop-sdk-connect-overlay loop-connect` classes, and hiding it with CSS (e.g. `.loop-connect { display: none }`) still suppresses the modal. Rules targeting the old modal's internals (e.g. `.loop-connect dialog`) and the injected `#loop-connect-styles` stylesheet are gone; theme the modal with `--loop-*` CSS variables on `#loop-sdk-connect-overlay` instead.
+- Connect: the modal opens with `showModal()` (the rest of the page is inert while it is shown) and closes with Esc, the close button, or a backdrop click.
+
 ## v0.15.0
 - Connect: default wallet URLs updated to `wallet.looptech.io` (mainnet), `wallet.testnet.looptech.io` (testnet), and `wallet.devnet.looptech.io` (devnet). The previous `cantonloop.com` domains are kept as an automatic fallback via the new `secondaryWalletUrl`.
 - Connect: `init(...)` accepts an optional `secondaryWalletUrl` to override the fallback wallet URL.
