@@ -1,4 +1,6 @@
-import type { Account, ConnectProviderStatus } from '../types';
+import type { Account, ConnectProviderStatus, TransactionPayload } from '../types';
+import { createTransactionHandlers } from './transactions';
+import type { TransactionProgressListener } from '../provider';
 import { generateRequestId } from '../provider';
 import { UnauthorizedError } from '../errors';
 import { Cip103Provider, CIP103_API_VERSION } from './provider';
@@ -7,6 +9,7 @@ import type { Cip103ConnectResult, Cip103EventMap, Cip103StatusEvent, Cip103Wall
 
 export interface LoopCip103Options {
   connectTimeoutMs?: number;
+  transactionTimeoutMs?: number;
 }
 
 export interface LoopCip103Bridge {
@@ -16,6 +19,7 @@ export interface LoopCip103Bridge {
   disconnect(): Promise<void>;
   account(): Promise<Account | null>;
   providerStatus(): Promise<ConnectProviderStatus>;
+  submitTransaction(payload: TransactionPayload, onProgress: TransactionProgressListener, timeout: number): Promise<unknown>;
   signMessage(message: string): Promise<unknown>;
   onSessionChanged(listener: () => void): void;
 }
@@ -84,7 +88,19 @@ export function createLoopCip103Provider(bridge: LoopCip103Bridge, options: Loop
     return { accounts, status };
   }
 
+  const transactions = createTransactionHandlers({
+    account: async () => {
+      if (disconnectPromise) throw new Cip103ProviderRpcError(4100, 'Disconnect in progress');
+      const account = (await snapshot()).accounts[0];
+      if (!account) throw new Cip103ProviderRpcError(4100, 'No authorized account');
+      return account;
+    },
+    submit: (payload, onProgress, timeout) => bridge.submitTransaction(payload, onProgress, timeout),
+    revision: () => revision,
+    notify: event => notify('txChanged', event),
+  }, options.transactionTimeoutMs);
   const provider = new Cip103Provider({
+    ...transactions,
     connect: () => {
       if (disconnectPromise) throw new Cip103ProviderRpcError(4100, 'Disconnect in progress');
       if (!connectPromise) {

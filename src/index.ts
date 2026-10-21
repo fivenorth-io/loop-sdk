@@ -147,6 +147,14 @@ class LoopSDK {
 					throw error;
 				}
 			},
+            submitTransaction: (payload, onProgress, timeout) => {
+                checkConnection();
+                const provider = this.requireProvider();
+                return provider.submitCip103Transaction(payload, data => {
+                    if (provider !== this.provider) return true;
+                    return onProgress(data);
+                }, timeout);
+            },
 			providerStatus: async () => { checkConnection(); return connection.getProviderStatus(); },
 			signMessage: async (message) => { checkConnection(); return this.requireProvider().signMessage(message); },
 			onSessionChanged: listener => { this.cip103SessionListeners.add(listener); },

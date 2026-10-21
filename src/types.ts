@@ -68,6 +68,7 @@ export type TransferRequest = {
 };
 
 export type TransactionPayload = {
+  commandId?: string;
   commands: any[];
   disclosedContracts: any[];
   packageIdSelectionPreference?: string[];
@@ -103,7 +104,7 @@ export type RunTransactionResponse = {
   estimated_traffic?: unknown;
   update_data?: unknown;
   update_id?: string;
-  status?: 'succeeded' | 'failed';
+  status?: 'succeeded' | 'failed' | 'unknown';
   error?: SubmissionError;
 };
 
