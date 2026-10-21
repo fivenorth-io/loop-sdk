@@ -1,3 +1,4 @@
+import type { Cip103Wallet } from './cip103/types';
 import type { UsdcBridgeExtension } from './extensions/usdc/types';
 
 export type Network = 'devnet' | 'testnet' | 'mainnet' | 'local' | 'dev' | 'test' | 'main';
@@ -9,6 +10,7 @@ export type Account = {
   auth_token: string;
   public_key: string;
   email?: string;
+  cip103?: Cip103Wallet;
 
   has_preapproval?: boolean;
   utility_preapproval_admins?: string[];
@@ -238,3 +240,10 @@ export type TrafficTopUpExecuteResponse = {
 };
 
 export type FeeBalanceTopUpExecuteResponse = TrafficTopUpExecuteResponse;
+
+export type ConnectProviderStatus = {
+  network_id: string;
+  signing_provider_id: string;
+  is_network_connected: boolean;
+  network_reason?: string;
+};
