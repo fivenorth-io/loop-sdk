@@ -1,6 +1,7 @@
 import type {
     Network,
     Account,
+    ConnectProviderStatus,
     Holding,
     TransferRequest,
     PreparedTransferPayload,
@@ -196,6 +197,21 @@ export class Connection {
         return data.payload;
     }
 
+    async getProviderStatus(): Promise<ConnectProviderStatus> {
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/provider/status`, {
+            signal: AbortSignal.timeout(5_000),
+        });
+        if (!response.ok) throw new Error('Provider status unavailable');
+        const data = await response.json();
+        if (!/^canton:[a-zA-Z0-9_-]{1,32}$/.test(data?.network_id)
+            || typeof data?.signing_provider_id !== 'string' || !data.signing_provider_id.trim()
+            || typeof data?.is_network_connected !== 'boolean'
+            || (data.network_reason !== undefined && typeof data.network_reason !== 'string')) {
+            throw new Error('Invalid provider status response');
+        }
+        return data;
+    }
+
     async verifySession(authToken: string): Promise<Account> {
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/account`, {
             method: 'GET',
@@ -224,6 +240,7 @@ export class Connection {
             auth_token: authToken,
             public_key: data?.public_key,
             email,
+            cip103: data?.cip103,
             has_preapproval: data?.has_preapproval,
             utility_preapproval_admins: Array.isArray(data?.utility_preapproval_admins) ? data.utility_preapproval_admins : [],
             has_merge_delegation: data?.has_merge_delegation,
