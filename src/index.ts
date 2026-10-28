@@ -14,6 +14,9 @@ import type {
 } from "./types";
 import { MessageType } from "./types";
 import { LoopWallet } from "./wallet";
+import { createLoopCip103Provider, type LoopCip103Options } from "./cip103/loop-adapter";
+import { Cip103Provider } from "./cip103/provider";
+import { Cip103ProviderRpcError } from "./cip103/errors";
 
 class LoopSDK {
 	private version: string = "0.15.0";
@@ -31,6 +34,11 @@ class LoopSDK {
 	private onReject: (() => void) | null = null;
 	private onTransactionUpdate: ((payload: RunTransactionResponse, message: any) => void) | null = null;
 	private connectModal: ConnectModalHandle | null = null;
+	private cip103Provider: Cip103Provider | null = null;
+	private cip103SessionListeners = new Set<() => void>();
+	private cip103RejectConnect: ((error: Error) => void) | null = null;
+	private cip103Restore: Promise<void> | null = null;
+	private cip103Epoch = 0;
 	public wallet: Wallet;
 
 	constructor() {
@@ -89,6 +97,96 @@ class LoopSDK {
 		this.redirectUrl = resolvedOptions.redirectUrl;
 
 		this.connection = new Connection({ network, walletUrl, secondaryWalletUrl, apiUrl });
+	}
+
+	getCip103Provider(options: LoopCip103Options = {}): Cip103Provider {
+		if (this.cip103Provider) return this.cip103Provider;
+		if (!this.connection) throw new Error("SDK not initialized. Call init() first.");
+		const connection = this.connection;
+		const checkConnection = () => {
+			if (this.connection !== connection) throw new Cip103ProviderRpcError(4900, "Loop was reinitialized; reload before using this provider");
+		};
+		this.cip103Provider = createLoopCip103Provider({
+			walletUrl: connection.walletUrl,
+			restore: async () => {
+				checkConnection();
+				if (!this.provider) {
+					this.cip103Restore ??= this.autoConnect().finally(() => { this.cip103Restore = null; });
+					await this.cip103Restore;
+				}
+			},
+			connect: async (timeout) => { checkConnection(); await this.connectForCip103(timeout); },
+			disconnect: async () => {
+				checkConnection();
+				// Restore only the stored ticket, without opening UI or authorizing it.
+				this.session ??= SessionInfo.fromStorage();
+				this.cip103Epoch++;
+				this.cip103RejectConnect?.(new Cip103ProviderRpcError(4100, "Connection canceled by disconnect"));
+				const ticketId = this.session.ticketId;
+				const token = this.session.authToken ?? this.session.ticketAuthToken;
+				if (ticketId && token) await connection.disconnect(ticketId, token);
+				this.clearLocalSession();
+			},
+			account: async () => {
+				checkConnection();
+				const provider = this.provider;
+				if (!provider || !this.session?.isAuthorized()) return null;
+				try {
+					const account = await provider.getAccount();
+					if (provider !== this.provider) throw new Cip103ProviderRpcError(4100, "Session changed during account verification");
+					if (account.party_id !== provider.party_id || account.public_key !== provider.public_key) {
+						this.clearLocalSession();
+						throw new Cip103ProviderRpcError(4100, "Account identity changed; reconnect required");
+					}
+					return account;
+				} catch (error) {
+					if (error instanceof UnauthorizedError && provider === this.provider) {
+						this.invalidateLocalSession();
+						return null;
+					}
+					throw error;
+				}
+			},
+            submitTransaction: (payload, onProgress, timeout) => {
+                checkConnection();
+                const provider = this.requireProvider();
+                return provider.submitCip103Transaction(payload, data => {
+                    if (provider !== this.provider) return true;
+                    return onProgress(data);
+                }, timeout);
+            },
+			providerStatus: async () => { checkConnection(); return connection.getProviderStatus(); },
+			ledgerApi: async request => {
+				checkConnection();
+				const provider = this.requireProvider();
+				return connection.ledgerApi(provider.getAuthToken(), request);
+			},
+			signMessage: async (message) => { checkConnection(); return this.requireProvider().signMessage(message); },
+			onSessionChanged: listener => { this.cip103SessionListeners.add(listener); },
+		}, options);
+		return this.cip103Provider;
+	}
+
+	private notifyCip103Session() {
+		for (const listener of this.cip103SessionListeners) listener();
+	}
+
+	private connectForCip103(timeout: number): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const cleanup = () => {
+				clearTimeout(timer);
+				this.cip103SessionListeners.delete(accepted);
+				if (this.cip103RejectConnect === failed) this.cip103RejectConnect = null;
+			};
+			const failed = (error: Error) => { cleanup(); reject(error); };
+			const accepted = () => {
+				if (this.provider && this.session?.isAuthorized()) { cleanup(); resolve(); }
+			};
+			const timer = setTimeout(() => failed(new Cip103ProviderRpcError(-32002, "Connection approval timed out")), timeout);
+			this.cip103SessionListeners.add(accepted);
+			this.cip103RejectConnect = failed;
+			void this.connect().then(accepted, failed);
+		});
 	}
 
 	// attempt to load a session from storage if it exists, parse it and validate it
@@ -168,6 +266,7 @@ class LoopSDK {
 				email: this.session!.email!,
 				hooks: this.createProviderHooks(),
 			});
+			this.notifyCip103Session();
 			this.onAccept?.(this.provider);
 			this.connection.connectWebSocket(
 				this.session!.ticketId!,
@@ -183,7 +282,9 @@ class LoopSDK {
 			throw new Error("SDK not initialized. Call init() first.");
 		}
 
+		const epoch = this.cip103Epoch;
 		await this.autoConnect();
+		if (this.cip103Provider && epoch !== this.cip103Epoch) throw new Cip103ProviderRpcError(4100, "Session changed during connection");
 
 		if (!this.session) {
 			throw new Error("No valid session found. The network connection maynot available or the backend is not reachable.");
@@ -206,6 +307,13 @@ class LoopSDK {
 					this.session.sessionId,
 					this.version,
 				);
+				if (this.cip103Provider && epoch !== this.cip103Epoch) {
+					// A disconnect may finish while ticket creation is still in flight.
+					await this.connection.disconnect(ticketId, ticketAuthToken).catch(error => {
+						console.warn("[LoopSDK] Failed to revoke canceled connect ticket.", error);
+					});
+					throw new Cip103ProviderRpcError(4100, "Session changed during connection");
+				}
 				this.session!.setTicketId(ticketId, ticketAuthToken);
 			}
 
@@ -267,6 +375,7 @@ class LoopSDK {
 					this.session!.authorized();
 					this.session!.save();
 
+					this.notifyCip103Session();
 					this.onAccept?.(this.provider);
 					this.hideQrCode();
 
@@ -281,6 +390,7 @@ class LoopSDK {
 			}
 		} else if (message.type === MessageType.HANDSHAKE_REJECT) {
 			console.log("[LoopSDK] Entering HANDSHAKE_REJECT flow");
+			this.cip103RejectConnect?.(new Cip103ProviderRpcError(4001, "Connection rejected by user"));
 			this.clearLocalSession();
 			this.onReject?.();
 
@@ -422,10 +532,14 @@ class LoopSDK {
 	}
 
 	private clearLocalSession() {
+		this.cip103Epoch++;
+		this.cip103RejectConnect?.(new Cip103ProviderRpcError(4100, "Wallet session ended"));
+		if (this.cip103Provider) this.provider?.rejectPendingRequests("SESSION_EXPIRED", "Wallet session ended");
 		this.session?.reset();
 		this.provider = null;
 		this.connection?.ws?.close();
 		this.hideQrCode();
+		this.notifyCip103Session();
 	}
 
 	private invalidateLocalSession() {
@@ -468,3 +582,4 @@ export const loop = new LoopSDK();
 export * from "./extensions/usdc/types";
 export * from "./errors";
 export * from "./types";
+export * from "./cip103";
