@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loop CIP-103 Demo</title>
+  <style>
+    textarea { box-sizing: border-box; width: 100%; font-family: monospace; margin-bottom: 10px; }
+    label { display: block; margin: 10px 0; }
+    hr { margin: 20px 0; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 450px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <p><a href="/">Loop SDK demo</a></p>
+  <h1>Loop CIP-103 Demo</h1>
+  <button id="connect" data-method="connect">Connect</button>
+  <div id="connected" hidden>
+  <section>
+    <h2>Connected!</h2>
+    <p id="party-id"></p>
+    <p id="public-key"></p>
+    <div id="account-actions">
+      <button data-method="disconnect">Logout</button>
+      <button data-method="status">Status</button>
+      <button data-method="isConnected">Is connected</button>
+      <button data-method="listAccounts">Accounts</button>
+      <button data-method="getPrimaryAccount">Account</button>
+      <button data-method="getActiveNetwork">Network</button>
+    </div>
+    <p id="connection-state" role="status">Click Connect to start.</p>
+  </section>
+
+  <hr>
+
+  <section>
+    <h3>Ledger</h3>
+    <button id="ledger-end">Ledger end</button>
+    <button id="active-contracts">My contracts (10)</button>
+    <label for="ledger-request">Request JSON</label>
+    <textarea id="ledger-request" rows="7">{
+  "requestMethod": "get",
+  "resource": "/v2/state/ledger-end"
+}</textarea>
+    <button id="ledger-custom">Run request</button>
+    
+  </section>
+
+  <hr>
+
+  <section>
+    <h3>Message signing</h3>
+    <label for="message">Message</label>
+    <textarea id="message" rows="2">Testing Loop CIP-103</textarea>
+    <button id="sign">Sign</button>
+    
+  </section>
+
+  <hr>
+
+  <section>
+    <h3>Transfer Helper</h3>
+    
+    <p>Uses the original SDK to prepare a transfer. Then submit it through CIP-103 below.</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+      <input id="recipient" aria-label="Recipient party" placeholder="Recipient party" style="flex: 1; min-width: 220px;">
+      <input id="amount" aria-label="Amount" placeholder="Amount" style="width: 160px;">
+    </div>
+    <details>
+      <summary>Transfer options</summary>
+      <p>Defaults: Amulet, DSO admin, 5-minute timeout.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0;">
+      <input id="instrument-admin" aria-label="Instrument admin" placeholder="Instrument admin (optional)" style="flex: 1; min-width: 260px;">
+      <input id="instrument-id" aria-label="Instrument id" placeholder="Instrument id (optional)" style="width: 180px;">
+      <input id="timeout" aria-label="Timeout" placeholder="Timeout ms (optional)" style="width: 220px;">
+      <input id="memo" aria-label="Memo" placeholder="Memo (optional)" style="flex: 1; min-width: 240px;">
+      </div>
+    </details>
+    <button id="estimate-transfer" style="margin-top: 8px; margin-right: 8px;">Estimate gas</button>
+    <button id="send-transfer" style="margin-top: 8px;">Send via original SDK</button>
+    <button id="prepare-transfer" style="margin-top: 8px;">Prepare for CIP-103</button>
+    <pre id="transfer-result" hidden></pre>
+  </section>
+  <hr>
+
+  <section>
+    <h3>Transaction</h3>
+    <label for="transaction">Payload JSON</label>
+    <textarea id="transaction" style="height: 150px;" placeholder='{"commands": [...], "disclosedContracts": [...]}'></textarea>
+    <label><input id="convert" type="checkbox" checked> Convert helper payload</label>
+    <p>Conversion removes helper fields and fills blank command IDs.</p>
+    <label for="transaction-method">Method</label>
+    <select id="transaction-method">
+      <option value="prepareExecuteAndWait">Wait for completion (prepareExecuteAndWait)</option>
+      <option value="prepareExecute">Return after preparation (prepareExecute)</option>
+    </select>
+    <p>Approval submits a real transaction; fees may apply.</p>
+    <button id="submit">Submit via CIP-103</button>
+  </section>
+
+  <hr>
+
+  </div>
+
+  <section>
+    <h3>Results and events</h3>
+    <button id="clear">Clear log</button>
+    <pre id="log" aria-live="polite">Ready.</pre>
+  </section>
+
+  <script type="module">
+    import { loop } from '/dist/index.js';
+
+    let legacyProvider;
+    loop.init({
+      appName: 'Loop CIP-103 Demo', network: 'local',
+      options: { openMode: 'popup', requestSigningMode: 'popup' },
+      onAccept: provider => { legacyProvider = provider; },
+      onReject: () => { legacyProvider = undefined; },
+      onTransactionUpdate: payload => log('Loop helper transaction update', payload),
+    });
+    const cip = loop.getCip103Provider();
+    const $ = id => document.getElementById(id);
+    const entries = [];
+    function log(label, value) {
+      entries.unshift(`${new Date().toLocaleTimeString()} ${label}\n${JSON.stringify(value, null, 2) ?? 'undefined'}`);
+      entries.length = Math.min(entries.length, 50);
+      $('log').textContent = entries.join('\n\n');
+      console.log(label, value);
+    }
+
+    for (const event of ['accountsChanged', 'statusChanged', 'messageSignature', 'txChanged']) {
+      cip.on(event, value => {
+        log(event, value);
+        if (event === 'accountsChanged') {
+          $('party-id').textContent = `Party ID: ${value[0]?.partyId ?? ''}`;
+          $('public-key').textContent = `Public Key: ${value[0]?.publicKey ?? ''}`;
+        }
+        if (event === 'statusChanged') {
+          $('connected').hidden = !value.connection.isConnected;
+          $('connect').hidden = value.connection.isConnected;
+          if (!value.connection.isConnected) legacyProvider = undefined;
+          $('connection-state').textContent = value.connection.isConnected
+            ? `Connected · ${value.network?.networkId ?? 'network unavailable'} · Ledger ${value.connection.isNetworkConnected ? 'online' : 'offline'}`
+            : 'Disconnected';
+        }
+        if (event === 'txChanged' && value.status === 'executed') {
+          $('ledger-request').value = JSON.stringify({
+            requestMethod: 'post', resource: '/v2/updates/transaction-by-id',
+            body: { updateId: value.payload.updateId, requestingParties: transactionParty ? [transactionParty] : [] },
+          }, null, 2);
+        }
+      });
+    }
+
+    async function request(method, params) {
+      const result = await cip.request(params === undefined ? { method } : { method, params });
+      log(`${method} result`, result);
+      return result;
+    }
+
+    function action(button, run) {
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try { await run(); }
+        catch (error) { log('Error', { code: error.code, message: error.message, data: error.data }); }
+        finally { button.disabled = false; }
+      });
+    }
+
+    for (const button of document.querySelectorAll('[data-method]')) {
+      action(button, () => request(button.dataset.method));
+    }
+    action($('sign'), () => request('signMessage', { message: $('message').value }));
+
+    function transferInput() {
+      const recipient = $('recipient').value.trim();
+      const amount = $('amount').value.trim();
+      if (!recipient || !amount) throw new Error('Enter recipient and amount');
+      const timeout = $('timeout').value.trim();
+      const requestTimeout = timeout ? Number(timeout) : undefined;
+      if (requestTimeout !== undefined && (!Number.isFinite(requestTimeout) || requestTimeout <= 0)) throw new Error('Timeout must be a positive number of milliseconds');
+      return {
+        recipient, amount, requestTimeout,
+        instrument: { instrument_id: $('instrument-id').value.trim() || 'Amulet', instrument_admin: $('instrument-admin').value.trim() || undefined },
+        requestedAt: new Date().toISOString(),
+        executeBefore: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        memo: $('memo').value.trim() || undefined,
+      };
+    }
+    async function prepareTransfer() {
+      if (!legacyProvider) throw new Error('Connect first');
+      const input = transferInput();
+      return legacyProvider.connection.prepareTransfer(legacyProvider.getAuthToken(), {
+        recipient: input.recipient, amount: input.amount, instrument: input.instrument,
+        requested_at: input.requestedAt, execute_before: input.executeBefore, memo: input.memo,
+      });
+    }
+    function showTransfer(result) {
+      $('transfer-result').hidden = false;
+      $('transfer-result').textContent = JSON.stringify(result, null, 2);
+      log('Loop transfer helper result', result);
+    }
+    action($('prepare-transfer'), async () => {
+      const payload = await prepareTransfer();
+      $('transaction').value = JSON.stringify(payload, null, 2);
+      showTransfer({ message: 'Payload ready in Transaction. Submit via CIP-103 to test the standard flow.' });
+    });
+    action($('estimate-transfer'), async () => {
+      const provider = legacyProvider;
+      const payload = await prepareTransfer();
+      if (provider !== legacyProvider) throw new Error('Session changed');
+      showTransfer(await provider.estimateGas(payload));
+    });
+    action($('send-transfer'), async () => {
+      const input = transferInput();
+      showTransfer(await loop.wallet.transfer(input.recipient, input.amount, input.instrument, {
+        requestedAt: input.requestedAt, executeBefore: input.executeBefore,
+        memo: input.memo, requestTimeout: input.requestTimeout,
+        executionMode: 'wait', estimateTraffic: true,
+      }));
+    });
+
+    let transactionParty;
+    action($('submit'), async () => {
+      const input = JSON.parse($('transaction').value);
+      if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Paste a transaction JSON object containing commands.');
+      const fields = ['commands', 'commandId', 'actAs', 'readAs', 'disclosedContracts', 'synchronizerId', 'packageIdSelectionPreference'];
+      const params = $('convert').checked
+        ? Object.fromEntries(Object.entries(input).filter(([key]) => fields.includes(key)))
+        : { ...input };
+      if ($('convert').checked) log('Omitted helper fields', Object.keys(input).filter(key => !fields.includes(key)));
+      if (params.commandId === undefined || ($('convert').checked && typeof params.commandId === 'string' && !params.commandId.trim())) {
+        params.commandId = crypto.randomUUID();
+      }
+      transactionParty = (await request('getPrimaryAccount')).partyId;
+      log('Transaction commandId', params.commandId);
+      await request($('transaction-method').value, params);
+    });
+
+    let ledgerQueue = Promise.resolve();
+    function ledger(params) {
+      const pending = ledgerQueue.then(async () => {
+        await new Promise(resolve => setTimeout(resolve, 3100));
+        return request('ledgerApi', params);
+      });
+      ledgerQueue = pending.catch(() => {});
+      return pending;
+    }
+    action($('ledger-end'), () => ledger({ requestMethod: 'get', resource: '/v2/state/ledger-end' }));
+    action($('ledger-custom'), () => ledger(JSON.parse($('ledger-request').value)));
+    action($('active-contracts'), async () => {
+      const account = await request('getPrimaryAccount');
+      const end = await ledger({ requestMethod: 'get', resource: '/v2/state/ledger-end' });
+      const params = {
+        requestMethod: 'post', resource: '/v2/state/active-contracts', query: { limit: 10 },
+        body: { activeAtOffset: end.offset, verbose: true, filter: { filtersByParty: { [account.partyId]: {} } } },
+      };
+      $('ledger-request').value = JSON.stringify(params, null, 2);
+      await ledger(params);
+    });
+    $('clear').addEventListener('click', () => { entries.length = 0; $('log').textContent = 'Log cleared.'; });
+  </script>
+</body>
+</html>
