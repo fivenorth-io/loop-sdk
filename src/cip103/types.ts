@@ -6,9 +6,10 @@ export type Cip103ProviderInfo = {
     "url"?: string;
     "userUrl"?: Cip103UserUrl;
 };
+// Ledger list endpoints return arrays; preserve their response format.
 export type Cip103LedgerApiResult = {
     [key: string]: unknown;
-};
+} | unknown[];
 export type Cip103UserUrl = string;
 export type Cip103JsPrepareSubmissionRequest = {
     "commandId"?: Cip103CommandId;

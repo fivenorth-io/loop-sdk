@@ -20,8 +20,36 @@ import type {
 import { PaymentRequiredError, UnauthorizedError } from './errors';
 import { SessionInfo } from './session';
 import { generateRequestId } from './provider';
+import type { Cip103LedgerApiRequest, Cip103LedgerApiResult } from './cip103/types';
+import { Cip103ProviderRpcError } from './cip103/errors';
 
 export class Connection {
+    async ledgerApi(authToken: string, request: Cip103LedgerApiRequest): Promise<Cip103LedgerApiResult> {
+        let response: Response;
+        try {
+            response = await fetch(`${this.apiUrl}/api/v1/.connect/ledger-api`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(request),
+                signal: AbortSignal.timeout(25_000),
+                redirect: 'error',
+            });
+            const body = await response.json();
+            if (!response.ok) {
+                const error = body?.error;
+                if (Number.isInteger(error?.code) && typeof error?.message === 'string') {
+                    throw new Cip103ProviderRpcError(error.code, error.message);
+                }
+                throw new Cip103ProviderRpcError(response.status === 429 ? -32005 : -32002, 'Ledger access unavailable');
+            }
+            if (!body || typeof body !== 'object') throw new Cip103ProviderRpcError(-32603, 'Invalid ledger response');
+            return body;
+        } catch (error) {
+            if (error instanceof Cip103ProviderRpcError) throw error;
+            throw new Cip103ProviderRpcError(-32002, 'Ledger request failed or timed out');
+        }
+    }
+
     public walletUrl: string = 'https://cantonloop.com';
     public secondaryWalletUrl: string | null = null;
     public apiUrl: string = 'https://cantonloop.com';

@@ -156,6 +156,11 @@ class LoopSDK {
                 }, timeout);
             },
 			providerStatus: async () => { checkConnection(); return connection.getProviderStatus(); },
+			ledgerApi: async request => {
+				checkConnection();
+				const provider = this.requireProvider();
+				return connection.ledgerApi(provider.getAuthToken(), request);
+			},
 			signMessage: async (message) => { checkConnection(); return this.requireProvider().signMessage(message); },
 			onSessionChanged: listener => { this.cip103SessionListeners.add(listener); },
 		}, options);

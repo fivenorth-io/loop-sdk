@@ -5,7 +5,7 @@ import { generateRequestId } from '../provider';
 import { UnauthorizedError } from '../errors';
 import { Cip103Provider, CIP103_API_VERSION } from './provider';
 import { Cip103ProviderRpcError, toCip103Error } from './errors';
-import type { Cip103ConnectResult, Cip103EventMap, Cip103StatusEvent, Cip103Wallet } from './types';
+import type { Cip103ConnectResult, Cip103EventMap, Cip103StatusEvent, Cip103Wallet, Cip103LedgerApiRequest, Cip103LedgerApiResult } from './types';
 
 export interface LoopCip103Options {
   connectTimeoutMs?: number;
@@ -21,6 +21,7 @@ export interface LoopCip103Bridge {
   providerStatus(): Promise<ConnectProviderStatus>;
   submitTransaction(payload: TransactionPayload, onProgress: TransactionProgressListener, timeout: number): Promise<unknown>;
   signMessage(message: string): Promise<unknown>;
+  ledgerApi(request: Cip103LedgerApiRequest): Promise<Cip103LedgerApiResult>;
   onSessionChanged(listener: () => void): void;
 }
 
@@ -101,6 +102,15 @@ export function createLoopCip103Provider(bridge: LoopCip103Bridge, options: Loop
   }, options.transactionTimeoutMs);
   const provider = new Cip103Provider({
     ...transactions,
+    ledgerApi: async request => {
+      if (disconnectPromise) throw new Cip103ProviderRpcError(4100, 'Disconnect in progress');
+      if (!(await snapshot()).accounts[0]) throw new Cip103ProviderRpcError(4100, 'No authorized account');
+      if (disconnectPromise) throw new Cip103ProviderRpcError(4100, 'Disconnect in progress');
+      const startRevision = revision;
+      const result = await bridge.ledgerApi(request);
+      if (revision !== startRevision || disconnectPromise) throw new Cip103ProviderRpcError(4100, 'Session changed during ledger request');
+      return result;
+    },
     connect: () => {
       if (disconnectPromise) throw new Cip103ProviderRpcError(4100, 'Disconnect in progress');
       if (!connectPromise) {
