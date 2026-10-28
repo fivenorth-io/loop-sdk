@@ -104,6 +104,7 @@ export type RunTransactionResponse = {
   estimated_traffic?: unknown;
   update_data?: unknown;
   update_id?: string;
+  // 'unknown' means execution could not be confirmed. Check the outcome before retrying.
   status?: 'succeeded' | 'failed' | 'unknown';
   error?: SubmissionError;
 };

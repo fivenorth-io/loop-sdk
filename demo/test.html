@@ -572,6 +572,7 @@
                     <div style="font-family: monospace; margin-bottom: 6px;">submission_id: ${submissionId || 'n/a'}</div>
                     <div style="font-family: monospace; margin-bottom: 6px;">update_id: ${updateId || 'n/a'}</div>
                     ${status ? html`<div style="font-family: monospace; margin-bottom: 6px;">status: ${status}</div>` : ''}
+                    ${status === 'unknown' ? html`<div>Transaction outcome unconfirmed. Check transaction history before trying again.</div>` : ''}
                     ${errorMessage ? html`<div style="font-family: monospace; margin-bottom: 6px; color: #b00020;">error: ${errorMessage}</div>` : ''}
                     ${updateUrl ? html`
                         <a href=${updateUrl} target="_blank" rel="noopener noreferrer">${updateUrl}</a>
