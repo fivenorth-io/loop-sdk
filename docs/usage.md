@@ -1,5 +1,10 @@
 # Usage Guide
 
+## CIP-103 provider
+
+Use `loop.getCip103Provider()` after `loop.init()` to access the Canton dApp API 0.5.0 interface. Existing Loop methods remain available. See the [CIP-103 guide](cip103.md) for methods, events, examples, and migration notes.
+
+
 Looking for server-side signing (no wallet popup)? See `docs/server.md`.
 
 ## Install the SDK
@@ -13,7 +18,7 @@ bun add @fivenorth/loop-sdk
 Or via CDN (no build process required):
 
 ```javascript
-import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.15.1/dist";
+import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.16.0/dist";
 ```
 
 Then import into your dApp:
@@ -361,3 +366,7 @@ As a result, `update_data.workflowId` (and Lighthouse) may show it as empty even
 
 What to do instead
 - Use `commandId` / `submissionId` for correlation. Keep track of your workflow identifiers on your side and map them to command or submission IDs.
+
+## Unconfirmed transaction outcomes
+
+Transaction results and `onTransactionUpdate` can report `status: "unknown"`, including legacy wait-mode transfers. Preserve transaction identifiers, check the outcome before retrying, and do not treat this status as success or a definite failure. See the [CIP-103 compatibility notes](cip103.md#existing-loop-integrations).

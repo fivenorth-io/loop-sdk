@@ -1,5 +1,10 @@
 # Loop SDK
 
+## CIP-103 provider
+
+Use `loop.getCip103Provider()` after `loop.init()` to access the Canton dApp API 0.5.0 interface. Existing Loop methods remain available. See the [CIP-103 guide](docs/cip103.md) for methods, events, examples, and migration notes.
+
+
 Loop SDK allows dApps connect to a [Loop](https://cantonloop.com) account. The Loop wallet can be on mobile or on a desktop browser. All the interaction will happen inside the dApp. For signing, user will be prompted to sign either on their Loop wallet on mobile devices or on browser. If you need a custom DAR, [read this guide](https://cantonloop.notion.site/loop-sdk-integration-guide) for integration steps. 
 
 ## Quick overview
@@ -23,7 +28,7 @@ import { loop } from '@fivenorth/loop-sdk';
 Note that, If you don't want to implement a build process, you can include the file directly with `unpkg` such as 
 
 ```javascript
-import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.15.1/dist';
+import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.16.0/dist';
 ```
 
 An example of how we use it in that manner is on our [loopsdk demo](https://codepen.io/kureikain/pen/KwVGgLX)
@@ -166,7 +171,7 @@ try {
 }
 ```
 
-`onTransactionUpdate` fires once per transaction with a single payload that includes `command_id` and `submission_id`. On success it also includes `update_id` and `update_data` (ledger transaction tree); on failure it includes `status: "failed"` and `error.error_message`.
+`onTransactionUpdate` reports transaction results with `command_id` and, when available, `submission_id`. On success it also includes `update_id` and `update_data` (ledger transaction tree); on failure it includes `status: "failed"` and `error.error_message`.
 
 `submitTransaction` is the default async path. It returns the submission result first (including `command_id` and `submission_id`), then the ledger update arrives later via `onTransactionUpdate` with `update_id` and `update_data`.
 
@@ -436,3 +441,7 @@ bun start
 ```
 
 Upon doing so you can visit http://localhost:3030/ to see the local demo app, serve in `demo/test.html` and SDK is auto compile so you can actively working and trying out the SDK.
+
+## Unconfirmed transaction outcomes
+
+Transaction results and `onTransactionUpdate` can report `status: "unknown"`, including legacy wait-mode transfers. Preserve transaction identifiers, check the outcome before retrying, and do not treat this status as success or a definite failure. See the [CIP-103 compatibility notes](docs/cip103.md#existing-loop-integrations).
