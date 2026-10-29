@@ -34,7 +34,7 @@ Work through this list before you submit. Review is the wrong place to discover 
 - [ ] **A Loop SDK signing-point map.** For every place a Loop user is a signatory or controller, tell us whether it's already wired through Loop SDK.
 - [ ] **[DAR Scope Agreement](https://docs.google.com/document/d/1v3VEe32l9K6IA9o2RKAB4KGJ5IcGsh7CwBJ239g-Ez4/edit), signed.** It sets the terms and scope of the review and covers all later review cycles for the project.
 
-**How to send:** email [support@cantonloop.com](mailto:support@cantonloop.com) with the subject line `Integration: [Project name]`.
+**How to send:** email [support@fivenorth.io](mailto:support@fivenorth.io) with the subject line `Integration: [Project name]`.
 
 ## What we review
 
@@ -70,4 +70,4 @@ If you're building something real, this process is due diligence, and diligence 
 
 ## Contact
 
-Email [support@cantonloop.com](mailto:support@cantonloop.com) with the subject line `Integration: [Project name]` to start a DAR review, or to check whether your integration needs one at all.
+Email [support@fivenorth.io](mailto:support@fivenorth.io) with the subject line `Integration: [Project name]` to start a DAR review, or to check whether your integration needs one at all.
