@@ -4,6 +4,7 @@ nav:
   - Overview: overview.md
   - Usage guide: usage.md
   - Server API: server.md
+  - Custom contracts: custom-contracts.md
   - Demo: demo.md
   - API reference: api-reference.md
-  - Release: release.md
+  - Changelog: changelog.md
