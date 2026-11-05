@@ -10,6 +10,9 @@ const server = Bun.serve({
     if (pathname === '/') {
       return new Response(Bun.file(join(import.meta.dir, '..', '/demo/test.html')));
     }
+    if (pathname === '/cip103' || pathname === '/cip103/') {
+      return new Response(Bun.file(join(import.meta.dir, '..', 'demo/cip103.html')));
+    }
 
     // Intercept the request for the SDK and compile it on the fly
     if (pathname === '/dist/index.js') {

@@ -4,6 +4,10 @@ Loop SDK lets dApps connect to a [Loop](https://cantonloop.com) wallet on mobile
 
 **Documentation: [docs.fivenorth.io/loop-sdk](https://docs.fivenorth.io/loop-sdk/overview/)**
 
+## CIP-103 provider
+
+Use `loop.getCip103Provider()` after `loop.init()` to access Canton dApp API 0.5.0. Existing Loop methods remain available. See the [CIP-103 guide](https://docs.fivenorth.io/loop-sdk/cip103/) for supported methods, ledger endpoints, and compatibility notes, including unconfirmed transaction outcomes.
+
 ## Install
 
 ```bash
@@ -13,7 +17,7 @@ bun add @fivenorth/loop-sdk
 Or without a build step:
 
 ```javascript
-import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.15/dist';
+import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.16.0/dist';
 ```
 
 ## Quickstart
@@ -38,6 +42,7 @@ loop.connect(); // shows the QR code / wallet prompt
 
 - [Overview and supported contracts](https://docs.fivenorth.io/loop-sdk/overview/)
 - [Usage guide](https://docs.fivenorth.io/loop-sdk/usage/): connecting, provider methods, submitting transactions
+- [CIP-103 provider](https://docs.fivenorth.io/loop-sdk/cip103/)
 - [Server API](https://docs.fivenorth.io/loop-sdk/server/): signing without a wallet popup
 - [Custom contracts](https://docs.fivenorth.io/loop-sdk/custom-contracts/): getting your own DAR reviewed and deployed
 - [API reference](https://docs.fivenorth.io/loop-sdk/api-reference/)
@@ -61,3 +66,5 @@ bun start
 ```
 
 Then visit http://localhost:3030/ to see the local demo app served from `demo/test.html`.
+
+Visit http://localhost:3030/cip103 for the CIP-103 demo.

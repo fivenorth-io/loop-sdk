@@ -1,6 +1,7 @@
 import type {
     Network,
     Account,
+    ConnectProviderStatus,
     Holding,
     TransferRequest,
     PreparedTransferPayload,
@@ -19,8 +20,36 @@ import type {
 import { PaymentRequiredError, UnauthorizedError } from './errors';
 import { SessionInfo } from './session';
 import { generateRequestId } from './provider';
+import type { Cip103LedgerApiRequest, Cip103LedgerApiResult } from './cip103/types';
+import { Cip103ProviderRpcError } from './cip103/errors';
 
 export class Connection {
+    async ledgerApi(authToken: string, request: Cip103LedgerApiRequest): Promise<Cip103LedgerApiResult> {
+        let response: Response;
+        try {
+            response = await fetch(`${this.apiUrl}/api/v1/.connect/ledger-api`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(request),
+                signal: AbortSignal.timeout(25_000),
+                redirect: 'error',
+            });
+            const body = await response.json();
+            if (!response.ok) {
+                const error = body?.error;
+                if (Number.isInteger(error?.code) && typeof error?.message === 'string') {
+                    throw new Cip103ProviderRpcError(error.code, error.message);
+                }
+                throw new Cip103ProviderRpcError(response.status === 429 ? -32005 : -32002, 'Ledger access unavailable');
+            }
+            if (!body || typeof body !== 'object') throw new Cip103ProviderRpcError(-32603, 'Invalid ledger response');
+            return body;
+        } catch (error) {
+            if (error instanceof Cip103ProviderRpcError) throw error;
+            throw new Cip103ProviderRpcError(-32002, 'Ledger request failed or timed out');
+        }
+    }
+
     public walletUrl: string = 'https://cantonloop.com';
     public secondaryWalletUrl: string | null = null;
     public apiUrl: string = 'https://cantonloop.com';
@@ -196,6 +225,21 @@ export class Connection {
         return data.payload;
     }
 
+    async getProviderStatus(): Promise<ConnectProviderStatus> {
+        const response = await fetch(`${this.apiUrl}/api/v1/.connect/provider/status`, {
+            signal: AbortSignal.timeout(5_000),
+        });
+        if (!response.ok) throw new Error('Provider status unavailable');
+        const data = await response.json();
+        if (!/^canton:[a-zA-Z0-9_-]{1,32}$/.test(data?.network_id)
+            || typeof data?.signing_provider_id !== 'string' || !data.signing_provider_id.trim()
+            || typeof data?.is_network_connected !== 'boolean'
+            || (data.network_reason !== undefined && typeof data.network_reason !== 'string')) {
+            throw new Error('Invalid provider status response');
+        }
+        return data;
+    }
+
     async verifySession(authToken: string): Promise<Account> {
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/account`, {
             method: 'GET',
@@ -224,6 +268,7 @@ export class Connection {
             auth_token: authToken,
             public_key: data?.public_key,
             email,
+            cip103: data?.cip103,
             has_preapproval: data?.has_preapproval,
             utility_preapproval_admins: Array.isArray(data?.utility_preapproval_admins) ? data.utility_preapproval_admins : [],
             has_merge_delegation: data?.has_merge_delegation,

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.16.0
+
+- **CIP-103:** add `loop.getCip103Provider()` targeting dApp API 0.5.0, with connection/account/network methods, message signing, transaction submission and lifecycle events, and authenticated ledger access. Existing Loop APIs remain available.
+- **Docs/demo:** add a provider integration guide and a separate local CIP-103 demo at `/cip103`.
+- **Deployment:** requires the CIP-103 wallet backend.
+
+- **Compatibility:** transaction results and `onTransactionUpdate` callbacks can now report `status: 'unknown'`, including legacy transfers with `executionMode: 'wait'`. This means execution could not be confirmed, for example after a timeout or connection error. Handle this separately from `succeeded` and `failed`; retain `command_id` and `submission_id`, check the ledger outcome, and do not automatically resubmit.
+- **CIP-103:** an unconfirmed `prepareExecuteAndWait` outcome rejects with an error rather than reporting a failed ledger transaction.
+- **Wallet API:** ambiguous execution errors from the execute-and-wait endpoint retain their HTTP error status and `message`, and now include `code: 'TRANSACTION_OUTCOME_UNKNOWN'`, `command_id`, and `submission_id`. Direct API consumers should handle this code as unconfirmed rather than a definite rejection.
+
 ## 0.15.1 (2026-10-08)
 Full Changelog: [v0.15.0...v0.15.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.15.0...v0.15.1)
 

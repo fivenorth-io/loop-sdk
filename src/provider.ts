@@ -30,6 +30,8 @@ export type ProviderHooks = {
   onSessionInvalid?: () => void;
 };
 
+export type TransactionProgressListener = (payload: any) => boolean;
+
 type SubmitOptions = {
   requestTimeout?: number;
   message?: string;
@@ -39,20 +41,18 @@ type SubmitOptions = {
   deduplicationPeriod?: DeduplicationPeriodInput;
 };
 
-// Use polyfill only on HTTP (crypt.randomUUID requires HTTPS or localhost)
-// In production (HTTPS), native randomUUID will be used
+// Generate a UUID when crypto.randomUUID is unavailable.
 function generateUUID(): string {
   return '10000000-1000-4000-8000-100000000000'.replace(
     /[018]/g,
     (c) => {
       const gCrypto = globalThis.crypto as Crypto | undefined;
 
-      if (!gCrypto?.getRandomValues) { // fallback for if crypto is not available
+      if (!gCrypto?.getRandomValues) { // Fallback when crypto is unavailable.
         const n = Number(c);
         return ((n ^ (Math.random() * 16) >> (n / 4))).toString(16);
       }
 
-      // use crypto API
       const arr = gCrypto.getRandomValues(new Uint8Array(1));
       const byte = arr[0]!;
       const n = Number(c);
@@ -81,6 +81,9 @@ export class Provider {
     private requests: Map<string, any> = new Map();
     private requestTimeout: number = DEFAULT_REQUEST_TIMEOUT_MS;
     private hooks?: ProviderHooks;
+    // Keep listening after a timeout for late transaction results.
+    private transactionObservers = new Map<string, { listener: TransactionProgressListener; expires: number }>();
+
 
     constructor({ connection, party_id, public_key, auth_token, email, hooks }: { connection: Connection, party_id: string, public_key: string, auth_token: string, email?: string, hooks?: ProviderHooks }) {
         if (!connection) {
@@ -98,8 +101,19 @@ export class Provider {
         return this.auth_token;
     }
 
-    // handle all responses from the websocket except for handshake_accept, handshake_reject
+    // Handle websocket responses. The SDK handles connection approval and rejection.
     public handleResponse(message: any) {
+        // Progress keeps the request ID inside the payload so older SDKs do not finish early.
+        const progress = message?.type === 'transaction_progress';
+        const observedId = progress ? message?.payload?.request_id : message?.request_id;
+        for (const [id, observer] of this.transactionObservers) {
+            if (observer.expires <= Date.now()) this.transactionObservers.delete(id);
+        }
+        const observer = this.transactionObservers.get(observedId);
+        if (observer && (progress || message?.type === MessageType.TRANSACTION_COMPLETED)) {
+            if (observer.listener(message.payload)) this.transactionObservers.delete(observedId);
+        }
+        if (progress) return;
         console.log('Received response:', message);
 
         if (
@@ -113,12 +127,13 @@ export class Provider {
             this.hooks?.onTransactionUpdate?.(message.payload as RunTransactionResponse, message);
         }
 
-        if (message.request_id) {
+        if (message.request_id && this.requests.has(message.request_id)) {
             this.requests.set(message.request_id, message);
         }
     }
 
     public rejectPendingRequests(code: string, message: string): void {
+        this.transactionObservers.clear();
         for (const requestId of this.requests.keys()) {
             this.requests.set(requestId, {
                 request_id: requestId,
@@ -135,8 +150,7 @@ export class Provider {
         return this.connection.getHolding(this.auth_token);
     }
 
-    // get the current account connected to the provider
-    // This is useful for dApps to know if the user has pre approval or merge delegation permissions to ensure UTXO consolidation is in place
+    // Get the connected account and its preapproval and merge delegation details.
     getAccount(): Promise<Account> {
         return this.connection.verifySession(this.auth_token);
     }
@@ -149,7 +163,7 @@ export class Provider {
         return this.connection.estimateGasForConnect(this.auth_token, payload);
     }
 
-    // submit a transaction to be signed by the wallet to the websocket
+    // Send a transaction to the wallet for approval and signing.
     async submitTransaction(
       payload: TransactionPayload, 
       options?: SubmitOptions
@@ -180,6 +194,16 @@ export class Provider {
           { ...requestPayloadWithTraffic, execution_mode: 'wait' },
           options,
         );
+    }
+
+    // Use the wallet approval flow and wait for ledger confirmation.
+    submitCip103Transaction(payload: TransactionPayload, onProgress: TransactionProgressListener, requestTimeout: number): Promise<any> {
+        for (const [id, observer] of this.transactionObservers) {
+            if (observer.expires <= Date.now()) this.transactionObservers.delete(id);
+        }
+        return this.sendRequest(MessageType.RUN_TRANSACTION, { ...payload, execution_mode: 'wait' }, {
+            requestTimeout, onTransactionProgress: onProgress,
+        });
     }
 
     async transfer(
@@ -242,7 +266,7 @@ export class Provider {
         });
     }
 
-    // submit a raw message to be signed by the wallet to the websocket
+    // Send a message to the wallet for signing.
     async signMessage(message: string): Promise<any> {
         return this.sendRequest(MessageType.SIGN_RAW_MESSAGE, message);
     }
@@ -268,7 +292,7 @@ export class Provider {
     private sendRequest(
       messageType: MessageType, 
       params: any = {}, 
-      options?: { requestTimeout?: number; message?: string; requestLabel?: string }
+      options?: { requestTimeout?: number; message?: string; requestLabel?: string; onTransactionProgress?: TransactionProgressListener }
     ): Promise<any> {
         return new Promise((resolve, reject) => {
             const requestId = generateRequestId();
@@ -308,15 +332,22 @@ export class Provider {
                     }
                 }
 
+                this.requests.set(requestId, null);
+                if (options?.onTransactionProgress) {
+                    this.transactionObservers.set(requestId, {
+                        listener: options.onTransactionProgress,
+                        expires: Date.now() + (options.requestTimeout ?? this.requestTimeout) + 600_000,
+                    });
+                }
                 try {
                   this.connection.ws!.send(JSON.stringify(requestBody));
                 } catch (error) {
+                  this.requests.delete(requestId);
+                  this.transactionObservers.delete(requestId);
                   console.error('[LoopSDK] error when sending request', error);
                   reject(error);
                   return;
                 }
-
-                this.requests.set(requestId, null);
 
                 const intervalTime = 300; // 300ms
                 let elapsedTime = 0;
@@ -340,6 +371,7 @@ export class Provider {
                             return;
                         }
                         if (response.type === MessageType.REJECT_REQUEST) {
+                            this.transactionObservers.delete(requestId);
                             const rejectMessage = response?.payload?.message;
                             const rejectCode = response?.payload?.code;
                             this.hooks?.onRequestFinish?.({
