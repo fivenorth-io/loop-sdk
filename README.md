@@ -4,6 +4,10 @@ Loop SDK lets dApps connect to a [Loop](https://cantonloop.com) wallet on mobile
 
 **Documentation: [docs.fivenorth.io/loop-sdk](https://docs.fivenorth.io/loop-sdk/overview/)**
 
+## Release updates
+
+Follow [#5n-loop-sdk-releases](https://fivenorthdigital.slack.com/archives/C0CG59QNB32) for new releases, upgrade notes, and breaking changes. For channel access or SDK support, contact [support@looptech.io](mailto:support@looptech.io).
+
 ## CIP-103 provider
 
 Use `loop.getCip103Provider()` after `loop.init()` to access Canton dApp API 0.5.0. Existing Loop methods remain available. See the [CIP-103 guide](https://docs.fivenorth.io/loop-sdk/cip103/) for supported methods, ledger endpoints, and compatibility notes, including unconfirmed transaction outcomes.

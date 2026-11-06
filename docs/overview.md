@@ -7,6 +7,10 @@ Loop SDK allows dApps to connect to a [Loop](https://cantonloop.com) account.
 - GitHub: [fivenorth-io/loop-sdk](https://github.com/fivenorth-io/loop-sdk)
 - npm: [`@fivenorth/loop-sdk`](https://www.npmjs.com/package/@fivenorth/loop-sdk)
 
+## Release updates
+
+Follow [#5n-loop-sdk-releases](https://fivenorthdigital.slack.com/archives/C0CG59QNB32) for new releases, upgrade notes, and breaking changes. For channel access or SDK support, contact [support@looptech.io](mailto:support@looptech.io).
+
 ## What is Loop SDK?
 
 Loop SDK is a lightweight JavaScript client that allows dApps to securely connect to the Loop wallet.
