@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.1
+Full Changelog: [v0.16.0...v0.16.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.16.0...v0.16.1)
+
+### What Changed
+
+- **connect:** closing the connect modal (close button, Esc or backdrop) now cancels the connection the same way a rejection in the wallet does: the local session is cleared, `onReject()` is called, and a pending CIP-103 `connect` rejects with code 4001. Before, the dApp was never told and kept waiting.
+
 ## 0.16.0
 
 - **CIP-103:** add `loop.getCip103Provider()` targeting dApp API 0.5.0, with connection/account/network methods, message signing, transaction submission and lifecycle events, and authenticated ledger access. Existing Loop APIs remain available.
