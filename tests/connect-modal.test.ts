@@ -9,6 +9,7 @@ mock.module('../src/connect-modal', () => ({
   },
 }));
 const { loop } = await import('../src/index');
+const { Connection } = await import('../src/connection');
 const sdk = loop as any;
 
 test('closing the connect modal clears the session and calls onReject', () => {
@@ -27,4 +28,33 @@ test('closing the connect modal rejects a pending CIP-103 connect with 4001', as
   const connecting = sdk.connectForCip103(60_000);
   modal!.onDismiss();
   await expect(connecting).rejects.toMatchObject({ code: 4001 });
+});
+
+test('connecting again right after closing the modal opens a socket for the new ticket', () => {
+  const RealWebSocket = globalThis.WebSocket;
+  const sockets: any[] = [];
+  globalThis.WebSocket = Object.assign(
+    class {
+      readyState = 0;
+      onclose?: () => void;
+      constructor(public url: string) { sockets.push(this); }
+      close() { this.readyState = 2; } // like a real socket, onclose fires later
+    },
+    { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 },
+  ) as any;
+  try {
+    const connection = new Connection({ network: 'local' });
+    Object.assign(sdk, { connection, session: { reset() {} }, onReject: null });
+    connection.connectWebSocket('old-ticket', 'auth', () => {});
+    sdk.showQrCode(['https://wallet.test/connect']);
+    modal!.onDismiss();
+    expect(connection.connectInProgress()).toBe(false);
+    connection.connectWebSocket('new-ticket', 'auth', () => {});
+    expect(sockets[1].url).toContain('new-ticket');
+    sockets[0].onclose!(); // the old socket closing late must not drop the new one
+    expect(connection.ws).toBe(sockets[1]);
+  } finally {
+    globalThis.WebSocket = RealWebSocket;
+    sdk.connection = null;
+  }
 });

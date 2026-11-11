@@ -541,7 +541,7 @@ class LoopSDK {
 		if (this.cip103Provider) this.provider?.rejectPendingRequests("SESSION_EXPIRED", "Wallet session ended");
 		this.session?.reset();
 		this.provider = null;
-		this.connection?.ws?.close();
+		this.connection?.closeWebSocket();
 		this.hideQrCode();
 		this.notifyCip103Session();
 	}

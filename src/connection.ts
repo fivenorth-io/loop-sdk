@@ -107,6 +107,14 @@ export class Connection {
         return this.status === 'connecting' || this.status === 'connected';
     }
 
+    // closeWebSocket resets the state right away, so a new connect doesn't wait for the old socket's onclose
+    closeWebSocket() {
+        const ws = this.ws;
+        this.ws = null;
+        this.status = 'disconnected';
+        ws?.close();
+    }
+
     async getTicket(appName: string, sessionId: string, version: string): Promise<{ ticket_id: string, auth_token: string }> {
         const response = await fetch(`${this.apiUrl}/api/v1/.connect/pair/tickets`, {
             method: 'POST',
