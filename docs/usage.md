@@ -76,6 +76,11 @@ loop.init({
 
 ## 2. Connect to the Wallet
 
+<video controls preload="metadata" poster="../assets/videos/connect-your-dapp.jpg">
+  <source src="../assets/videos/connect-your-dapp.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 To start the connection:
 
 ```javascript
@@ -104,6 +109,11 @@ await loop.autoConnect()
 ## 3. Using the Provider
 
 When the user accepts, the `provider` object gives you access to wallet data and ledger operations.
+
+<video controls preload="metadata" poster="../assets/videos/submit-and-sign.jpg">
+  <source src="../assets/videos/submit-and-sign.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 The provider object includes:
 
@@ -355,6 +365,11 @@ You initialize once, connect on the button click, then use the provider to inter
 ---
 
 ## FAQ
+
+<video controls preload="metadata" poster="../assets/videos/integration-checklist.jpg">
+  <source src="../assets/videos/integration-checklist.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ### Why is my workflowId missing from transaction updates?
 

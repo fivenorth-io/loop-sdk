@@ -4,6 +4,11 @@ Loop SDK also supports a server-side signing flow. Instead of asking the user to
 
 Important: this flow requires access to the user's private key. Party ID + public key alone is not enough.
 
+<video controls preload="metadata" poster="../assets/videos/server-sdk.jpg">
+  <source src="../assets/videos/server-sdk.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 ## Install the SDK
 
 Follow the same step in [Install SDK](https://docs.fivenorth.io/loop-sdk/usage/#install-the-sdk) to install the SDK.
@@ -81,6 +86,11 @@ And that's all
 ## 3.1 Handle Fee Balance
 
 Loop supports two server SDK fee flows: Fee Balance, where users maintain a prepaid balance and Canton deducts transaction costs from that balance, and pending network fees, where a transaction can create a separate fee payment that must be paid before the next transaction.
+
+<video controls preload="metadata" poster="../assets/videos/fee-balance.jpg">
+  <source src="../assets/videos/fee-balance.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 Existing server SDK integrations can keep using `loop.executeTransaction(...)`. That helper still performs the simple one-call flow:
 
