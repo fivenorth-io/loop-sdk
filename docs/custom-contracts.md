@@ -4,6 +4,11 @@ This page is for teams who want to integrate with Loop Wallet using their own DA
 
 Deploying a third-party DAR on our validator is a hosting decision with real regulatory, reputational and network-standing exposure, so we review every request with real diligence. That diligence is what keeps the pipeline healthy for the builders we most want to work with.
 
+<video controls preload="metadata" poster="../assets/videos/custom-contracts.jpg">
+  <source src="../assets/videos/custom-contracts.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 ## Do you need a custom DAR?
 
 Many integrations don't. If you only read on-ledger state, or only need users to sign against contracts Loop already supports (see [Supported contracts](overview.md#supported-contracts)), you can build entirely on the SDK and skip the rest of this page.
