@@ -345,6 +345,9 @@ export class Provider {
                   this.requests.delete(requestId);
                   this.transactionObservers.delete(requestId);
                   console.error('[LoopSDK] error when sending request', error);
+                  this.hooks?.onRequestFinish?.({
+                    status: 'error', messageType, requestLabel: options?.requestLabel, requestContext,
+                  });
                   reject(error);
                   return;
                 }
@@ -379,6 +382,7 @@ export class Provider {
                                 messageType,
                                 requestLabel: options?.requestLabel,
                                 requestContext,
+                                errorCode: rejectCode,
                             });
                             reject(new RejectRequestError(rejectMessage, rejectCode));
                         } else {

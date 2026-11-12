@@ -569,9 +569,27 @@ class LoopSDK {
 	}
 
 	private createProviderHooks(): ProviderHooks {
+		const pendingWindows = new Map<Window, number>();
 		return {
-			onRequestStart: () => this.openRequestUi(),
-			onRequestFinish: () => undefined,
+			onRequestStart: () => {
+				const popup = this.openRequestUi();
+				if (popup) pendingWindows.set(popup, (pendingWindows.get(popup) ?? 0) + 1);
+				return popup;
+			},
+			onRequestFinish: ({ requestContext, errorCode }) => {
+				const popup = requestContext as Window | null;
+				if (!popup || !pendingWindows.has(popup)) return;
+				const remaining = pendingWindows.get(popup)! - 1;
+				if (remaining > 0) {
+					pendingWindows.set(popup, remaining);
+					return;
+				}
+				pendingWindows.delete(popup);
+				if (errorCode === 'APPROVAL_UNAVAILABLE') {
+					try { popup.close(); } catch { /* The browser may restrict window access. */ }
+					if (this.popupWindow === popup) this.popupWindow = null;
+				}
+			},
 			onTransactionUpdate: this.onTransactionUpdate ?? undefined,
 			onSessionInvalid: () => this.invalidateLocalSession(),
 		};
