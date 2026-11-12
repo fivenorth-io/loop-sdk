@@ -18,7 +18,7 @@ bun add @fivenorth/loop-sdk
 Or via CDN (no build process required):
 
 ```javascript
-import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.16.0/dist";
+import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.16.1/dist";
 ```
 
 Then import into your dApp:
@@ -61,7 +61,7 @@ loop.init({
 | `appName` | Name shown to the user in Loop wallet |
 | `network` | `local`, `devnet`, or `mainnet` |
 | `onAccept(provider)` | Called when the user approves connection |
-| `onReject()` | Called when the user rejects connection |
+| `onReject()` | Called when the user rejects connection or closes the connect modal |
 | `onTransactionUpdate(payload)` | Called when a transaction update is finalized (includes `update_id` and optional `update_data`) |
 
 ### Options
