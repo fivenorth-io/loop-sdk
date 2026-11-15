@@ -522,6 +522,10 @@ class LoopSDK {
 			onContinueInBrowser: (url) => this.openWallet(url),
 			onDismiss: () => {
 				this.connectModal = null;
+				// Closing the modal cancels the connection, the same as a rejection in the wallet.
+				this.cip103RejectConnect?.(new Cip103ProviderRpcError(4001, "Connection canceled by user"));
+				this.clearLocalSession();
+				this.onReject?.();
 			},
 		});
 	}
@@ -537,7 +541,7 @@ class LoopSDK {
 		if (this.cip103Provider) this.provider?.rejectPendingRequests("SESSION_EXPIRED", "Wallet session ended");
 		this.session?.reset();
 		this.provider = null;
-		this.connection?.ws?.close();
+		this.connection?.closeWebSocket();
 		this.hideQrCode();
 		this.notifyCip103Session();
 	}

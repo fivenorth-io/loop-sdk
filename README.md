@@ -21,7 +21,7 @@ bun add @fivenorth/loop-sdk
 Or without a build step:
 
 ```javascript
-import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.16.0/dist';
+import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.16.1/dist';
 ```
 
 ## Quickstart

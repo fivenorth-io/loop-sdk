@@ -37,7 +37,7 @@ loop.init({
 
 #### Notes
 - `onAccept(provider)` is called when user approves via wallet.
-- `onReject()` is called when user rejects.
+- `onReject()` is called when user rejects, in the wallet or by closing the connect modal.
 - `onTransactionUpdate(payload)` reports transaction results with `command_id` and, when available, `submission_id`. On success it also includes `update_id` and `update_data` (ledger transaction tree); on failure it includes `status: "failed"` and `error.error_message`.
 - `openMode` and `redirectUrl` configure connection UI behavior.
 - `requestSigningMode` controls whether signing/transaction requests open the wallet dashboard automatically after you are connected (`'popup'` default or `'tab'`).
