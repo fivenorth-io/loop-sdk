@@ -146,8 +146,19 @@
         }
         if (event === 'txChanged' && value.status === 'executed') {
           $('ledger-request').value = JSON.stringify({
-            requestMethod: 'post', resource: '/v2/updates/transaction-by-id',
-            body: { updateId: value.payload.updateId, requestingParties: transactionParty ? [transactionParty] : [] },
+            requestMethod: 'post', resource: '/v2/updates/update-by-id',
+            body: {
+              updateId: value.payload.updateId,
+              updateFormat: {
+                includeTransactions: {
+                  transactionShape: 'TRANSACTION_SHAPE_ACS_DELTA',
+                  eventFormat: {
+                    filtersByParty: transactionParty ? { [transactionParty]: {} } : {},
+                    verbose: true,
+                  },
+                },
+              },
+            },
           }, null, 2);
         }
       });
@@ -254,7 +265,10 @@
       const end = await ledger({ requestMethod: 'get', resource: '/v2/state/ledger-end' });
       const params = {
         requestMethod: 'post', resource: '/v2/state/active-contracts', query: { limit: 10 },
-        body: { activeAtOffset: end.offset, verbose: true, filter: { filtersByParty: { [account.partyId]: {} } } },
+        body: {
+          activeAtOffset: end.offset,
+          eventFormat: { filtersByParty: { [account.partyId]: {} }, verbose: true },
+        },
       };
       $('ledger-request').value = JSON.stringify(params, null, 2);
       await ledger(params);
