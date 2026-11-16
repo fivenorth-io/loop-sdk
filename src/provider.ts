@@ -81,6 +81,7 @@ export class Provider {
     private requests: Map<string, any> = new Map();
     private requestTimeout: number = DEFAULT_REQUEST_TIMEOUT_MS;
     private hooks?: ProviderHooks;
+    private approvedRequests = new Set<string>();
     // Keep listening after a timeout for late transaction results.
     private transactionObservers = new Map<string, { listener: TransactionProgressListener; expires: number }>();
 
@@ -110,6 +111,7 @@ export class Provider {
             if (observer.expires <= Date.now()) this.transactionObservers.delete(id);
         }
         const observer = this.transactionObservers.get(observedId);
+        if (progress && this.requests.has(observedId)) this.approvedRequests.add(observedId);
         if (observer && (progress || message?.type === MessageType.TRANSACTION_COMPLETED)) {
             if (observer.listener(message.payload)) this.transactionObservers.delete(observedId);
         }
@@ -355,6 +357,7 @@ export class Provider {
 
                 const intervalId = setInterval(() => {
                     const response = this.requests.get(requestId);
+                    if (response) this.approvedRequests.delete(requestId);
                     if (response) {
                         clearInterval(intervalId);
                         this.requests.delete(requestId);
@@ -391,7 +394,7 @@ export class Provider {
                             resolve(response.payload);
                         }
                     } else {
-                        if (isClosedWindow(requestContext)) {
+                        if (isClosedWindow(requestContext) && !this.approvedRequests.has(requestId)) {
                             clearInterval(intervalId);
                             this.requests.delete(requestId);
                             this.rejectPendingRequest(requestId, 'POPUP_CLOSED', 'Wallet popup was closed before the request completed.');
@@ -408,6 +411,7 @@ export class Provider {
 
                         elapsedTime += intervalTime;
                         if (elapsedTime >= timeoutMs) {
+                            this.approvedRequests.delete(requestId);
                             clearInterval(intervalId);
                             this.requests.delete(requestId);
                             this.hooks?.onRequestFinish?.({
