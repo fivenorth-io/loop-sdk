@@ -67,4 +67,30 @@ describe('Provider popup handling', () => {
     // run_transaction + reject_request
     expect(ws.send).toHaveBeenCalledTimes(2);
   });
+
+  it('does not reject an approved request in wait mode without a progress listener', async () => {
+    const { popup, ws, provider } = setup();
+    const result = provider.submitAndWaitForTransaction({ commands: [] } as any);
+
+    await sleep(50);
+    const sent = JSON.parse((ws.send.mock.calls[0] as any)[0]);
+
+    // Progress arrives although no progress listener was registered
+    provider.handleResponse({
+      type: 'transaction_progress',
+      payload: { request_id: sent.request_id, status: 'approved' },
+    });
+    popup.closed = true;
+    await sleep(400);
+
+    // No reject_request must be sent for an approved request
+    expect(ws.send).toHaveBeenCalledTimes(1);
+
+    provider.handleResponse({
+      request_id: sent.request_id,
+      type: 'transaction_completed',
+      payload: { ok: true },
+    });
+    await expect(result).resolves.toEqual({ ok: true });
+  });
 });
