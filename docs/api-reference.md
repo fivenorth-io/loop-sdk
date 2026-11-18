@@ -182,6 +182,10 @@ If the wallet popup or tab opened for the request is closed before the wallet re
 
 These methods are available from `import { loop } from '@fivenorth/loop-sdk/server'`.
 
+### Transfer preparation
+
+`loop.getProvider().transfer(recipient, amount, instrument?, options?)` returns a prepared transaction payload for `loop.executeTransaction(payload)`. It accepts `requestedAt`, `executeBefore`, and `memo` in `options`. The server provider forwards `memo` to the transfer preparation request. See the [server transfer example](server.md#providertransferrecipient-amount-instrument-options).
+
 ### Fee Balance Methods
 
 Loop supports two server SDK fee flows: Fee Balance, where users maintain a prepaid balance and Canton deducts transaction costs from that balance, and pending network fees, where a transaction can create a separate fee payment that must be paid before the next transaction.

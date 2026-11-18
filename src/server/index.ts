@@ -43,6 +43,7 @@ class RpcProvider extends Provider {
             },
             requested_at: options?.requestedAt instanceof Date ? options?.requestedAt.toISOString() : options?.requestedAt || undefined,
             execute_before: options?.executeBefore instanceof Date ? options?.executeBefore.toISOString() : options?.executeBefore || undefined,
+            memo: options?.memo,
         });
     }
 }

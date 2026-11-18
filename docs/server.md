@@ -323,6 +323,26 @@ console.log('Transaction submitted:', submissionResponse);
 
 ### Methods
 
+#### `provider.transfer(recipient, amount, instrument?, options?)`
+
+Prepares a token transfer and returns a transaction payload. Call `loop.executeTransaction(payload)` to sign and execute it with the server signer.
+
+Pass an optional `memo` in the fourth argument to include it in the transfer metadata. Server SDK versions before **0.16.1** silently dropped this option; upgrade to 0.16.1 or later to preserve it. An omitted or empty memo is not sent.
+
+```javascript
+// After loop.init(...) and await loop.authenticate()
+const transferPayload = await loop.getProvider().transfer(
+  'recipient-party-id',
+  '10',
+  undefined, // default instrument: Amulet (CC)
+  { memo: 'Invoice INV-123' },
+);
+
+await loop.executeTransaction(transferPayload);
+```
+
+The server transfer helper also accepts `requestedAt` and `executeBefore` as strings or `Date` objects. Browser signing options such as `message`, `requestTimeout`, and `executionMode` do not apply to this preparation step.
+
 #### `provider.prepareSubmission(payload: TransactionPayload)`
 
 Prepares a transaction for submission.
