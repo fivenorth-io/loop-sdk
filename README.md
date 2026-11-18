@@ -53,6 +53,10 @@ loop.connect(); // shows the QR code / wallet prompt
 - [Live demo](https://docs.fivenorth.io/loop-sdk/demo/)
 - [Changelog](CHANGELOG.md) and [security policy](SECURITY.md)
 
+## License
+
+Loop SDK is licensed under the [Apache License 2.0](LICENSE). The license is included in the npm package.
+
 # Development Guide
 
 This section is only for developing the SDK itself. To use the SDK, see the [docs](https://docs.fivenorth.io/loop-sdk/overview/).
