@@ -11,6 +11,10 @@ Loop SDK allows dApps to connect to a [Loop](https://cantonloop.com) account.
 
 Follow [#5n-loop-sdk-releases](https://fivenorthdigital.slack.com/archives/C0CG59QNB32) for new releases, upgrade notes, and breaking changes. For channel access or SDK support, contact [support@looptech.io](mailto:support@looptech.io).
 
+## License
+
+Loop SDK is licensed under the [Apache License 2.0](https://github.com/fivenorth-io/loop-sdk/blob/main/LICENSE). The license is included in the npm package.
+
 ## What is Loop SDK?
 
 Loop SDK is a lightweight JavaScript client that allows dApps to securely connect to the Loop wallet.
