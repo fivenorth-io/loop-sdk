@@ -176,6 +176,8 @@ await provider.transfer(
 
 If the wallet popup or tab opened for the request is closed before the wallet responds, the promise rejects with `PopupClosedError`. Otherwise the existing `requestTimeout` behavior still applies.
 
+A backend rejection with `APPROVAL_UNAVAILABLE` rejects the request with `RejectRequestError` carrying that code and closes its signing popup/tab if no other request is pending in the same window. Other completion/close behavior remains controlled by the wallet UI.
+
 ---
 
 ## Server SDK API

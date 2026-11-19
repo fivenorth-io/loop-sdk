@@ -7,6 +7,7 @@ Full Changelog: [v0.16.0...v0.16.1](https://github.com/fivenorth-io/loop-sdk/com
 
 - **server-sdk:** forward `options.memo` when preparing a transfer with `loop.getProvider().transfer(...)`. Previously, the server provider silently dropped the memo. Upgrade to preserve transfer memos in server integrations.
 - **License:** add Apache 2.0 licensing to the SDK repository and npm package, including the `LICENSE` file and package metadata.
+- **signing:** close the signing popup/tab when a request is rejected with `APPROVAL_UNAVAILABLE`, provided no other request still needs that window. Track pending requests per window and release their bookkeeping when sending fails.
 - **Docs/demo:** update CIP-103 examples and supported endpoint docs for Canton 3.6.x/3.7.x, using `update-by-id`, `updateFormat`, and `eventFormat`. No SDK runtime changes are required for this migration.
 - **connect:** closing the connect modal (close button, Esc or backdrop) now cancels the connection the same way a rejection in the wallet does: the local session is cleared, `onReject()` is called, and a pending CIP-103 `connect` rejects with code 4001. Before, the dApp was never told and kept waiting. The ticket socket is released at once, so connecting again right away opens a new one.
 
