@@ -79,6 +79,7 @@ export class Provider {
     public email?: string;
     private auth_token: string;
     private requests: Map<string, any> = new Map();
+    private signedRequests = new Set<string>();
     private requestTimeout: number = DEFAULT_REQUEST_TIMEOUT_MS;
     private hooks?: ProviderHooks;
     // Keep listening after a timeout for late transaction results.
@@ -109,6 +110,10 @@ export class Provider {
         for (const [id, observer] of this.transactionObservers) {
             if (observer.expires <= Date.now()) this.transactionObservers.delete(id);
         }
+        // Closing the popup cannot cancel a transaction already signed by the wallet.
+        if (progress && message.payload?.status === 'signed' && this.requests.has(observedId)) {
+            this.signedRequests.add(observedId);
+        }
         const observer = this.transactionObservers.get(observedId);
         if (observer && (progress || message?.type === MessageType.TRANSACTION_COMPLETED)) {
             if (observer.listener(message.payload)) this.transactionObservers.delete(observedId);
@@ -134,6 +139,7 @@ export class Provider {
 
     public rejectPendingRequests(code: string, message: string): void {
         this.transactionObservers.clear();
+        this.signedRequests.clear();
         for (const requestId of this.requests.keys()) {
             this.requests.set(requestId, {
                 request_id: requestId,
@@ -343,6 +349,7 @@ export class Provider {
                   this.connection.ws!.send(JSON.stringify(requestBody));
                 } catch (error) {
                   this.requests.delete(requestId);
+                  this.signedRequests.delete(requestId);
                   this.transactionObservers.delete(requestId);
                   console.error('[LoopSDK] error when sending request', error);
                   reject(error);
@@ -358,6 +365,7 @@ export class Provider {
                     if (response) {
                         clearInterval(intervalId);
                         this.requests.delete(requestId);
+                        this.signedRequests.delete(requestId);
                         const code = extractErrorCode(response);
                         if (isUnauthCode(code)) {
                             this.hooks?.onRequestFinish?.({
@@ -391,9 +399,10 @@ export class Provider {
                             resolve(response.payload);
                         }
                     } else {
-                        if (isClosedWindow(requestContext)) {
+                        if (isClosedWindow(requestContext) && !this.signedRequests.has(requestId)) {
                             clearInterval(intervalId);
                             this.requests.delete(requestId);
+                            this.signedRequests.delete(requestId);
                             this.rejectPendingRequest(requestId, 'POPUP_CLOSED', 'Wallet popup was closed before the request completed.');
                             this.hooks?.onRequestFinish?.({
                                 status: 'error',
@@ -410,6 +419,7 @@ export class Provider {
                         if (elapsedTime >= timeoutMs) {
                             clearInterval(intervalId);
                             this.requests.delete(requestId);
+                            this.signedRequests.delete(requestId);
                             this.hooks?.onRequestFinish?.({
                                 status: 'timeout',
                                 messageType,
