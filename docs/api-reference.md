@@ -174,7 +174,7 @@ await provider.transfer(
 );
 ```
 
-If the wallet popup or tab opened for the request is closed before the wallet responds, the promise rejects with `PopupClosedError`. Otherwise the existing `requestTimeout` behavior still applies.
+Closing the wallet popup or tab before signing rejects the request with `PopupClosedError`. For transactions, once the SDK receives `signed`, closing the window does not cancel the request: it keeps waiting for the result or the existing `requestTimeout`. A `pending` preparation update does not count as signing.
 
 A backend rejection with `APPROVAL_UNAVAILABLE` rejects the request with `RejectRequestError` carrying that code and closes its signing popup/tab if no other request is pending in the same window. Other completion/close behavior remains controlled by the wallet UI.
 
