@@ -605,3 +605,4 @@ export * from "./extensions/usdc/types";
 export * from "./errors";
 export * from "./types";
 export * from "./cip103";
+export { ReadOnlyLoopSDK } from './read-only';

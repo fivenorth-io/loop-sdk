@@ -76,3 +76,29 @@ bun start
 Then visit http://localhost:3030/ to see the local demo app served from `demo/test.html`.
 
 Visit http://localhost:3030/cip103 for the CIP-103 demo.
+
+### Read-only reconciliation
+
+Use a separately issued read-only Loop API key without loading a signing key:
+
+```ts
+import { ReadOnlyLoopSDK } from '@fivenorth/loop-sdk/server';
+
+const client = new ReadOnlyLoopSDK({
+  apiKey: process.env.LOOP_READ_ONLY_API_KEY!,
+  network: 'mainnet',
+});
+const balances = await client.getHolding();
+const contracts = await client.getActiveContracts({
+  interfaceId: '#splice-api-token-holding-v1:Splice.Api.Token.HoldingV1:Holding',
+});
+```
+
+The wallet owner creates or rotates this key using
+`POST /api/v1/profile/read-only-api-key` with their authenticated wallet session,
+and revokes it with `DELETE` on the same endpoint. Only one key is active per
+user; rotation invalidates the previous read-only key without affecting regular
+SDK credentials. Read-only keys expire after 90 days. The creation response includes
+`expires_at`; rotate before that timestamp to keep polling uninterrupted. The key can read only that wallet's
+holdings and active contracts, and cannot submit transactions. Requires backend
+support for read-only keys. Existing balance coverage and query limits apply.
