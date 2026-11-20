@@ -19,7 +19,7 @@ import { Cip103Provider } from "./cip103/provider";
 import { Cip103ProviderRpcError } from "./cip103/errors";
 
 class LoopSDK {
-	private version: string = "0.16.1";
+	private version: string = "0.17.0";
 
 	private appName: string = "Unknown";
 	private connection: Connection | null = null;

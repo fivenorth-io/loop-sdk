@@ -18,7 +18,7 @@ bun add @fivenorth/loop-sdk
 Or via CDN (no build process required):
 
 ```javascript
-import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.16.1/dist";
+import { loop } from "https://unpkg.com/@fivenorth/loop-sdk@0.17.0/dist";
 ```
 
 Then import into your dApp:

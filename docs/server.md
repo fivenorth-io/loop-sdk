@@ -2,7 +2,9 @@
 
 Loop SDK also supports a server-side signing flow. Instead of asking the user to approve each action in the wallet UI, your backend signs and submits transactions directly using the user's private key.
 
-Important: this flow requires access to the user's private key. Party ID + public key alone is not enough.
+Important: this signing flow requires access to the user's private key. Party ID + public key alone is not enough.
+
+For reconciliation that only reads holdings and active contracts, use [ReadOnlyLoopSDK](read-only.md). It needs only a separately issued read-only API key; skip the signing setup below.
 
 <video controls preload="metadata" poster="../assets/videos/server-sdk.jpg">
   <source src="../assets/videos/server-sdk.mp4" type="video/mp4">

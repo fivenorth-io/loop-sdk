@@ -23,6 +23,8 @@ application can fetch holdings, query DAML contracts, submit transactions, and s
 
 The SDK also includes a **server-side signing flow** for integrators who want to sign and submit transactions without a wallet popup. This server flow requires access to the user's private key.
 
+For reconciliation services, use [ReadOnlyLoopSDK](read-only.md) to read holdings and active contracts with a separate read-only API key. The service does not need a private key or wallet session.
+
 ## Supported contracts
 
 Loop SDK can sign and submit any DAML transaction whose packages are installed on the Loop validator. Today that includes:
@@ -57,7 +59,7 @@ The server SDK lets your backend sign and submit transactions programmatically. 
 - Initialize with `privateKey` + `partyId`
 - Authenticate, then prepare → sign → execute
 
-If you do not control the private key, you must use the normal wallet popup flow instead.
+For signing without custody of the private key, use the normal wallet popup flow. For holdings and active-contract reads only, use the [read-only client](read-only.md).
 
 Example ideas:
 - List pending transfers
