@@ -1,6 +1,39 @@
 # API Reference
 
-This section lists all publicly available SDK APIs to dApps.
+This section lists public SDK APIs for dApps and server integrations.
+
+---
+
+## `ReadOnlyLoopSDK`
+
+Available since 0.17.0 from `@fivenorth/loop-sdk` and `@fivenorth/loop-sdk/server`.
+See the [read-only guide](read-only.md) for setup and examples.
+
+```ts
+new ReadOnlyLoopSDK({ apiKey, network?, apiUrl? })
+```
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `apiKey` | `string` | Your read-only API key. |
+| `network` | `Network` | Defaults to `main`. Supports `local`, `dev`/`devnet`, `test`/`testnet`, and `main`/`mainnet`. |
+| `apiUrl` | `string` | Optional API base URL, without `/api/v1`. |
+
+### `getHolding(): Promise<Holding[]>`
+
+Returns the wallet's token balances, including locked/unlocked amounts and instrument identifiers.
+
+### `getActiveContracts(filter): Promise<unknown[]>`
+
+Returns active contracts matching the supplied filter.
+`filter` accepts `templateId?: string` and `interfaceId?: string`. At least one
+nonempty filter is required. If both are supplied, `templateId` takes precedence.
+Consumers must inspect/narrow the returned contract structures.
+
+The client has no signing, submission, connection, or key-management methods.
+Unsuccessful HTTP responses throw `Error("Loop read failed (<status>)")`.
+Missing filters and credentials without the required prefix throw synchronously.
+There is no built-in timeout, retry, or automatic credential renewal.
 
 ---
 

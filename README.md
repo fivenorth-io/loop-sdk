@@ -21,7 +21,7 @@ bun add @fivenorth/loop-sdk
 Or without a build step:
 
 ```javascript
-import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.16.1/dist';
+import { loop } from 'https://unpkg.com/@fivenorth/loop-sdk@0.17.0/dist';
 ```
 
 ## Quickstart
@@ -42,11 +42,35 @@ loop.init({
 loop.connect(); // shows the QR code / wallet prompt
 ```
 
+## Read-only reconciliation
+
+Use a separately issued read-only Loop API key without loading a signing key:
+
+```ts
+import { ReadOnlyLoopSDK } from '@fivenorth/loop-sdk/server';
+
+const client = new ReadOnlyLoopSDK({
+  apiKey: process.env.LOOP_READ_ONLY_API_KEY!,
+  network: 'mainnet',
+});
+const balances = await client.getHolding();
+const contracts = await client.getActiveContracts({
+  interfaceId: '#splice-api-token-holding-v1:Splice.Api.Token.HoldingV1:Holding',
+});
+```
+
+A read-only key can access only its wallet's holdings and active contracts. Keys
+expire after 90 days and can be replaced or revoked independently of regular SDK
+credentials. See the [read-only guide](docs/read-only.md) for setup and key management.
+
+The client is also exported from `@fivenorth/loop-sdk`.
+
 ## Docs
 
 - [Overview and supported contracts](https://docs.fivenorth.io/loop-sdk/overview/)
 - [Usage guide](https://docs.fivenorth.io/loop-sdk/usage/): connecting, provider methods, submitting transactions
 - [CIP-103 provider](https://docs.fivenorth.io/loop-sdk/cip103/)
+- [Read-only reconciliation](docs/read-only.md): holdings and ACS without a signing key
 - [Server API](https://docs.fivenorth.io/loop-sdk/server/): signing without a wallet popup
 - [Custom contracts](https://docs.fivenorth.io/loop-sdk/custom-contracts/): getting your own DAR reviewed and deployed
 - [API reference](https://docs.fivenorth.io/loop-sdk/api-reference/)

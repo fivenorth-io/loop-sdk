@@ -19,7 +19,7 @@ import { Cip103Provider } from "./cip103/provider";
 import { Cip103ProviderRpcError } from "./cip103/errors";
 
 class LoopSDK {
-	private version: string = "0.16.1";
+	private version: string = "0.17.0";
 
 	private appName: string = "Unknown";
 	private connection: Connection | null = null;
@@ -605,3 +605,4 @@ export * from "./extensions/usdc/types";
 export * from "./errors";
 export * from "./types";
 export * from "./cip103";
+export { ReadOnlyLoopSDK } from './read-only';

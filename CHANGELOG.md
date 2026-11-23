@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0
+
+### What Changed
+
+- Add `ReadOnlyLoopSDK` to read wallet balances and active contracts with a read-only API key. No signing key or wallet connection is required.
+- Export the client from `@fivenorth/loop-sdk` and `@fivenorth/loop-sdk/server`.
+- Add a [read-only guide](docs/read-only.md) with setup, key management, and usage examples.
+
 ## 0.16.1
 Full Changelog: [v0.16.0...v0.16.1](https://github.com/fivenorth-io/loop-sdk/compare/v0.16.0...v0.16.1)
 

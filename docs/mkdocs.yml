@@ -5,6 +5,7 @@ nav:
   - Usage guide: usage.md
   - CIP-103 provider: cip103.md
   - Server API: server.md
+  - Read-only reconciliation: read-only.md
   - Custom contracts: custom-contracts.md
   - Demo: demo.md
   - API reference: api-reference.md

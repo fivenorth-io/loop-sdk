@@ -287,3 +287,4 @@ export class LoopSDK {
 export const loop = new LoopSDK();
 export * from '../errors';
 export * from '../types';
+export { ReadOnlyLoopSDK } from '../read-only';
