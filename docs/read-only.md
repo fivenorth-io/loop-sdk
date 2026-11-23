@@ -1,4 +1,4 @@
-# Read-only reconciliation
+# Read-only API keys
 
 Use `ReadOnlyLoopSDK` to read wallet balances and active contracts with a read-only
 API key. No signing key, wallet popup, or `connect()` call is needed.
