@@ -19,7 +19,7 @@ import type {
 } from './types';
 import { PaymentRequiredError, UnauthorizedError } from './errors';
 import { SessionInfo } from './session';
-import { generateRequestId } from './provider';
+import { generateRequestId, toLedgerDeduplicationPeriod } from './provider';
 import type { Cip103LedgerApiRequest, Cip103LedgerApiResult } from './cip103/types';
 import { Cip103ProviderRpcError } from './cip103/errors';
 
@@ -499,7 +499,7 @@ export class Connection {
                 command_id: params.command_id,
                 signature: params.signature,
                 transaction_data: params.transaction_data,
-                deduplication_period: params.deduplication_period,
+                deduplication_period: params.deduplication_period ? toLedgerDeduplicationPeriod(params.deduplication_period) : undefined,
             }),
         });
 
