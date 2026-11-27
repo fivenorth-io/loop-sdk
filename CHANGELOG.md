@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### What Changed
+
+- **build:** exclude the local Bun.serve demo (`src/server.ts`) from `tsc` output so the published package no longer ships `dist/server.js` beside the real `@fivenorth/loop-sdk/server` entry.
+
 ## 0.17.0
 
 ### What Changed
