@@ -86,6 +86,7 @@ export class SessionInfo  {
     this.partyId = undefined;
     this.publicKey = undefined;
     this.email = undefined;
+    this.userApiKey = undefined;
     this.walletUrl = undefined;
   }
 
