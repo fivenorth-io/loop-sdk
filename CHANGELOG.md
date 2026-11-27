@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### What Changed
+
+- **server-sdk:** reject invalid deduplication periods in `toLedgerDeduplicationPeriod` (`empty` must be `true`; `seconds` / `nanos` must be non-negative integers).
+
 ## 0.17.0
 
 ### What Changed

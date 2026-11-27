@@ -474,10 +474,18 @@ export function toLedgerDeduplicationPeriod(input: DeduplicationPeriodInput) {
     }
 
     if ('empty' in input) {
+        // Only `{ empty: true }` is part of DeduplicationPeriodInput. A present but
+        // falsy `empty` must not become ledger Empty.
+        if ((input as { empty?: unknown }).empty !== true) {
+            throw new Error('Deduplication period must be { seconds, nanos? } or { empty: true }');
+        }
         return { Empty: {} };
     }
 
-    if (!Number.isFinite(input.seconds)) {
+    if (!Number.isInteger(input.seconds) || input.seconds < 0) {
+        throw new Error('Deduplication period must be { seconds, nanos? } or { empty: true }');
+    }
+    if (input.nanos !== undefined && (!Number.isInteger(input.nanos) || input.nanos < 0)) {
         throw new Error('Deduplication period must be { seconds, nanos? } or { empty: true }');
     }
 
