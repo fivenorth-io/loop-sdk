@@ -37,7 +37,7 @@ test('passes a period already in the ledger format through as is', async () => {
 });
 
 test('throws before sending when seconds is not a finite number', async () => {
-  for (const period of [{}, { seconds: undefined }, { seconds: NaN }, { seconds: Infinity }]) {
+  for (const period of [{}, { seconds: undefined }, { seconds: NaN }, { seconds: Infinity }, { seconds: -1 }, { seconds: 1.5 }, { empty: false }, { nanos: 1 }]) {
     const count = sent.length;
     await expect(executeBody(period)).rejects.toThrow('Deduplication period must be { seconds, nanos? } or { empty: true }');
     expect(sent.length).toBe(count);
