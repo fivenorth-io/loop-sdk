@@ -29,7 +29,7 @@
 	},
 	"repository": "github:fivenorth-io/loop-sdk",
 	"scripts": {
-		"build": "bun tsc && bun build ./src/index.ts --outdir ./dist --target browser --format esm",
+		"build": "rm -rf dist && bun tsc && bun build ./src/index.ts --outdir ./dist --target browser --format esm && bun build ./src/server/index.ts --outfile ./dist/server/index.js --target node --format esm --external node-forge",
 		"prepublishOnly": "bun run build",
 		"start": "bun run src/server.ts"
 	},

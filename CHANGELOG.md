@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### What Changed
+
+- **server-sdk:** bundle `@fivenorth/loop-sdk/server` with Bun for Node ESM so relative imports in `dist/` include resolvable paths. `tsc` alone left extensionless specifiers that Node rejected (`ERR_MODULE_NOT_FOUND`).
+
 ## 0.17.0
 
 ### What Changed
