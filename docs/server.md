@@ -309,7 +309,7 @@ const preparedPayload = await provider.prepareSubmission({
 });
 
 // 2. Sign the transaction hash from the prepared payload
-// The transaction_hash is a base64 encoded string
+// The transaction_hash is a base64 encoded 32-byte hash; signTransactionHash throws on anything else
 const signedTransactionHash = signer.signTransactionHash(preparedPayload.transaction_hash);
 
 // 3. Execute the transaction

@@ -55,9 +55,15 @@ export class Signer {
             throw new Error('Transaction hash is required');
         }
 
+        // Prepared transaction hashes are 32 bytes (SHA-256)
+        const hash = forge.util.decode64(transactionHash);
+        if (hash.length !== 32) {
+            throw new Error('Transaction hash must be 32 bytes');
+        }
+
         // Now we will sign the transaction hash
         const signedRequest = forge.pki.ed25519.sign({
-            message: forge.util.decode64(transactionHash),
+            message: hash,
             encoding: 'binary',
             privateKey: this.privateKey,
         }) as unknown as forge.Bytes;
