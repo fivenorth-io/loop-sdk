@@ -468,9 +468,17 @@ function isClosedWindow(value: unknown): boolean {
     return 'closed' in value && value.closed === true;
 }
 
-function toLedgerDeduplicationPeriod(input: DeduplicationPeriodInput) {
+export function toLedgerDeduplicationPeriod(input: DeduplicationPeriodInput) {
+    if ('DeduplicationDuration' in input || 'Empty' in input) {
+        return input;
+    }
+
     if ('empty' in input) {
         return { Empty: {} };
+    }
+
+    if (!Number.isFinite(input.seconds)) {
+        throw new Error('Deduplication period must be { seconds, nanos? } or { empty: true }');
     }
 
     return {
